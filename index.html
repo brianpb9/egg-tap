@@ -359,6 +359,16 @@
   .zoomcard .rar{top:10px;right:10px;font-size:13px;padding:3px 10px;}
   .zoomcard .crown{top:-10px;font-size:26px;}
   .zoomclose{position:absolute;top:-16px;right:-12px;z-index:6;width:38px;height:38px;border-radius:50%;border:none;background:#fff;font-weight:800;font-size:17px;color:#7a572b;box-shadow:var(--shadow);cursor:pointer;}
+  /* new-world celebration */
+  .wc-card{background:radial-gradient(circle at 50% 30%,#fffdf6,#fff0d0);border:4px solid #ffcf5c;border-radius:28px;padding:18px 26px 22px;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.3),0 0 30px rgba(244,163,0,.5);max-width:80%;animation:zoompop .35s cubic-bezier(.2,.8,.3,1.2);position:relative;}
+  .wc-burst{font-size:30px;}
+  .wc-thumb{width:96px;height:96px;margin:2px auto;display:flex;align-items:center;justify-content:center;}
+  .wc-thumb img{width:90px;height:90px;object-fit:contain;}
+  .wc-title{font-weight:800;font-size:15px;color:#b9821a;letter-spacing:.5px;}
+  .wc-world{font-weight:800;font-size:24px;color:#5a4326;margin:2px 0 12px;}
+  .wc-go{display:block;width:100%;border:none;border-radius:999px;font-family:inherit;font-weight:800;font-size:19px;color:#fff;background:linear-gradient(180deg,#8be36b,#5fb83e);box-shadow:0 5px 0 #3f8f24;padding:12px 0;cursor:pointer;}
+  .wc-go:active{transform:translateY(3px);box-shadow:0 2px 0 #3f8f24;}
+  .wc-later{margin-top:8px;background:none;border:none;color:#9a8a6a;font-weight:800;font-size:14px;cursor:pointer;}
   .cardlet .newcard{position:absolute;top:6px;left:6px;z-index:4;background:linear-gradient(180deg,#ff7eb0,#ff4f87);color:#fff;font-weight:800;font-size:9px;letter-spacing:.5px;padding:2px 7px;border-radius:9px;box-shadow:0 2px 5px rgba(255,79,135,.5);animation:newpulse 1.1s ease-in-out infinite;}
   @keyframes newpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
   .albumfilters{display:flex;gap:7px;padding:4px 16px 6px;flex-wrap:wrap;}
@@ -1049,10 +1059,19 @@ const SFX={
 /* ---- gentle WebAudio background music (toggleable, low-arousal for toddlers) ---- */
 let _bgmTimer=null, _bgmStep=0;
 const BGM_SCALE=[392.00,440.00,523.25,587.33,659.25,783.99];
+// each world gets its own gentle musical mood
+const WORLD_BGM={
+  green_forest:{scale:[392,440,523,587,659,784],pat:[0,2,4,2,1,3,5,3]},      // calm pentatonic
+  sunny_beach:{scale:[523,587,659,784,880,988],pat:[0,2,1,3,4,2,5,3]},        // bright & sunny
+  candy_land:{scale:[587,659,784,880,1047,1175],pat:[0,2,4,1,3,5,2,4]},       // playful & high
+  dino_valley:{scale:[294,330,392,440,523,587],pat:[0,1,2,0,3,1,4,2]},        // low & adventurous
+  ocean_kingdom:{scale:[349,392,494,587,659,698],pat:[0,2,3,1,4,2,5,3]},      // dreamy
+  rainbow_meadow:{scale:[440,523,659,698,880,1047],pat:[0,2,4,3,5,1,4,2]}     // airy & magical
+};
 function musicNote(freq,dur,vol){ const c=ac(); if(!c) return; const o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();
   o.type="sine"; o.frequency.value=freq; f.type="lowpass"; f.frequency.value=1100; o.connect(f); f.connect(g); g.connect(c.destination);
   const tt=c.currentTime; g.gain.setValueAtTime(0,tt); g.gain.linearRampToValueAtTime(vol,tt+0.09); g.gain.exponentialRampToValueAtTime(0.0001,tt+dur); o.start(tt); o.stop(tt+dur+0.05); }
-function bgmStep(){ if(!AC||(S.settings&&S.settings.music===false)) return; const pat=[0,2,4,2,1,3,5,3]; const n=BGM_SCALE[pat[_bgmStep%pat.length]]; _bgmStep++; musicNote(n,1.1,0.05); if(_bgmStep%4===0) musicNote(n/2,1.7,0.03); }
+function bgmStep(){ if(!AC||(S.settings&&S.settings.music===false)) return; const wb=WORLD_BGM[S.currentWorld]||{scale:BGM_SCALE,pat:[0,2,4,2,1,3,5,3]}; const n=wb.scale[wb.pat[_bgmStep%wb.pat.length]]; _bgmStep++; musicNote(n,1.1,0.05); if(_bgmStep%4===0) musicNote(n/2,1.7,0.03); }
 function startBGM(){ if(_bgmTimer) return; if(S.settings&&S.settings.music===false) return; _bgmTimer=setInterval(bgmStep,720); }
 function stopBGM(){ clearInterval(_bgmTimer); _bgmTimer=null; }
 function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; S.settings.music=!S.settings.music; save();
@@ -1635,6 +1654,7 @@ function reward(){
   syncWallet(); checkUnlocks(); checkSets(); save();
 }
 function nextEgg(){ SFX.tap(); $("#rewardOverlay").classList.remove("active");
+  if(S.pendingNewWorld){ const nw=S.pendingNewWorld; S.pendingNewWorld=null; save(); newEgg(); celebrateWorld(nw); return; } // celebrate + nudge to the freshly unlocked world
   if(SESSION_HATCH>0 && SESSION_HATCH%SOFT_STOP_EVERY===0) showSoftStop(); else newEgg(); }
 
 function worldComplete(w){ const base=creaturesOf(w.sets).filter(c=>!c.legend); return base.length>0 && base.every(c=>S.owned[c.id]); }
@@ -1646,7 +1666,22 @@ function checkUnlocks(){
   S.worldsUnlocked=want;
   if(!want.includes(S.currentWorld)) S.currentWorld=want[want.length-1];
   newly.forEach(id=>{ try{SFX.fanfare&&SFX.fanfare('epic');}catch(e){} toast(`🎉 ${nm(world(id).name)}!`); });
+  if(newly.length) S.pendingNewWorld=newly[newly.length-1]; // celebrate + nudge the player to the new world at a safe moment
 }
+function celebrateWorld(id){ const w=world(id); if(!w) return; const en=S.locale!=='id'; const mascot=creaturesOf(w.sets).find(c=>!c.legend);
+  let ov=document.getElementById('worldCelebrate');
+  if(!ov){ ov=document.createElement('div'); ov.id='worldCelebrate'; ov.className='overlay'; $("#device").appendChild(ov); }
+  ov.innerHTML=`<div class="wc-card">
+    <div class="wc-burst">🎉</div>
+    <div class="wc-thumb">${mascot?creatureMarkup(mascot,90):''}</div>
+    <div class="wc-title">${en?'New World Unlocked!':'Dunia Baru Terbuka!'}</div>
+    <div class="wc-world">${w.emoji||'🗺️'} ${nm(w.name)}</div>
+    <button class="wc-go" onclick="gotoNewWorld('${id}')">${en?'Explore now →':'Jelajahi →'}</button>
+    <button class="wc-later" onclick="closeWorldCelebrate()">${en?'Later':'Nanti'}</button></div>`;
+  ov.classList.add('active'); try{ burst(40,ov,true); SFX.fanfare&&SFX.fanfare('legend'); }catch(e){}
+}
+function closeWorldCelebrate(){ const ov=document.getElementById('worldCelebrate'); if(ov) ov.classList.remove('active'); }
+function gotoNewWorld(id){ closeWorldCelebrate(); try{SFX.tap&&SFX.tap();}catch(e){} S.currentWorld=id; save(); show('hatch'); newEgg(); }
 function checkSets(){
   DATA.worlds.forEach(w=>{ w.sets.forEach(setId=>{
     if(S.setsAwarded.includes(setId)) return;

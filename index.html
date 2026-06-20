@@ -825,6 +825,14 @@ DATA.challenges.push(
     const wrong=new Set(); while(wrong.size<2){ const w=1+Math.floor(Math.random()*6); if(w!==n) wrong.add(w); }
     const opts=[{v:set(n),correct:true},...[...wrong].map(w=>({v:set(w),correct:false}))].sort(()=>Math.random()-0.5);
     DATA.challenges.push({id:"gen_count"+n,archetype:"COUNT",skill:n<=3?"numbers.count3":"numbers.count5",tier:n<=2?1:n<=4?2:3,prompt:{id:"Mana yang ada "+n+"?",en:"Which has "+n+"?"},options:opts}); }
+  // ARITHMETIC (advanced / age 5): addition & subtraction, answers shown as number choices
+  DATA.skills.push({id:"numbers.add",pillar:"numbers",label:{id:"Berhitung +/−",en:"Adding & subtracting"}});
+  const numOpts=(ans)=>{ const wrong=new Set(); let guard=0; while(wrong.size<2&&guard++<30){ const w=Math.max(0,ans+(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*3))); if(w!==ans) wrong.add(w); }
+    return [{v:String(ans),correct:true},...[...wrong].map(w=>({v:String(w),correct:false}))].sort(()=>Math.random()-0.5); };
+  for(let a=1;a<=6;a++) for(let b=1;b<=5;b++){ if(a+b>10) continue;
+    DATA.challenges.push({id:`gen_add_${a}_${b}`,archetype:"FIND_OBJECT",skill:"numbers.add",tier:(a+b)<=5?3:4,prompt:{id:`${a} + ${b} = ?`,en:`${a} + ${b} = ?`},options:numOpts(a+b)}); }
+  for(let a=3;a<=9;a++){ const b=1+Math.floor(Math.random()*(a-1));
+    DATA.challenges.push({id:`gen_sub_${a}_${b}`,archetype:"FIND_OBJECT",skill:"numbers.add",tier:4,prompt:{id:`${a} − ${b} = ?`,en:`${a} − ${b} = ?`},options:numOpts(a-b)}); }
 })();
 
 /* ===== V3 Batch B — 50 color variants + rarity + Rainbow Meadow ===== */
@@ -1364,12 +1372,14 @@ function recordAttempt(s,ok){
   const sp=S.skillProgress[s]||(S.skillProgress[s]={tier:1,last5:[]});
   sp.last5.push(ok?1:0); if(sp.last5.length>5) sp.last5.shift();
   if(sp.last5.length>=5){ const r=sp.last5.reduce((a,b)=>a+b,0)/5; if(r>=0.8&&sp.tier<4)sp.tier++; else if(r<=0.4&&sp.tier>1)sp.tier--; }
+  S.stats.attempts=(S.stats.attempts||0)+1;
   if(ok){ S.stats.correct++; missionProgress('correct'); if(!S.stats.weekSkills.includes(s)) S.stats.weekSkills.push(s); }
 }
 let _recentCh=[];
 function pickChallenge(){
-  const skills=DATA.skills.map(s=>s.id);
-  const sk=skills[(S.stats.challengesPassed+S.stats.hatches)%skills.length];
+  let skills=DATA.skills.map(s=>s.id);
+  if(S.ageBand>=5){ const num=DATA.skills.filter(s=>s.pillar==='numbers').map(s=>s.id); skills=skills.concat(num,num); } // age 5: extra math
+  const sk=skills[Math.floor(Math.random()*skills.length)]; // random skill each time → less repetitive
   const tier=tierFor(sk);
   let pool=DATA.challenges.filter(c=>c.skill===sk&&c.tier===tier);
   if(!pool.length) pool=DATA.challenges.filter(c=>c.skill===sk);
@@ -1445,6 +1455,17 @@ function answerSeq(el){
 function escalateHint(){
   const opts=$$("#ch_options .opt"); const right=opts.find(o=>o.dataset.correct==="true");
   if(!right){ LOOP.resolved=true; LOOP.answered=true; setTimeout(finishChallenge,400); return; } // safety: malformed -> just move on
+  // AGE 5 = assessment mode: no win-assist. A subtle nudge, then reveal the answer to learn and SKIP (counts as missed, not a win).
+  if(S.ageBand>=5){
+    if(LOOP.wrongs>=2){ LOOP.resolved=true; LOOP.answered=true;
+      opts.forEach(o=>{ if(o.dataset.correct!=="true") o.classList.add("dim"); }); right.classList.add("hint");
+      setCue(S.locale==='id'?'Belum tepat — lain kali ya! 💪':'Not quite — next time! 💪');
+      if(!vo('oops')) speak(S.locale==='id'?'Lain kali ya':'Next time');
+      clearTimeout(LOOP._auto); LOOP._auto=setTimeout(finishChallenge,1300); } // SKIP — not recorded as correct
+    else { right.classList.add("hint"); }
+    return;
+  }
+  // AGES 3-4 = gentle no-fail: hint, then solve it for them so they never get stuck
   const autoSolve=()=>{ if(LOOP.resolved) return; right.classList.add("right"); LOOP.resolved=true; LOOP.answered=true; SFX.correct(); recordAttempt(LOOP.challenge.skill,true); S.stats.challengesPassed++; if(!voPraise()) speak(DATA.praise[S.locale][0]); setTimeout(finishChallenge,700); };
   if(LOOP.wrongs===1){ right.classList.add("hint"); }
   else if(LOOP.wrongs>=2){ opts.forEach(o=>{ if(o.dataset.correct!=="true"&&!o.classList.contains("dim")) o.classList.add("dim"); }); right.classList.add("hint");
@@ -1740,15 +1761,27 @@ function openGate(){ GATE_TARGET=[31,47,52,68,73,29][Math.floor(Math.random()*6)
   $("#gateNums").innerHTML=[...nums].sort(()=>Math.random()-0.5).map(n=>`<button onclick="tryGate(${n})">${n}</button>`).join("");
   openModal("gateModal"); }
 function tryGate(n){ if(n===GATE_TARGET){ SFX.correct(); closeModal("gateModal"); show("parent"); } else { SFX.oops(); bounceModal("gateModal"); } }
-function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newSkills=S.stats.weekSkills.length;
-  $("#p_summary").innerHTML=S.locale==="id"
-    ? `Si kecil menetaskan <b>${S.stats.hatches}</b> telur, mengoleksi <b>${owned}</b> makhluk, menyelesaikan <b>${S.stats.challengesPassed}</b> tantangan (<b>${S.stats.correct}</b> jawaban benar). Keterampilan baru: <b>${newSkills}</b>. Streak: <b>${S.daily.streak}</b> hari. Lencana: <b>${S.badges.length}</b>.`
-    : `Your child hatched <b>${S.stats.hatches}</b> eggs, collected <b>${owned}</b> creatures, completed <b>${S.stats.challengesPassed}</b> challenges (<b>${S.stats.correct}</b> correct). New skills: <b>${newSkills}</b>. Streak: <b>${S.daily.streak}</b> days. Badges: <b>${S.badges.length}</b>.`;
-  $("#skillList").innerHTML=DATA.skills.map(sk=>{ const sp=S.skillProgress[sk.id]||{tier:1,last5:[]};
-    const dots=Array.from({length:5},(_,i)=>{ const v=sp.last5[i]; return `<i class="${v===1?'ok':v===0?'no':''}"></i>`; }).join("");
-    return `<div class="skillrow"><div class="lab">${nm(sk.label)}</div><div class="dots5">${dots}</div><div class="tiertag">${nm(TIER_NAMES[sp.tier]||{id:'T'+sp.tier,en:'T'+sp.tier})}</div></div>`; }).join("");
+function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newSkills=S.stats.weekSkills.length; const en=S.locale!=='id';
+  const att=S.stats.attempts||0, acc=att?Math.round(S.stats.correct/att*100):0;
+  $("#p_summary").innerHTML=en
+    ? `Your child hatched <b>${S.stats.hatches}</b> eggs, collected <b>${owned}</b> creatures, and answered <b>${S.stats.correct}/${att}</b> challenges correctly (<b>${acc}%</b> accuracy). New skills this week: <b>${newSkills}</b>. Streak: <b>${S.daily.streak}</b> days · Badges: <b>${S.badges.length}</b>.`
+    : `Si kecil menetaskan <b>${S.stats.hatches}</b> telur, mengoleksi <b>${owned}</b> makhluk, dan menjawab benar <b>${S.stats.correct}/${att}</b> tantangan (akurasi <b>${acc}%</b>). Keterampilan baru minggu ini: <b>${newSkills}</b>. Streak: <b>${S.daily.streak}</b> hari · Lencana: <b>${S.badges.length}</b>.`;
+  const pillLabels={colors:{id:'Warna',en:'Colors'},shapes:{id:'Bentuk',en:'Shapes'},animals:{id:'Hewan',en:'Animals'},numbers:{id:'Angka & hitung',en:'Numbers & math'},letters:{id:'Huruf',en:'Letters'},emotions:{id:'Emosi',en:'Emotions'},logic:{id:'Logika',en:'Logic'},memory:{id:'Memori',en:'Memory'}};
+  const pillars={}; DATA.skills.forEach(sk=>{ const sp=S.skillProgress[sk.id]; (pillars[sk.pillar]=pillars[sk.pillar]||[]).push(sp?sp.tier:1); });
+  const pillHtml=Object.keys(pillars).map(p=>{ const avg=Math.round(pillars[p].reduce((a,b)=>a+b,0)/pillars[p].length);
+    return `<div class="skillrow"><div class="lab">${pillLabels[p]?nm(pillLabels[p]):p}</div><div class="tiertag">${nm(TIER_NAMES[avg]||{id:'T'+avg,en:'T'+avg})}</div></div>`; }).join("");
+  const btn=a=>`<button onclick="setAgeBand(${a})" style="width:42px;height:42px;border-radius:50%;border:3px solid ${S.ageBand===a?'#4f8f24':'#ffd591'};background:${S.ageBand===a?'#a8e46c':'#fff'};font-weight:800;font-size:17px;cursor:pointer;color:#5a4a2a">${a}</button>`;
+  const ageRow=`<div class="skillrow" style="gap:10px;align-items:center"><div class="lab">${en?'Child age':'Umur anak'}</div>${btn(3)}${btn(4)}${btn(5)}</div>`
+    +`<div class="note" style="margin:2px 2px 6px;color:#7a6a4a">${S.ageBand>=5?(en?'⚡ Age 5: real challenges + extra math — wrong answers are NOT auto-solved.':'⚡ Umur 5: tantangan nyata + lebih banyak matematika — jawaban salah TIDAK dibantu.'):(en?'🌿 Ages 3–4: gentle no-fail mode (always succeeds).':'🌿 Umur 3–4: mode lembut tanpa gagal (selalu berhasil).')}</div>`;
+  $("#skillList").innerHTML=ageRow
+    +`<div class="setbar"><span>${en?'Mastery by area':'Penguasaan per bidang'}</span></div>`+pillHtml
+    +`<div class="setbar"><span>${en?'Skill detail':'Detail keterampilan'}</span></div>`
+    +DATA.skills.map(sk=>{ const sp=S.skillProgress[sk.id]||{tier:1,last5:[]};
+      const dots=Array.from({length:5},(_,i)=>{ const v=sp.last5[i]; return `<i class="${v===1?'ok':v===0?'no':''}"></i>`; }).join("");
+      return `<div class="skillrow"><div class="lab">${nm(sk.label)}</div><div class="dots5">${dots}</div><div class="tiertag">${nm(TIER_NAMES[sp.tier]||{id:'T'+sp.tier,en:'T'+sp.tier})}</div></div>`; }).join("");
   $("#lang_id").classList.toggle("on",S.locale==="id"); $("#lang_en").classList.toggle("on",S.locale==="en");
 }
+function setAgeBand(a){ S.ageBand=a; save(); try{SFX.tap();}catch(e){} renderParent(); toast((S.locale==='id'?'Umur diatur ke ':'Age set to ')+a+' 🎯'); }
 function setLang(l){ S.locale=l; save(); applyStaticI18n(); renderParent(); }
 function resetGame(){ if(confirm(S.locale==="id"?"Hapus semua data?":"Erase all data?")){ localStorage.removeItem(SAVE_KEY); location.reload(); } }
 

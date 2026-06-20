@@ -240,6 +240,17 @@
   .nav .ic svg{width:27px;height:27px;display:block;}
   .coin svg{width:17px;height:17px;flex:0 0 auto;}
   #worldName{margin-left:46px;}
+  .corner svg{width:24px;height:24px;display:block;margin:0 auto;}
+  .goalchip svg{width:15px;height:15px;vertical-align:-2px;}
+  /* rarity card frames (album) */
+  .cardlet.rar-rare{box-shadow:inset 0 0 0 3px #4d9be0, var(--shadow);}
+  .cardlet.rar-epic,.cardlet.rar-magic{box-shadow:inset 0 0 0 3px #9b59f0, var(--shadow);}
+  .cardlet.rar-legend{box-shadow:inset 0 0 0 3px #F4A300, 0 0 16px rgba(244,163,0,.5);}
+  .cardlet.rar-legend::after{content:"";position:absolute;top:0;left:-70%;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-18deg);animation:cardshine 3s ease-in-out infinite;pointer-events:none;}
+  @keyframes cardshine{0%{left:-70%}55%,100%{left:140%}}
+  /* first-run tutorial pointer */
+  #tapHint{position:absolute;left:50%;top:60%;transform:translateX(-50%);font-weight:800;font-size:22px;color:var(--btn);pointer-events:none;z-index:4;text-shadow:0 1px 2px #fff,0 0 8px #fff;animation:taphint 1.1s ease-in-out infinite;}
+  @keyframes taphint{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-16px)}}
 </style>
 </head>
 <body>
@@ -269,8 +280,8 @@
 
   <!-- S2 HATCH -->
   <section id="hatch" class="screen">
-    <button class="corner" title="Parent" onclick="openGate()">🔒</button>
-    <button class="corner" id="musicBtn" style="left:10px;right:auto" onclick="toggleMusic()">🔊</button>
+    <button class="corner" title="Parent" onclick="openGate()"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.4" fill="#ffd591" stroke="#cf8a2c" stroke-width="1.6"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="#cf8a2c" stroke-width="1.8"/><circle cx="12" cy="14.6" r="1.6" fill="#cf8a2c"/></svg></button>
+    <button class="corner" id="musicBtn" style="left:10px;right:auto" onclick="toggleMusic()"></button>
     <div class="topbar">
       <div class="title" id="worldName">Hutan Hijau</div>
       <div class="wallet">
@@ -288,6 +299,7 @@
       <div class="revealbanner" id="revealBanner"></div>
       <div class="cue" id="cue"></div>
       <div class="tapdots" id="tapdots"></div>
+      <div id="tapHint" style="display:none">👆 Tap!</div>
       <button class="bonusbtn" id="bonusEgg" style="display:none" onclick="buyBonusEgg()"></button>
     </div>
     <div class="overlay" id="challengeOverlay">
@@ -793,7 +805,8 @@ function bgmStep(){ if(!AC||(S.settings&&S.settings.music===false)) return; cons
 function startBGM(){ if(_bgmTimer) return; if(S.settings&&S.settings.music===false) return; _bgmTimer=setInterval(bgmStep,720); }
 function stopBGM(){ clearInterval(_bgmTimer); _bgmTimer=null; }
 function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; S.settings.music=!S.settings.music; save();
-  if(S.settings.music) startBGM(); else stopBGM(); const b=$("#musicBtn"); if(b) b.textContent=S.settings.music?"🔊":"🔇"; }
+  if(S.settings.music) startBGM(); else stopBGM(); const b=$("#musicBtn"); if(b) b.innerHTML=S.settings.music?ICON.music:ICON.muted; }
+function haptic(p){ try{ if(navigator.vibrate && !(S.settings&&S.settings.sfx===false)) navigator.vibrate(p); }catch(e){} }
 function speak(text){ try{ if(!window.speechSynthesis)return; const u=new SpeechSynthesisUtterance(text);
   u.lang=S.locale==="id"?"id-ID":"en-US"; u.rate=0.95; u.pitch=1.25; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
 
@@ -1043,6 +1056,9 @@ const ICON={
   star:`<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 6L12 16.9 6.6 19.2l1.3-6-4.5-4 6-.6z" fill="#FFC83D" stroke="#d99a12" stroke-width="1.2" stroke-linejoin="round"/></svg>`,
   coin:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4" fill="#F4C430" stroke="#b88a12" stroke-width="1.6"/><circle cx="12" cy="12" r="5" fill="none" stroke="#b88a12" stroke-width="1.3"/></svg>`,
   dust:`<svg viewBox="0 0 24 24"><path d="M12 2.5l1.9 6.6 6.6 1.9-6.6 1.9L12 19.5l-1.9-6.6L3.5 11l6.6-1.9z" fill="#C77DFF" stroke="#8a3dd0" stroke-width="1"/></svg>`,
+  lock:`<svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.4" fill="#ffd591" stroke="#cf8a2c" stroke-width="1.6"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="#cf8a2c" stroke-width="1.8"/><circle cx="12" cy="14.6" r="1.6" fill="#cf8a2c"/></svg>`,
+  music:`<svg viewBox="0 0 24 24"><path d="M6 9.5v5h3l5 4V5.5l-5 4H6z" fill="#7ec8e3" stroke="#2c8aa8" stroke-width="1.4" stroke-linejoin="round"/><path d="M16.5 9.5a4 4 0 0 1 0 5M19 7.5a7 7 0 0 1 0 9" fill="none" stroke="#2c8aa8" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  muted:`<svg viewBox="0 0 24 24"><path d="M6 9.5v5h3l5 4V5.5l-5 4H6z" fill="#cdbba8" stroke="#8a7a66" stroke-width="1.4" stroke-linejoin="round"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5" stroke="#8a7a66" stroke-width="1.6" stroke-linecap="round"/></svg>`,
 };
 function renderNav(nav){
   const items=[["hatch","nav_hatch"],["album","nav_album"],["home","nav_home"],["world","nav_world"]];
@@ -1114,7 +1130,7 @@ function syncWallet(){
   const st=document.querySelector('#hatch .stage'); const b=BG[S.currentWorld];
   if(st) st.style.background = b? `linear-gradient(rgba(255,251,240,.60),rgba(255,251,240,.82)), url('${b}') center/cover no-repeat` : '';
   const gc=$("#goalChip"); if(gc){ const ow=ownedCount(); const nx=DATA.worlds.find(w=>!S.worldsUnlocked.includes(w.id));
-    gc.textContent = nx ? `🥚 ${Math.max(0,nx.unlock-ow)} ${t('creatures')} → ${nm(nx.name)}` : ''; }
+    gc.innerHTML = nx ? `${ICON.hatch} ${Math.max(0,nx.unlock-ow)} ${t('creatures')} → ${nm(nx.name)}` : ''; }
   updateBonusBtn();
 }
 function pickEgg(){ const w=world(S.currentWorld); const ids=w.eggIds.filter(id=>DATA.eggs.find(e=>e.id===id));
@@ -1126,6 +1142,7 @@ function newEgg(){
   LOOP={crack:0,egg:pickEgg(),creature:null,challenge:null,wrongs:0,isNew:false};
   $("#eggwrap").innerHTML=eggMarkup(LOOP.egg);
   setCue(t("tap_cue")); updateDots(); syncWallet();
+  { const th=$("#tapHint"); if(th){ th.textContent=S.locale==='id'?'👆 Ketuk!':'👆 Tap!'; th.style.display=S.tutDone?"none":"block"; } }
   clearTimeout(window._idle);
   window._idle=setTimeout(()=>{ if(LOOP.crack===0){ if(AUDIO_READY){ if(!vo('tap')) speak(t("tap_cue")); } bounceEgg(); } },2500);
 }
@@ -1135,7 +1152,8 @@ function updateDots(){ const need=LOOP.egg.crackStates;
 function bounceEgg(){ const e=$(".egg"); if(e){ e.classList.remove("shake"); void e.offsetWidth; e.classList.add("shake"); } }
 function tapEgg(){
   if(LOOP.creature) return;
-  clearTimeout(window._idle);
+  clearTimeout(window._idle); haptic(15);
+  if(!S.tutDone){ S.tutDone=true; save(); const th=$("#tapHint"); if(th) th.style.display="none"; }
   LOOP.crack++; SFX.crack(LOOP.crack); bounceEgg(); burst(6,$("#eggwrap"));
   if(!EGGIMG[LOOP.egg.id]) $("#eggwrap").innerHTML=eggSVG(LOOP.egg,LOOP.crack);
   updateDots(); updateBonusBtn();
@@ -1162,7 +1180,7 @@ function hatch(){
   setCue(""); $("#tapdots").innerHTML=""; updateBonusBtn();
   const st=$("#hatch .stage"); if(st){ st.classList.remove("prehatch"); st.classList.add("hatching"); }
   // STAGE 2 — cracking moment
-  SFX.crackBig(); shakeScreen(); burst(30,$("#eggwrap"),true);
+  SFX.crackBig(); shakeScreen(); haptic([0,40,50,90]); burst(30,$("#eggwrap"),true);
   const egg=$(".egg"); if(egg) egg.classList.add("crackburst");
   // STAGE 3 — epic reveal (pause scales with rarity)
   const pause = c.rarity==="legend"?1000 : (c.rarity==="magic"||c.rarity==="epic")?900 : 600;
@@ -1249,7 +1267,7 @@ function renderOptions(ch){
 function answer(el){
   if(el.classList.contains("dim")||el.classList.contains("right")) return;
   const correct=el.dataset.correct==="true"; const ch=LOOP.challenge;
-  if(correct){ SFX.correct(); el.classList.add("right"); recordAttempt(ch.skill,true); S.stats.challengesPassed++;
+  if(correct){ SFX.correct(); haptic(25); el.classList.add("right"); recordAttempt(ch.skill,true); S.stats.challengesPassed++;
     burst(24,$("#fx"),true); const p=DATA.praise[S.locale][Math.floor(Math.random()*DATA.praise[S.locale].length)];
     if(!voPraise()) speak(p); setCue(p); awardBadges(); LOOP.answered=true;
     setTimeout(finishChallenge,700);
@@ -1384,7 +1402,7 @@ function renderAlbum(){
     total+=cs.length; have+=cs.filter(c=>S.owned[c.id]).length;
     html+=`<div class="setbar"><span>${w.emoji} ${nm(w.name)}</span><span>${setHave}/${base.length}${setHave===base.length?" "+t("set_done"):""}</span></div>`;
     const card=c=>{ const owned=!!S.owned[c.id];
-      return `<div class="cardlet ${owned?'':'locked'}" onclick="albumTap('${c.id}',${owned})">
+      return `<div class="cardlet ${owned?'rar-'+c.rarity:'locked'}" onclick="albumTap('${c.id}',${owned})">
         <div class="rar" style="background:${RARCOLOR[c.rarity]}">${owned?rarLabel(c.rarity):'?'}</div>
         <div class="sil">${creatureMarkup(c,82)}</div>
         <div class="nm">${owned?nm(c.name):'???'}</div>
@@ -1501,7 +1519,8 @@ function burst(n,parent,big){ const colors=["#ff8a3d","#7BC950","#C77DFF","#48CA
 function boot(){
   load(); applyStaticI18n();
   setInterval(()=>{ S.stats.playSeconds++; if(S.stats.playSeconds%20===0) save(); },1000);
-  window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; startBGM(); const b=$("#musicBtn"); if(b) b.textContent=(S.settings&&S.settings.music===false)?"🔇":"🔊"; },{once:true});
+  window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; startBGM(); },{once:true});
+  { const b=$("#musicBtn"); if(b) b.innerHTML=(S.settings&&S.settings.music===false)?ICON.muted:ICON.music; }
   renderNav($("#nav"));
   // anti-softlock safety: if a challenge was answered but the reward didn't appear, a tap on the stage recovers it
   $("#hatch .stage").addEventListener("click",()=>{

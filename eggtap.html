@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Egg Tap</title>
+<style>
+  /* ============================================================
+     EGG TAP — playable vertical slice (v2: cute visuals + depth)
+     Built from EGG_TAP_MASTER_BIBLE v2.0 + the /data/*.json schemas.
+     Principle: "the game is data, not code." Creatures, eggs, drop
+     tables, challenges, worlds, skills, decorations & badges live in
+     the DATA block; the engine just runs them.
+     Cute creatures & eggs are PROCEDURAL SVG (no art assets needed).
+  ============================================================ */
+  :root{
+    --bg1:#fff7e6; --bg2:#ffe3c2;
+    --ink:#3b2a1d; --soft:#7a6a5b;
+    --btn:#ff8a3d; --btn2:#ffb05c;
+    --good:#7BC950; --pop:#C77DFF; --sky:#48CAE4;
+    --card:#ffffff; --shadow:0 8px 24px rgba(120,70,20,.18);
+    --r:26px; --tap-min:64px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:'Baloo 2','Nunito',system-ui,'Segoe UI',sans-serif;
+    background:radial-gradient(120% 120% at 50% 0%,var(--bg1),var(--bg2));
+    color:var(--ink); overflow:hidden; user-select:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #device{
+    position:relative; width:min(440px,100vw); height:min(900px,100vh);
+    background:linear-gradient(180deg,#fff9f0,#ffeccb);
+    overflow:hidden; box-shadow:var(--shadow);
+  }
+  @media(min-width:460px){ #device{ border-radius:36px; height:min(880px,96vh);} }
+
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;}
+  .screen.active{display:flex;}
+  .pad{padding:16px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;}
+  .wallet{display:flex;gap:8px;}
+  .coin{display:flex;align-items:center;gap:5px;background:#fff;border-radius:999px;padding:5px 12px;font-weight:800;box-shadow:var(--shadow);font-size:15px;}
+  .title{font-weight:800;font-size:20px;}
+  h1,h2,h3{margin:.2em 0;}
+
+  .big{border:none;border-radius:var(--r);min-height:var(--tap-min);font-family:inherit;font-weight:800;font-size:22px;color:#fff;
+    background:linear-gradient(180deg,var(--btn2),var(--btn));box-shadow:0 6px 0 #d96a20, var(--shadow);padding:14px 26px;cursor:pointer;transition:transform .08s;}
+  .big:active{transform:translateY(4px);box-shadow:0 2px 0 #d96a20;}
+  .ghost{background:#fff;color:var(--ink);box-shadow:0 4px 0 #e9d3b0,var(--shadow);}
+  .mini{font-size:16px;padding:10px 18px;min-height:48px;}
+
+  #hatch{align-items:center;justify-content:flex-start;}
+  .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;position:relative;}
+  .eggwrap{position:relative;display:flex;align-items:center;justify-content:center;width:260px;height:300px;}
+  .egg{width:188px;height:236px;cursor:pointer;filter:drop-shadow(0 14px 18px rgba(120,70,20,.25));animation:wobble 2.6s ease-in-out infinite;}
+  @keyframes wobble{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+  .egg.shake{animation:shake .28s;}
+  @keyframes shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-7px,2px) rotate(-4deg)}75%{transform:translate(7px,-2px) rotate(4deg)}}
+  .hatched{width:210px;height:210px;animation:pop .6s cubic-bezier(.18,1.5,.4,1);}
+  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+  .floaty{animation:floaty 3s ease-in-out infinite;}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+  .cue{margin-top:6px;font-weight:800;font-size:20px;color:var(--soft);min-height:28px;text-align:center;padding:0 16px;}
+  .tapdots{display:flex;gap:10px;margin-top:8px;}
+  .tapdots i{width:16px;height:16px;border-radius:50%;background:#e8cda0;display:block;}
+  .tapdots i.on{background:var(--btn);}
+
+  .fx{position:absolute;inset:0;pointer-events:none;overflow:visible;}
+  .particle{position:absolute;width:14px;height:14px;border-radius:3px;opacity:0;}
+
+  .overlay{position:absolute;inset:0;background:rgba(40,20,5,.45);display:none;align-items:flex-end;z-index:40;}
+  .overlay.active{display:flex;animation:fade .25s;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .sheet{background:#fff;width:100%;border-radius:30px 30px 0 0;padding:18px 16px 26px;box-shadow:0 -10px 30px rgba(0,0,0,.2);animation:rise .35s cubic-bezier(.2,1,.3,1);}
+  @keyframes rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .asker{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .asker .av{width:70px;height:70px;flex:0 0 auto;}
+  .prompt{font-weight:800;font-size:21px;line-height:1.15;}
+  .sample{display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0;min-height:0;}
+  .samplebox{width:84px;height:84px;border-radius:20px;background:#fff7ee;border:4px dashed #ffce9e;display:flex;align-items:center;justify-content:center;font-size:46px;}
+  .options{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:14px;}
+  .opt{width:104px;height:104px;border-radius:24px;border:4px solid #f0e6d6;background:#fff7ee;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow);transition:transform .1s;overflow:hidden;}
+  .opt .em{font-size:54px;line-height:1;transition:transform .15s;}
+  .opt:active{transform:scale(.94);}
+  .opt.hint{animation:hintpulse 1s ease-in-out infinite;border-color:var(--good);}
+  @keyframes hintpulse{0%,100%{box-shadow:0 0 0 0 rgba(123,201,80,.5)}50%{box-shadow:0 0 0 12px rgba(123,201,80,0)}}
+  .opt.dim{opacity:.25;pointer-events:none;}
+  .opt.right{border-color:var(--good);background:#eaffe0;animation:rightpop .4s;}
+  @keyframes rightpop{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+  .opt.wrong{animation:nope .4s;}
+  @keyframes nope{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  .opt.picked{border-color:var(--sky);background:#e6f8ff;}
+  .opt .seqnum{position:absolute;top:4px;left:8px;font-size:14px;font-weight:800;color:var(--sky);}
+
+  .reward{text-align:center;}
+  .card3d{width:210px;height:240px;margin:8px auto;border-radius:24px;background:linear-gradient(160deg,#fff,#fff2dd);box-shadow:var(--shadow);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;animation:flip .7s cubic-bezier(.2,1,.3,1);border:5px solid #ffd591;}
+  @keyframes flip{0%{transform:rotateY(90deg) scale(.8);opacity:0}100%{transform:rotateY(0) scale(1);opacity:1}}
+  .newbadge{background:var(--pop);color:#fff;font-weight:800;border-radius:999px;padding:3px 12px;font-size:13px;display:inline-block;margin-top:8px;}
+  .rwbtns{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
+
+  .nav{display:flex;border-top:3px solid #ffe1b8;background:#fff;}
+  .nav button{flex:1;border:none;background:none;padding:10px 4px 14px;font-family:inherit;font-weight:800;color:var(--soft);font-size:12px;cursor:pointer;min-height:var(--tap-min);display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .nav button .ic{font-size:28px;line-height:1;}
+  .nav button.sel{color:var(--btn);}
+  .nav button.sel .ic{transform:translateY(-2px);filter:drop-shadow(0 4px 6px rgba(255,138,61,.4));}
+
+  .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px;}
+  .cardlet{aspect-ratio:3/4;border-radius:20px;background:#fff;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;}
+  .cardlet .nm{font-size:12px;font-weight:800;margin-top:2px;}
+  .cardlet.locked{background:#efe6d8;}
+  .cardlet.locked .sil{filter:brightness(0) opacity(.18);}
+  .rar{position:absolute;top:6px;right:8px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;color:#fff;}
+  .setbar{padding:10px 16px 2px;font-weight:800;color:var(--soft);display:flex;justify-content:space-between;}
+  .badgestrip{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;}
+  .badge{flex:0 0 auto;width:64px;text-align:center;font-size:10px;font-weight:800;color:var(--soft);}
+  .badge .bc{width:54px;height:54px;border-radius:16px;background:#fff;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 3px;}
+  .badge.locked .bc{background:#ece2d3;filter:grayscale(1) opacity(.5);}
+
+  #home .room{flex:1;position:relative;margin:12px;border-radius:24px;overflow:hidden;background:#bfe6ff center/cover no-repeat;box-shadow:var(--shadow);}
+  #home .room::after{content:"";position:absolute;inset:0;border-radius:24px;pointer-events:none;box-shadow:inset 0 -50px 70px rgba(60,40,20,.18), inset 0 0 0 5px #fff;}
+  .placed{position:absolute;cursor:grab;touch-action:none;filter:drop-shadow(0 7px 5px rgba(0,0,0,.28));z-index:2;transition:transform .1s;}
+  .placed:active{transform:scale(1.06);}
+  .tray{display:flex;gap:10px;overflow-x:auto;padding:12px;background:#fff;align-items:stretch;}
+  .trayitem{flex:0 0 auto;width:82px;border-radius:18px;background:#fff7ee;box-shadow:var(--shadow);padding:8px 6px;text-align:center;font-size:11px;font-weight:800;cursor:pointer;border:3px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+  .trayitem img{display:block;}
+  .trayitem:active{transform:scale(.93);}
+  .trayitem.cantafford{opacity:.45;}
+  .traytag{flex:0 0 auto;width:46px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--soft);}
+
+  .worldrow{display:flex;align-items:center;gap:14px;background:#fff;border-radius:22px;padding:14px;margin:10px 16px;box-shadow:var(--shadow);}
+  .worldrow .orb{width:64px;height:64px;border-radius:18px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:34px;}
+  .worldrow.locked{opacity:.6;}
+  .worldrow .meta{flex:1;}
+  .worldrow .pill{font-size:12px;font-weight:800;color:var(--soft);}
+  .prog{height:10px;border-radius:999px;background:#eee;overflow:hidden;margin-top:6px;}
+  .prog>i{display:block;height:100%;background:var(--good);}
+
+  .modal{position:absolute;inset:0;background:rgba(40,20,5,.5);display:none;align-items:center;justify-content:center;z-index:60;padding:20px;}
+  .modal.active{display:flex;animation:fade .25s;}
+  .modalbox{background:#fff;border-radius:28px;padding:24px;max-width:380px;width:100%;text-align:center;box-shadow:var(--shadow);animation:rise .3s;}
+  .streakwrap{display:flex;justify-content:center;gap:6px;margin:12px 0;flex-wrap:wrap;}
+  .sd{width:34px;height:34px;border-radius:10px;background:#eee;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;}
+  .sd.done{background:var(--good);color:#fff;}
+  .sd.today{outline:3px solid var(--btn);}
+
+  .gateNums{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
+  .gateNums button{min-height:60px;border-radius:18px;border:none;background:#fff7ee;font-family:inherit;font-weight:800;font-size:26px;box-shadow:var(--shadow);cursor:pointer;}
+  .corner{position:absolute;top:10px;right:10px;width:46px;height:46px;border-radius:14px;border:none;background:rgba(255,255,255,.7);font-size:22px;cursor:pointer;z-index:30;box-shadow:var(--shadow);}
+  .skillrow{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #f0e6d6;}
+  .skillrow .lab{flex:1;font-weight:700;}
+  .tiertag{font-weight:800;border-radius:999px;padding:3px 10px;color:#fff;font-size:12px;background:var(--sky);}
+  .dots5{display:flex;gap:4px;}
+  .dots5 i{width:12px;height:12px;border-radius:50%;background:#ddd;}
+  .dots5 i.ok{background:var(--good);}
+  .dots5 i.no{background:#ff9a8a;}
+  .note{font-size:13px;color:var(--soft);line-height:1.4;}
+  .lang{display:flex;gap:8px;}
+  .lang button{flex:1;border-radius:14px;border:3px solid #eee;background:#fff;padding:10px;font-weight:800;font-family:inherit;cursor:pointer;}
+  .lang button.on{border-color:var(--btn);color:var(--btn);}
+
+  .center{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:14px;padding:24px;}
+  .agebtns{display:flex;gap:14px;}
+  .agebtns button{width:90px;height:110px;border-radius:24px;border:none;background:#fff;box-shadow:var(--shadow);font-family:inherit;font-weight:800;font-size:18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+  .agebtns button .big-emoji{font-size:42px;}
+  .logo{font-size:40px;font-weight:800;letter-spacing:-1px;}
+  .logo small{display:block;font-size:15px;color:var(--soft);font-weight:700;letter-spacing:0;}
+  .muted{color:var(--soft);font-size:13px;}
+  .floatlabel{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-weight:800;color:var(--soft);font-size:13px;}
+  .prof{display:flex;align-items:center;gap:12px;background:#fff;border-radius:20px;padding:14px;box-shadow:var(--shadow);text-align:left;}
+
+  /* ===== Onboarding hero (redesigned) ===== */
+  #onboard{overflow:hidden;}
+  .ob-sky{position:absolute;inset:0;background:radial-gradient(120% 85% at 50% -8%, #d6efff 0%, #fff3da 46%, #ffe3c2 100%);}
+  .ob-sky::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;background:url('assets/bg/green_forest.png') bottom center/cover no-repeat;opacity:.55;-webkit-mask-image:linear-gradient(transparent,#000 65%);mask-image:linear-gradient(transparent,#000 65%);}
+  .ob-floaters{position:absolute;inset:0;pointer-events:none;z-index:1;}
+  .ob-floaters img{position:absolute;width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 6px 6px rgba(0,0,0,.18));animation:floaty 4s ease-in-out infinite;}
+  .ob-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:13px;padding:22px;text-align:center;overflow-y:auto;}
+  .ob-hero{display:flex;flex-direction:column;align-items:center;gap:0;}
+  .ob-egg{width:104px;height:104px;object-fit:contain;filter:drop-shadow(0 10px 14px rgba(120,70,20,.28));animation:wobble 3s ease-in-out infinite;margin-bottom:2px;}
+  .ob-sell{font-weight:800;color:#fff;font-size:13.5px;background:linear-gradient(180deg,var(--btn2),var(--btn));border-radius:999px;padding:7px 16px;box-shadow:var(--shadow);}
+  .agebtns button{width:98px;height:120px;flex-direction:column;gap:4px;}
+  .agebtns button .ageimg{width:66px;height:66px;object-fit:contain;}
+  .agebtns button .agenum{font-size:22px;font-weight:800;color:var(--ink);}
+  .ob-trust{font-size:12px;font-weight:800;color:var(--soft);background:rgba(255,255,255,.78);border-radius:999px;padding:7px 14px;box-shadow:var(--shadow);}
+
+  /* ===== Quick-win polish ===== */
+  .opt.count .em{font-size:26px;line-height:1.05;white-space:normal;word-break:break-word;max-width:88px;letter-spacing:1px;transform:none!important;}
+  .cue{text-shadow:0 1px 2px #fff,0 2px 10px #fff,0 0 14px rgba(255,255,255,.95);}
+  .goalchip{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:#fff;border-radius:999px;padding:6px 14px;font-weight:800;font-size:13px;color:var(--ink);box-shadow:var(--shadow);white-space:nowrap;z-index:3;}
+  .goalchip:empty{display:none;}
+  .floatlabel{top:10px;bottom:auto;left:50%;right:auto;transform:translateX(-50%);width:auto;max-width:90%;background:rgba(255,255,255,.85);border-radius:999px;padding:6px 14px;font-size:12px;box-shadow:var(--shadow);pointer-events:none;animation:hintfade 6s forwards;}
+  @keyframes hintfade{0%,70%{opacity:1}100%{opacity:0}}
+</style>
+</head>
+<body>
+<div id="device">
+  <!-- S0/S1 ONBOARDING -->
+  <section id="onboard" class="screen active">
+    <div class="ob-sky"></div>
+    <div class="ob-floaters" id="obFloaters"></div>
+    <div class="ob-content">
+      <div class="ob-hero">
+        <img class="ob-egg" src="assets/eggs/egg_legend.png" alt="" />
+        <div class="logo">Egg Tap <small id="ob_tag">Tetaskan · Belajar · Koleksi</small></div>
+      </div>
+      <div class="ob-sell" id="ob_sell">✨ Tetaskan 50+ makhluk lucu & belajar sambil bermain!</div>
+      <div class="prof" style="background:rgba(255,255,255,.92)"><div style="width:60px;flex:0 0 auto" id="prof_av"></div>
+        <div><b id="prof_name">Profesor Hatch</b><div class="note" id="prof_line"></div></div></div>
+      <div id="ob_q" class="title">Berapa usia si kecil?</div>
+      <div class="agebtns">
+        <button onclick="setAge(3)"><img class="ageimg" src="assets/creatures/anchor_pip.png" alt=""><span class="agenum">3</span></button>
+        <button onclick="setAge(4)"><img class="ageimg" src="assets/creatures/bunny.png" alt=""><span class="agenum">4</span></button>
+        <button onclick="setAge(5)"><img class="ageimg" src="assets/creatures/cat.png" alt=""><span class="agenum">5</span></button>
+      </div>
+      <div class="ob-trust" id="ob_trust">🛡️ Tanpa iklan · Aman untuk anak · 🇮🇩 Bahasa</div>
+    </div>
+  </section>
+
+  <!-- S2 HATCH -->
+  <section id="hatch" class="screen">
+    <button class="corner" title="Parent" onclick="openGate()">🔒</button>
+    <div class="topbar">
+      <div class="title" id="worldName">Hutan Hijau</div>
+      <div class="wallet">
+        <div class="coin">⭐ <span id="w_stars">0</span></div>
+        <div class="coin">🪙 <span id="w_coins">0</span></div>
+        <div class="coin">✨ <span id="w_dust">0</span></div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="goalchip" id="goalChip"></div>
+      <div class="fx" id="fx"></div>
+      <div class="eggwrap" id="eggwrap"></div>
+      <div class="cue" id="cue"></div>
+      <div class="tapdots" id="tapdots"></div>
+    </div>
+    <div class="overlay" id="challengeOverlay">
+      <div class="sheet">
+        <div class="asker"><div class="av" id="ch_av"></div><div class="prompt" id="ch_prompt"></div></div>
+        <div class="sample" id="ch_sample"></div>
+        <div class="options" id="ch_options"></div>
+      </div>
+    </div>
+    <div class="overlay" id="rewardOverlay">
+      <div class="sheet reward">
+        <div class="card3d" id="rw_card"></div>
+        <div id="rw_name" class="title"></div>
+        <div id="rw_new"></div>
+        <div class="muted" id="rw_gain"></div>
+        <div class="rwbtns">
+          <button class="big mini ghost" id="rw_share" style="display:none" onclick="shareHatch()">📸 Kartu</button>
+          <button class="big" onclick="nextEgg()" id="rw_next">Telur Berikutnya ➜</button>
+        </div>
+      </div>
+    </div>
+    <div class="nav" id="nav"></div>
+  </section>
+
+  <!-- S5 ALBUM -->
+  <section id="album" class="screen">
+    <div class="topbar"><div class="title" id="t_album">Album Makhluk</div>
+      <div class="coin">📚 <span id="ab_count">0</span>/<span id="ab_total">0</span></div></div>
+    <div class="scroll" id="albumScroll"></div>
+    <div class="nav"></div>
+  </section>
+
+  <!-- S6 HOME -->
+  <section id="home" class="screen">
+    <div class="topbar"><div class="title" id="t_home">Rumahku</div><div class="coin">🪙 <span id="hm_coins">0</span></div></div>
+    <div class="room" id="room"></div>
+    <div class="tray" id="tray"></div>
+    <div class="nav"></div>
+  </section>
+
+  <!-- S7 WORLD MAP -->
+  <section id="world" class="screen">
+    <div class="topbar"><div class="title" id="t_world">Dunia</div></div>
+    <div class="scroll" id="worldScroll"></div>
+    <div class="nav"></div>
+  </section>
+
+  <!-- S8 DAILY -->
+  <div class="modal" id="dailyModal">
+    <div class="modalbox">
+      <div style="font-size:54px">🎁</div>
+      <h2 id="d_title">Telur Harian!</h2>
+      <p class="note" id="d_sub"></p>
+      <div class="streakwrap" id="streakStrip"></div>
+      <button class="big" onclick="claimDaily()" id="d_claim">Ambil 🥚</button>
+    </div>
+  </div>
+
+  <!-- LEGEND modal (set completion) -->
+  <div class="modal" id="legendModal">
+    <div class="modalbox">
+      <div style="font-size:46px">👑</div>
+      <h2 id="lg_title">Set Lengkap!</h2>
+      <div id="lg_card" style="margin:8px auto"></div>
+      <p class="note" id="lg_sub"></p>
+      <button class="big" onclick="closeModal('legendModal')" id="lg_ok">Hore! 🎉</button>
+    </div>
+  </div>
+
+  <!-- PARENT GATE -->
+  <div class="modal" id="gateModal">
+    <div class="modalbox">
+      <h2 id="g_title">Zona Orang Tua</h2>
+      <p class="note" id="g_sub"></p>
+      <div class="gateNums" id="gateNums"></div>
+      <button class="ghost big" style="margin-top:14px;width:100%" onclick="closeModal('gateModal')" id="g_cancel">Batal</button>
+    </div>
+  </div>
+
+  <!-- HATCH CARD modal -->
+  <div class="modal" id="cardModal">
+    <div class="modalbox">
+      <canvas id="hatchCanvas" width="540" height="720" style="width:100%;max-width:300px;border-radius:18px;box-shadow:var(--shadow)"></canvas>
+      <div class="rwbtns">
+        <button class="big mini" id="card_dl" onclick="downloadCard()">⬇️ Simpan</button>
+        <button class="big mini ghost" onclick="closeModal('cardModal')" id="card_close">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARENT ZONE -->
+  <section id="parent" class="screen">
+    <div class="topbar"><div class="title" id="t_parent">Zona Orang Tua</div>
+      <button class="corner" style="position:static" onclick="show('hatch')">✕</button></div>
+    <div class="scroll">
+      <div class="pad">
+        <div style="background:#fff;border-radius:22px;padding:16px;box-shadow:var(--shadow)">
+          <h3 id="p_week">Kemajuan minggu ini</h3>
+          <p class="note" id="p_summary"></p>
+        </div>
+      </div>
+      <div class="setbar"><span id="p_skillsh">Keterampilan yang dipelajari</span><span>tier</span></div>
+      <div id="skillList"></div>
+      <div class="pad">
+        <h3 id="p_settings">Pengaturan</h3>
+        <div class="note" id="p_lang_l" style="margin-bottom:6px">Bahasa</div>
+        <div class="lang">
+          <button id="lang_id" class="on" onclick="setLang('id')">🇮🇩 Bahasa</button>
+          <button id="lang_en" onclick="setLang('en')">🇬🇧 English</button>
+        </div>
+        <div style="height:14px"></div>
+        <button class="ghost big" style="width:100%" onclick="resetGame()" id="p_reset">Mulai Ulang Data</button>
+        <p class="note" style="margin-top:12px" id="p_compliance"></p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* =============================================================
+   DATA LAYER  (creatures use cute procedural rendering via `kind`)
+   ============================================================= */
+const DATA = {
+  worlds: [
+    {id:"green_forest", order:1, name:{id:"Hutan Hijau", en:"Green Forest"}, emoji:"🌳", unlock:0,  sets:["forest_friends"], eggIds:["egg_common","egg_rare"], bg:["#bfe6ff","#dff5e1","#cdeccb"]},
+    {id:"sunny_beach",  order:2, name:{id:"Pantai Ceria", en:"Sunny Beach"}, emoji:"🏖️", unlock:9,  sets:["beach_buddies"], eggIds:["egg_common","egg_rare"], bg:["#aee7ff","#ffe9b0","#ffd98a"]},
+    {id:"candy_land",   order:3, name:{id:"Negeri Permen", en:"Candy Land"}, emoji:"🍭", unlock:16, sets:["candy_pals"],   eggIds:["egg_candy","egg_magic"], bg:["#ffd6ef","#ffe1f3","#ffc8e6"]},
+    {id:"dino_valley",  order:4, name:{id:"Lembah Dino", en:"Dino Valley"}, emoji:"🦕", unlock:23, sets:["dino_gang"],     eggIds:["egg_dino","egg_magic"], bg:["#d7f0c0","#eaf7d0","#c6e6a0"]},
+    {id:"ocean_kingdom",order:5, name:{id:"Kerajaan Laut", en:"Ocean Kingdom"}, emoji:"🌊", unlock:30, sets:["ocean_crew"], eggIds:["egg_ocean","egg_magic"], bg:["#9fdcf2","#bfeafc","#7ec8e3"]},
+  ],
+
+  /* kind drives the cute procedural look. eyes/pattern add variety. legend=set reward. */
+  creatures: [
+    // forest_friends — woodland critters
+    {id:"crt_forest_pip",   name:{id:"Pip",en:"Pip"},     set:"forest_friends", world:"green_forest", rarity:"common", color:"#7BC950", pal:["#Eaffd6","#3A7D1E"], kind:"round",  eyes:"sparkle", pattern:"belly"},
+    {id:"crt_forest_buno",  name:{id:"Buno",en:"Buno"},   set:"forest_friends", world:"green_forest", rarity:"common", color:"#E8A23D", pal:["#FFF4E0","#A35F12"], kind:"bear",   eyes:"round",   pattern:"belly"},
+    {id:"crt_forest_hopsy", name:{id:"Hopsi",en:"Hopsy"}, set:"forest_friends", world:"green_forest", rarity:"common", color:"#F2C14E", pal:["#FFF6D8","#A8841C"], kind:"bunny",  eyes:"sparkle", pattern:"none"},
+    {id:"crt_forest_dewy",  name:{id:"Dewi",en:"Dewy"},   set:"forest_friends", world:"green_forest", rarity:"common", color:"#6FD08C", pal:["#E8FFE0","#2E8B4C"], kind:"frog",   eyes:"round",   pattern:"belly"},
+    {id:"crt_forest_twiggy",name:{id:"Twiggy",en:"Twiggy"},set:"forest_friends",world:"green_forest", rarity:"common", color:"#C2925A", pal:["#F2E3C8","#5E4422"], kind:"deer",   eyes:"happy",   pattern:"spots"},
+    {id:"crt_forest_nutty", name:{id:"Nutty",en:"Nutty"}, set:"forest_friends", world:"green_forest", rarity:"common", color:"#B5742E", pal:["#FFE9C7","#6E3D12"], kind:"squirrel",eyes:"sparkle", pattern:"belly"},
+    {id:"crt_forest_fenn",  name:{id:"Fenn",en:"Fenn"},   set:"forest_friends", world:"green_forest", rarity:"common", color:"#D98CC0", pal:["#FFE7F6","#8A3A6E"], kind:"cat",    eyes:"happy",   pattern:"none"},
+    {id:"crt_forest_bram",  name:{id:"Bram",en:"Bram"},   set:"forest_friends", world:"green_forest", rarity:"rare",   color:"#E86A4A", pal:["#FFE3D8","#9B3B2B"], kind:"fox",    eyes:"wink",    pattern:"belly"},
+    {id:"crt_forest_lala",  name:{id:"Lala",en:"Lala"},   set:"forest_friends", world:"green_forest", rarity:"rare",   color:"#C77DFF", pal:["#F3E6FF","#7B2CBF"], kind:"bug",    eyes:"sparkle", pattern:"star"},
+    {id:"crt_forest_gilly", name:{id:"Gilly",en:"Gilly"}, set:"forest_friends", world:"green_forest", rarity:"rare",   color:"#6AB0E8", pal:["#E3F2FF","#1F5C99"], kind:"bird",   eyes:"round",   pattern:"none"},
+    {id:"crt_forest_olo",   name:{id:"Olo",en:"Olo"},     set:"forest_friends", world:"green_forest", rarity:"magic",  color:"#9af0c8", pal:["#FFFFFF","#2FA86A"], kind:"ghost",  eyes:"sparkle", pattern:"star"},
+    {id:"crt_forest_grumby",name:{id:"Grumby",en:"Grumby"},set:"forest_friends",world:"green_forest", rarity:"legend", color:"#5BA86B", pal:["#E8FFE0","#246B36"], kind:"monster",eyes:"sparkle", pattern:"spots", legend:true},
+
+    // beach_buddies
+    {id:"crt_beach_shelly", name:{id:"Shelly",en:"Shelly"},set:"beach_buddies", world:"sunny_beach", rarity:"common", color:"#FFB6C1", pal:["#FFF0F3","#C76B86"], kind:"round",  eyes:"sparkle", pattern:"spots"},
+    {id:"crt_beach_sandy",  name:{id:"Sandy",en:"Sandy"}, set:"beach_buddies", world:"sunny_beach", rarity:"common", color:"#F0D78A", pal:["#FFFBE8","#9C8A4A"], kind:"crab",   eyes:"happy",   pattern:"none"},
+    {id:"crt_beach_wavey",  name:{id:"Wavey",en:"Wavey"}, set:"beach_buddies", world:"sunny_beach", rarity:"common", color:"#5FC8E8", pal:["#E6FAFF","#1F7FA0"], kind:"fish",   eyes:"round",   pattern:"belly"},
+    {id:"crt_beach_sunny",  name:{id:"Suni",en:"Suni"},   set:"beach_buddies", world:"sunny_beach", rarity:"common", color:"#FFD24A", pal:["#FFF6D0","#C79A12"], kind:"bird",   eyes:"sparkle", pattern:"none"},
+    {id:"crt_beach_coral",  name:{id:"Coral",en:"Coral"}, set:"beach_buddies", world:"sunny_beach", rarity:"rare",   color:"#FF8C66", pal:["#FFE9E0","#B0492B"], kind:"seahorse",eyes:"happy",  pattern:"stripes"},
+    {id:"crt_beach_pearl",  name:{id:"Pearl",en:"Pearl"}, set:"beach_buddies", world:"sunny_beach", rarity:"rare",   color:"#E0D6F5", pal:["#FFFFFF","#9A8AC0"], kind:"round",  eyes:"sparkle", pattern:"belly"},
+    {id:"crt_beach_krabby", name:{id:"Krabby",en:"Krabby"},set:"beach_buddies",world:"sunny_beach", rarity:"magic",  color:"#FF5C5C", pal:["#FFE0E0","#A02020"], kind:"crab",   eyes:"wink",    pattern:"none"},
+    {id:"crt_beach_tideo",  name:{id:"Tideo",en:"Tideo"}, set:"beach_buddies", world:"sunny_beach", rarity:"legend", color:"#2Ea0c8", pal:["#CAF0F8","#04668a"], kind:"monster",eyes:"sparkle", pattern:"belly", legend:true},
+
+    // candy_pals
+    {id:"crt_candy_gummy",  name:{id:"Gummy",en:"Gummy"}, set:"candy_pals", world:"candy_land", rarity:"common", color:"#FF7FB0", pal:["#FFE6F0","#B03A6A"], kind:"blob", eyes:"sparkle", pattern:"none"},
+    {id:"crt_candy_minty",  name:{id:"Minty",en:"Minty"}, set:"candy_pals", world:"candy_land", rarity:"common", color:"#8FE8C8", pal:["#E8FFF6","#2FA080"], kind:"round",eyes:"happy",   pattern:"belly"},
+    {id:"crt_candy_bonbon", name:{id:"Bonbon",en:"Bonbon"},set:"candy_pals",world:"candy_land", rarity:"common", color:"#FFC85A", pal:["#FFF3D6","#C7951C"], kind:"bunny",eyes:"sparkle", pattern:"spots"},
+    {id:"crt_candy_choco",  name:{id:"Choco",en:"Choco"}, set:"candy_pals", world:"candy_land", rarity:"rare",   color:"#9B5A2B", pal:["#E8D0B0","#5A3A18"], kind:"bear", eyes:"round",   pattern:"belly"},
+    {id:"crt_candy_swirl",  name:{id:"Swirl",en:"Swirl"}, set:"candy_pals", world:"candy_land", rarity:"magic",  color:"#C77DFF", pal:["#F3E6FF","#7B2CBF"], kind:"bug",  eyes:"sparkle", pattern:"star"},
+    {id:"crt_candy_kingjelly",name:{id:"Raja Jeli",en:"King Jelly"},set:"candy_pals",world:"candy_land",rarity:"legend",color:"#FF5BA0",pal:["#FFE0EF","#B01060"],kind:"monster",eyes:"sparkle",pattern:"star",legend:true},
+
+    // dino_gang
+    {id:"crt_dino_rex",  name:{id:"Rex",en:"Rex"},  set:"dino_gang", world:"dino_valley", rarity:"common", color:"#7FB069", pal:["#E8FFD8","#3E6B2E"], kind:"dino",  eyes:"sparkle", pattern:"belly"},
+    {id:"crt_dino_tri",  name:{id:"Tri",en:"Tri"},  set:"dino_gang", world:"dino_valley", rarity:"common", color:"#E8A23D", pal:["#FFF0D8","#A35F12"], kind:"trike", eyes:"happy",   pattern:"none"},
+    {id:"crt_dino_dotty",name:{id:"Dotty",en:"Dotty"},set:"dino_gang",world:"dino_valley", rarity:"common", color:"#6FC0C0", pal:["#E0FAFA","#2A8080"], kind:"dino",  eyes:"round",   pattern:"spots"},
+    {id:"crt_dino_spike",name:{id:"Spike",en:"Spike"},set:"dino_gang",world:"dino_valley", rarity:"rare",  color:"#6AB0E8", pal:["#E3F2FF","#1F5C99"], kind:"dino",  eyes:"wink",    pattern:"stripes"},
+    {id:"crt_dino_tero", name:{id:"Tero",en:"Tero"}, set:"dino_gang", world:"dino_valley", rarity:"magic",  color:"#E86A6A", pal:["#FFE3E3","#9B2B2B"], kind:"ptero", eyes:"sparkle", pattern:"none"},
+    {id:"crt_dino_bigrex",name:{id:"Raja Rex",en:"King Rex"},set:"dino_gang",world:"dino_valley",rarity:"legend",color:"#C24a3a",pal:["#FFE0D8","#7a1f12"],kind:"monster",eyes:"sparkle",pattern:"spots",legend:true},
+
+    // ocean_crew
+    {id:"crt_ocean_finn",  name:{id:"Finn",en:"Finn"},  set:"ocean_crew", world:"ocean_kingdom", rarity:"common", color:"#48CAE4", pal:["#CAF0F8","#0077B6"], kind:"fish",    eyes:"sparkle", pattern:"belly"},
+    {id:"crt_ocean_bubbles",name:{id:"Bubbles",en:"Bubbles"},set:"ocean_crew",world:"ocean_kingdom",rarity:"common",color:"#90E0EF",pal:["#E0FBFF","#0096C7"],kind:"round",   eyes:"happy",   pattern:"none"},
+    {id:"crt_ocean_inky", name:{id:"Inky",en:"Inky"},   set:"ocean_crew", world:"ocean_kingdom", rarity:"common", color:"#B58Cff", pal:["#Ede0ff","#5a2c9a"], kind:"octopus", eyes:"sparkle", pattern:"spots"},
+    {id:"crt_ocean_marina",name:{id:"Marina",en:"Marina"},set:"ocean_crew",world:"ocean_kingdom", rarity:"rare",  color:"#0096C7", pal:["#CAF0F8","#023E8A"], kind:"seahorse",eyes:"happy",   pattern:"stripes"},
+    {id:"crt_ocean_splash",name:{id:"Splash",en:"Splash"},set:"ocean_crew",world:"ocean_kingdom", rarity:"magic", color:"#34D0c0", pal:["#D6fff8","#0a8a7a"], kind:"fish",    eyes:"wink",    pattern:"star"},
+    {id:"crt_ocean_kraki",name:{id:"Kraki",en:"Kraki"}, set:"ocean_crew", world:"ocean_kingdom", rarity:"legend", color:"#3a4ea0", pal:["#cfe0ff","#1a2a6a"], kind:"monster", eyes:"sparkle", pattern:"belly", legend:true},
+  ],
+
+  eggs: [
+    {id:"egg_common", tier:"common", crackStates:3, dropTableId:"drop_common_default", base:"#FFE6B0", accent:"#E8A23D", pattern:"dots"},
+    {id:"egg_rare",   tier:"rare",   crackStates:3, dropTableId:"drop_rare_default",   base:"#E3D2FF", accent:"#8B5CF6", pattern:"stars"},
+    {id:"egg_magic",  tier:"magic",  crackStates:4, dropTableId:"drop_magic_default",  base:"#C7F0FF", accent:"#3BB6D8", pattern:"sparkle"},
+    {id:"egg_candy",  tier:"candy",  crackStates:3, dropTableId:"drop_common_default", base:"#FFD3EC", accent:"#FF5BA0", pattern:"hearts"},
+    {id:"egg_dino",   tier:"dino",   crackStates:3, dropTableId:"drop_common_default", base:"#D6F0B8", accent:"#5E9B3E", pattern:"scales"},
+    {id:"egg_ocean",  tier:"ocean",  crackStates:3, dropTableId:"drop_common_default", base:"#BFEAFC", accent:"#0096C7", pattern:"waves"},
+    {id:"egg_legend", tier:"legend", crackStates:5, dropTableId:"drop_legend_default", base:"#FFE9A8", accent:"#F4A300", pattern:"crown"},
+  ],
+
+  dropTables: {
+    drop_common_default:{ pity:5, dupCurrency:"coins",    dupAmount:10, entries:[{rarity:"common",weight:72},{rarity:"rare",weight:23},{rarity:"magic",weight:5}] },
+    drop_rare_default:  { pity:3, dupCurrency:"stardust", dupAmount:15, entries:[{rarity:"rare",weight:78},{rarity:"magic",weight:22}] },
+    drop_magic_default: { pity:3, dupCurrency:"stardust", dupAmount:25, entries:[{rarity:"rare",weight:40},{rarity:"magic",weight:60}] },
+    drop_legend_default:{ pity:1, dupCurrency:"stardust", dupAmount:50, entries:[{rarity:"legend",weight:100}] },
+  },
+
+  skills: [
+    {id:"colors.red",     pillar:"colors",     label:{id:"Mengenal merah", en:"Recognizing red"}},
+    {id:"colors.blue",    pillar:"colors",     label:{id:"Mengenal biru", en:"Recognizing blue"}},
+    {id:"shapes.circle",  pillar:"shapes",     label:{id:"Mengenal lingkaran", en:"Recognizing circles"}},
+    {id:"animals.cat",    pillar:"animals",    label:{id:"Mengenal hewan", en:"Identifying animals"}},
+    {id:"numbers.count3", pillar:"numbers",    label:{id:"Berhitung", en:"Counting"}},
+    {id:"letters.A",      pillar:"letters",    label:{id:"Mengenal huruf", en:"Learning letters"}},
+    {id:"emotions.happy", pillar:"emotions",   label:{id:"Memahami perasaan", en:"Understanding feelings"}},
+    {id:"vocab.food",     pillar:"vocabulary", label:{id:"Kosakata", en:"Vocabulary"}},
+    {id:"logic.bigsmall", pillar:"logic",      label:{id:"Besar & kecil / urutan", en:"Logic & sequence"}},
+    {id:"memory.match",   pillar:"memory",     label:{id:"Daya ingat & memasangkan", en:"Memory & matching"}},
+  ],
+
+  // Challenge INSTANCES. archetypes: FIND_ATTRIBUTE, FIND_OBJECT, COUNT, EMOTION, MATCH, MEMORY, SEQUENCE
+  challenges: [
+    {id:"c_red1", archetype:"FIND_ATTRIBUTE", skill:"colors.red", tier:1, prompt:{id:"Cari yang merah!",en:"Find red!"},
+      options:[{v:"🍎",correct:true},{v:"🔵",correct:false},{v:"🍌",correct:false}]},
+    {id:"c_red2", archetype:"FIND_ATTRIBUTE", skill:"colors.red", tier:2, prompt:{id:"Mana yang merah?",en:"Which is red?"},
+      options:[{v:"🟢",correct:false},{v:"🍓",correct:true},{v:"🟣",correct:false},{v:"🟠",correct:false}]},
+    {id:"c_blue1", archetype:"FIND_ATTRIBUTE", skill:"colors.blue", tier:1, prompt:{id:"Cari yang biru!",en:"Find blue!"},
+      options:[{v:"🔵",correct:true},{v:"🔴",correct:false},{v:"🟡",correct:false}]},
+    {id:"c_blue2", archetype:"FIND_ATTRIBUTE", skill:"colors.blue", tier:2, prompt:{id:"Mana yang biru?",en:"Which is blue?"},
+      options:[{v:"🫐",correct:true},{v:"🍓",correct:false},{v:"🌽",correct:false},{v:"🍆",correct:false}]},
+    {id:"c_circle1", archetype:"FIND_ATTRIBUTE", skill:"shapes.circle", tier:1, prompt:{id:"Cari lingkaran!",en:"Find the circle!"},
+      options:[{v:"⚫",correct:true},{v:"🔺",correct:false},{v:"🟥",correct:false}]},
+    {id:"c_circle2", archetype:"FIND_ATTRIBUTE", skill:"shapes.circle", tier:2, prompt:{id:"Mana yang bulat?",en:"Which is round?"},
+      options:[{v:"🔶",correct:false},{v:"🟠",correct:true},{v:"🔷",correct:false},{v:"⬛",correct:false}]},
+    {id:"c_cat1", archetype:"FIND_OBJECT", skill:"animals.cat", tier:1, prompt:{id:"Cari kucing!",en:"Find the cat!"},
+      options:[{v:"🐱",correct:true},{v:"🐶",correct:false},{v:"🐮",correct:false}]},
+    {id:"c_dog2", archetype:"FIND_OBJECT", skill:"animals.cat", tier:2, prompt:{id:"Mana anjingnya?",en:"Which is the dog?"},
+      options:[{v:"🐰",correct:false},{v:"🐶",correct:true},{v:"🐸",correct:false},{v:"🐷",correct:false}]},
+    {id:"c_count3", archetype:"COUNT", skill:"numbers.count3", tier:1, prompt:{id:"Mana yang ada TIGA bintang?",en:"Which has THREE stars?"},
+      options:[{v:"⭐",correct:false},{v:"⭐⭐⭐",correct:true},{v:"⭐⭐⭐⭐⭐",correct:false}]},
+    {id:"c_count5", archetype:"COUNT", skill:"numbers.count3", tier:2, prompt:{id:"Mana yang ada LIMA hati?",en:"Which has FIVE hearts?"},
+      options:[{v:"❤️❤️",correct:false},{v:"❤️❤️❤️❤️❤️",correct:true},{v:"❤️❤️❤️",correct:false}]},
+    {id:"c_happy1", archetype:"EMOTION", skill:"emotions.happy", tier:1, prompt:{id:"Cari wajah gembira!",en:"Find the happy face!"},
+      options:[{v:"😄",correct:true},{v:"😢",correct:false}]},
+    {id:"c_sad2", archetype:"EMOTION", skill:"emotions.happy", tier:2, prompt:{id:"Siapa yang sedih?",en:"Who is sad?"},
+      options:[{v:"😄",correct:false},{v:"😭",correct:true},{v:"😡",correct:false}]},
+    {id:"c_letterA", archetype:"FIND_OBJECT", skill:"letters.A", tier:1, prompt:{id:"Cari huruf A!",en:"Find the letter A!"},
+      options:[{v:"🅰️",correct:true},{v:"🅱️",correct:false},{v:"🆎",correct:false}]},
+    {id:"c_food1", archetype:"FIND_OBJECT", skill:"vocab.food", tier:1, prompt:{id:"Cari makanan!",en:"Find the food!"},
+      options:[{v:"🍕",correct:true},{v:"🚗",correct:false},{v:"⚽",correct:false}]},
+    {id:"c_food2", archetype:"FIND_OBJECT", skill:"vocab.food", tier:2, prompt:{id:"Mana buahnya?",en:"Which is a fruit?"},
+      options:[{v:"🧸",correct:false},{v:"🍇",correct:true},{v:"🎈",correct:false},{v:"🚌",correct:false}]},
+    // MATCH (sample shown, pick the same)
+    {id:"c_match1", archetype:"MATCH", skill:"memory.match", tier:1, sample:"🟦", prompt:{id:"Cari yang SAMA!",en:"Find the SAME one!"},
+      options:[{v:"🟥",correct:false},{v:"🟦",correct:true},{v:"🟩",correct:false}]},
+    {id:"c_match2", archetype:"MATCH", skill:"memory.match", tier:2, sample:"🐱", prompt:{id:"Pasangkan yang sama!",en:"Match the same!"},
+      options:[{v:"🐶",correct:false},{v:"🐱",correct:true},{v:"🐰",correct:false},{v:"🐭",correct:false}]},
+    // MEMORY (sample flashes, then hides)
+    {id:"c_mem1", archetype:"MEMORY", skill:"memory.match", tier:2, sample:"🍓", prompt:{id:"Yang mana tadi?",en:"Which one was it?"},
+      options:[{v:"🍓",correct:true},{v:"🍌",correct:false},{v:"🍇",correct:false}]},
+    {id:"c_mem2", archetype:"MEMORY", skill:"memory.match", tier:3, sample:"⭐", prompt:{id:"Yang mana tadi?",en:"Which one was it?"},
+      options:[{v:"❤️",correct:false},{v:"⭐",correct:true},{v:"🌙",correct:false},{v:"☀️",correct:false}]},
+    // SEQUENCE (tap small -> big, in order)
+    {id:"c_seq1", archetype:"SEQUENCE", skill:"logic.bigsmall", tier:1, prompt:{id:"Ketuk dari KECIL ke BESAR!",en:"Tap SMALL to BIG!"},
+      options:[{v:"🔵",order:2,scale:1.0},{v:"🔵",order:1,scale:0.55},{v:"🔵",order:3,scale:1.5}]},
+    {id:"c_seq2", archetype:"SEQUENCE", skill:"logic.bigsmall", tier:2, prompt:{id:"Urutkan kecil ke besar!",en:"Order small to big!"},
+      options:[{v:"⭐",order:3,scale:1.4},{v:"⭐",order:1,scale:0.5},{v:"⭐",order:4,scale:1.8},{v:"⭐",order:2,scale:0.9}]},
+    {id:"c_big1", archetype:"FIND_ATTRIBUTE", skill:"logic.bigsmall", tier:1, prompt:{id:"Ketuk yang paling BESAR!",en:"Tap the BIGGEST!"},
+      options:[{v:"🐘",correct:true,scale:1.4},{v:"🐘",correct:false,scale:0.7},{v:"🐘",correct:false,scale:1.0}]},
+  ],
+
+  praise: { id:["Yeay!","Hebat!","Kamu bisa!","Wow!","Bintang super!","Pintar sekali!","Keren!"],
+            en:["Yay!","Amazing!","You did it!","Wow!","Superstar!","So clever!","Great!"] },
+  oops:   { id:["Coba lagi ya!","Hampir!","Ayo coba lagi!"], en:["Try again!","Almost!","Try once more!"] },
+
+  decorations: [
+    {id:"deco_forest_treehouse", world:"green_forest", emoji:"🏠", cost:200, label:{id:"Rumah Pohon",en:"Treehouse"}},
+    {id:"deco_forest_pond",      world:"green_forest", emoji:"⛲", cost:80,  label:{id:"Kolam",en:"Pond"}},
+    {id:"deco_forest_swing",     world:"green_forest", emoji:"🛝", cost:50,  label:{id:"Ayunan",en:"Swing"}},
+    {id:"deco_forest_flower",    world:"green_forest", emoji:"🌻", cost:30,  label:{id:"Bunga",en:"Flower"}},
+    {id:"deco_forest_tree",      world:"green_forest", emoji:"🌲", cost:40,  label:{id:"Pohon",en:"Tree"}},
+    {id:"deco_forest_mushroom",  world:"green_forest", emoji:"🍄", cost:25,  label:{id:"Jamur",en:"Mushroom"}},
+    {id:"deco_beach_umbrella",   world:"sunny_beach",  emoji:"⛱️", cost:60,  label:{id:"Payung",en:"Umbrella"}},
+    {id:"deco_beach_castle",     world:"sunny_beach",  emoji:"🏰", cost:120, label:{id:"Istana Pasir",en:"Sandcastle"}},
+    {id:"deco_candy_lolly",      world:"candy_land",   emoji:"🍭", cost:50,  label:{id:"Permen",en:"Lollipop"}},
+    {id:"deco_dino_volcano",     world:"dino_valley",  emoji:"🌋", cost:90,  label:{id:"Gunung",en:"Volcano"}},
+    {id:"deco_ocean_coral",      world:"ocean_kingdom",emoji:"🪸", cost:55,  label:{id:"Karang",en:"Coral"}},
+  ],
+
+  badges: [
+    {id:"first_hatch", emoji:"🥚", label:{id:"Telur Pertama",en:"First Hatch"}},
+    {id:"hatch10",     emoji:"🐣", label:{id:"10 Telur",en:"10 Hatches"}},
+    {id:"hatch50",     emoji:"🐥", label:{id:"50 Telur",en:"50 Hatches"}},
+    {id:"set_forest_friends", emoji:"🌳", label:{id:"Set Hutan",en:"Forest Set"}},
+    {id:"set_beach_buddies",  emoji:"🏖️", label:{id:"Set Pantai",en:"Beach Set"}},
+    {id:"set_candy_pals",     emoji:"🍭", label:{id:"Set Permen",en:"Candy Set"}},
+    {id:"set_dino_gang",      emoji:"🦕", label:{id:"Set Dino",en:"Dino Set"}},
+    {id:"set_ocean_crew",     emoji:"🌊", label:{id:"Set Laut",en:"Ocean Set"}},
+    {id:"smart20",     emoji:"🧠", label:{id:"20 Jawaban Benar",en:"20 Correct"}},
+  ],
+
+  story:{ id:"Profesor Hatch menemukan telur ajaib! Bantu semua makhluk menetas ya!",
+          en:"Professor Hatch found magical eggs! Help every creature hatch!" },
+};
+
+const I18N = {
+  id:{ tagline:"Tetaskan · Belajar · Koleksi", sell:"✨ Tetaskan 50+ makhluk lucu & belajar sambil bermain!", trust:"🛡️ Tanpa iklan · Aman untuk anak · 🇮🇩 Bahasa", age_q:"Berapa usia si kecil?",
+    age_note:"Untuk orang tua: ini menyesuaikan tingkat kesulitan. Bisa diubah nanti.",
+    tap_cue:"Ketuk telurnya!", next:"Telur Berikutnya ➜", newbadge:"BARU!",
+    album:"Album Makhluk", home:"Rumahku", world:"Dunia", parentzone:"Zona Orang Tua",
+    nav_hatch:"Telur", nav_album:"Album", nav_home:"Rumah", nav_world:"Dunia",
+    daily_title:"Telur Harian!", daily_sub:"Hadiah gratis tiap hari. Sampai jumpa besok!",
+    daily_claim:"Ambil 🥚", gate_sub:"Ketuk angka", gate_cancel:"Batal",
+    week:"Kemajuan minggu ini", skillsh:"Keterampilan yang dipelajari", settings:"Pengaturan",
+    lang_l:"Bahasa", reset:"Mulai Ulang Data",
+    compliance:"Mainan edukasi anak. Tanpa iklan, tanpa data pribadi anak, tanpa pembelian acak.",
+    locked:"Terkunci", need:"Butuh", creatures:"makhluk", greet:"Hai!",
+    afford:"Koin kurang", placed_hint:"Geser untuk memindahkan. Ketuk makhluk untuk menyapa!",
+    set_done:"Set lengkap! 🎉", remember:"Ingat ini!", legend_sub:"Kamu dapat makhluk LEGENDA!",
+    badges:"Lencana", share_title:"Aku menetaskan" },
+  en:{ tagline:"Hatch · Learn · Collect", sell:"✨ Hatch 50+ cute creatures & learn while playing!", trust:"🛡️ No ads · Safe for kids · 🇬🇧 English", age_q:"How old is your little one?",
+    age_note:"For parents: this sets the difficulty. You can change it later.",
+    tap_cue:"Tap the egg!", next:"Next Egg ➜", newbadge:"NEW!",
+    album:"Creature Album", home:"My Home", world:"Worlds", parentzone:"Parent Zone",
+    nav_hatch:"Hatch", nav_album:"Album", nav_home:"Home", nav_world:"World",
+    daily_title:"Daily Egg!", daily_sub:"A free gift every day. See you tomorrow!",
+    daily_claim:"Claim 🥚", gate_sub:"Tap the number", gate_cancel:"Cancel",
+    week:"Progress this week", skillsh:"Skills being learned", settings:"Settings",
+    lang_l:"Language", reset:"Reset Data",
+    compliance:"A child education product. No ads, no child PII, no random purchases.",
+    locked:"Locked", need:"Need", creatures:"creatures", greet:"Hi!",
+    afford:"Not enough coins", placed_hint:"Drag to move. Tap a creature to say hi!",
+    set_done:"Set complete! 🎉", remember:"Remember this!", legend_sub:"You got a LEGENDARY creature!",
+    badges:"Badges", share_title:"I hatched" }
+};
+
+/* ===================== STATE / SAVE ===================== */
+const SAVE_KEY="eggtap_save_v2"; let S=null;
+function defaultSave(){ return {
+  onboarded:false, ageBand:4, locale:"id", owned:{}, currencies:{stars:0,coins:0,stardust:0,tickets:0},
+  skillProgress:{}, worldsUnlocked:["green_forest"], currentWorld:"green_forest", home:[],
+  daily:{lastClaim:null,streak:0}, pity:{}, badges:[], setsAwarded:[],
+  stats:{hatches:0,challengesPassed:0,correct:0,playSeconds:0,weekSkills:[]}, entitlements:{plus:false} }; }
+function load(){ try{ S=JSON.parse(localStorage.getItem(SAVE_KEY)); }catch(e){} if(!S) S=defaultSave(); }
+function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
+function t(k){ return (I18N[S.locale]||I18N.id)[k] ?? k; }
+function nm(o){ return o[S.locale] ?? o.id ?? o.en; }
+
+/* ===================== AUDIO ===================== */
+let AC=null, AUDIO_READY=false;
+function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+function tone(freq,dur=0.12,type="sine",vol=0.2,when=0){
+  const c=ac(); if(!c) return; const o=c.createOscillator(),g=c.createGain();
+  o.type=type;o.frequency.value=freq;o.connect(g);g.connect(c.destination);
+  const tt=c.currentTime+when; g.gain.setValueAtTime(0,tt); g.gain.linearRampToValueAtTime(vol,tt+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001,tt+dur); o.start(tt); o.stop(tt+dur+0.02);
+}
+const SFX={
+  tap(){tone(440,0.07,"square",0.12);}, crack(n){tone(220+n*120,0.1,"sawtooth",0.16);},
+  hatch(){[523,659,784,1047].forEach((f,i)=>tone(f,0.18,"triangle",0.2,i*0.08));},
+  correct(){[659,880].forEach((f,i)=>tone(f,0.15,"sine",0.18,i*0.07));},
+  oops(){tone(300,0.18,"sine",0.14);tone(240,0.18,"sine",0.12,0.08);},
+  coin(){tone(880,0.06,"square",0.12);tone(1320,0.08,"square",0.1,0.05);},
+  star(){tone(1047,0.07,"triangle",0.12);},
+  legend(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,0.22,"triangle",0.2,i*0.1));},
+  signature(id){let h=0;for(const ch of id)h=(h*31+ch.charCodeAt(0))&0xffff;const base=330+(h%420);
+    [0,0.09,0.18].forEach((w,i)=>tone(base*(1+i*0.25),0.16,["sine","triangle","sine"][i],0.18,w));},
+};
+function speak(text){ try{ if(!window.speechSynthesis)return; const u=new SpeechSynthesisUtterance(text);
+  u.lang=S.locale==="id"?"id-ID":"en-US"; u.rate=0.95; u.pitch=1.25; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
+
+/* ===================== HELPERS ===================== */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const RARCOLOR={common:"#9aa7b0", rare:"#C77DFF", magic:"#48CAE4", legend:"#F4A300"};
+const RARLABEL={common:{id:"Umum",en:"Common"}, rare:{id:"Langka",en:"Rare"}, magic:{id:"Ajaib",en:"Magic"}, legend:{id:"Legenda",en:"Legend"}};
+function rarLabel(r){ return nm(RARLABEL[r]||{id:r,en:r}); }
+function world(id){ return DATA.worlds.find(w=>w.id===id); }
+function creature(id){ return DATA.creatures.find(c=>c.id===id); }
+function creaturesOf(setIds){ return DATA.creatures.filter(c=>setIds.includes(c.set)); }
+function ownedCount(){ return Object.keys(S.owned).length; }
+
+/* ----- AI ASSET MAPS (Higgsfield). Image present -> use PNG, else procedural SVG fallback ----- */
+const IMG={
+  crt_forest_pip:"assets/creatures/anchor_pip.png", crt_forest_buno:"assets/creatures/buno.png",
+  crt_forest_hopsy:"assets/creatures/bunny.png", crt_forest_dewy:"assets/creatures/dewy.png",
+  crt_forest_twiggy:"assets/creatures/twiggy.png", crt_forest_nutty:"assets/creatures/nutty.png",
+  crt_forest_fenn:"assets/creatures/cat.png", crt_forest_bram:"assets/creatures/bram.png",
+  crt_forest_lala:"assets/creatures/lala.png", crt_forest_gilly:"assets/creatures/gilly.png",
+  crt_forest_olo:"assets/creatures/ghost.png", crt_forest_grumby:"assets/creatures/legend.png",
+  crt_beach_shelly:"assets/creatures/shelly.png", crt_beach_sandy:"assets/creatures/sandy.png",
+  crt_beach_wavey:"assets/creatures/wavey.png", crt_beach_sunny:"assets/creatures/bird.png",
+  crt_beach_coral:"assets/creatures/seahorse.png", crt_beach_pearl:"assets/creatures/pearl.png",
+  crt_beach_krabby:"assets/creatures/crab.png", crt_beach_tideo:"assets/creatures/tideo.png",
+  crt_candy_gummy:"assets/creatures/gummy.png", crt_candy_minty:"assets/creatures/minty.png",
+  crt_candy_bonbon:"assets/creatures/bonbon.png", crt_candy_choco:"assets/creatures/choco.png",
+  crt_candy_swirl:"assets/creatures/swirl.png", crt_candy_kingjelly:"assets/creatures/monster.png",
+  crt_dino_rex:"assets/creatures/dino.png", crt_dino_tri:"assets/creatures/tri.png",
+  crt_dino_dotty:"assets/creatures/dotty.png", crt_dino_spike:"assets/creatures/spike.png",
+  crt_dino_tero:"assets/creatures/tero.png", crt_dino_bigrex:"assets/creatures/bigrex.png",
+  crt_ocean_finn:"assets/creatures/fish.png", crt_ocean_bubbles:"assets/creatures/bubbles.png",
+  crt_ocean_inky:"assets/creatures/octopus.png", crt_ocean_marina:"assets/creatures/marina.png",
+  crt_ocean_splash:"assets/creatures/splash.png", crt_ocean_kraki:"assets/creatures/kraki.png",
+};
+const BG={ green_forest:"assets/bg/green_forest.png", sunny_beach:"assets/bg/sunny_beach.png",
+  candy_land:"assets/bg/candy_land.png", dino_valley:"assets/bg/dino_valley.png", ocean_kingdom:"assets/bg/ocean_kingdom.png" };
+const EGGIMG={
+  egg_common:"assets/eggs/egg_common.png",
+  egg_rare:"assets/eggs/egg_rare.png",
+  egg_magic:"assets/eggs/egg_magic.png",
+  egg_candy:"assets/eggs/egg_candy.png",
+  egg_legend:"assets/eggs/egg_legend.png",
+};
+const VOICE={ tap:"assets/audio/vo_tap.mp3", oops:"assets/audio/vo_oops.mp3", remember:"assets/audio/vo_remember.mp3",
+  find_red:"assets/audio/vo_find_red.mp3", blue:"assets/audio/vo_blue.mp3", circle:"assets/audio/vo_circle.mp3",
+  cat:"assets/audio/vo_cat.mp3", count3:"assets/audio/vo_count3.mp3", happy:"assets/audio/vo_happy.mp3",
+  food:"assets/audio/vo_food.mp3", match:"assets/audio/vo_match.mp3", seq:"assets/audio/vo_seq.mp3",
+  big:"assets/audio/vo_big.mp3", letter:"assets/audio/vo_letter.mp3" };
+const PRAISE_VO=["assets/audio/vo_praise.mp3","assets/audio/vo_praise2.mp3","assets/audio/vo_praise3.mp3","assets/audio/vo_praise4.mp3","assets/audio/vo_praise5.mp3"];
+// which prompt VO to play per challenge id (else Web Speech)
+const PROMPTVO={ c_red1:"find_red", c_red2:"find_red", c_blue1:"blue", c_blue2:"blue", c_circle1:"circle", c_circle2:"circle",
+  c_cat1:"cat", c_count3:"count3", c_count5:"count3", c_happy1:"happy", c_food1:"food", c_food2:"food",
+  c_match1:"match", c_match2:"match", c_seq1:"seq", c_seq2:"seq", c_big1:"big", c_letterA:"letter" };
+const _voCache={};
+function playSrc(p){ try{ const a=_voCache[p]||(_voCache[p]=new Audio(p)); a.currentTime=0; a.play().catch(()=>{}); return true; }catch(e){ return false; } }
+function vo(key){ const p=VOICE[key]; return p?playSrc(p):false; }
+function voPraise(){ return playSrc(PRAISE_VO[Math.floor(Math.random()*PRAISE_VO.length)]); }
+function creatureMarkup(c,size){ const p=c&&IMG[c.id];
+  return p?`<img src="${p}" alt="" width="${size}" height="${size}" loading="lazy" decoding="async" style="object-fit:contain;display:block" draggable="false">`:creatureSVG(c,size); }
+function eggMarkup(egg){ const p=EGGIMG[egg.id];
+  return p?`<img class="egg" src="${p}" alt="" onclick="tapEgg()" style="width:210px;height:210px;object-fit:contain" draggable="false">`:eggSVG(egg,0); }
+
+/* ===================== CUTE CREATURE RENDERER =====================
+   One chibi body (big head) + modular cute add-ons selected by `kind`.
+   Variety from kind + signatureColor + palette + eyes + pattern.
+=================================================================== */
+const KINDS={
+  round:   {ears:"none",  side:"arms", bottom:"feet",  mouth:"smile"},
+  blob:    {ears:"none",  side:"arms", bottom:"none",  mouth:"smile", wide:1},
+  cat:     {ears:"cat",   side:"arms", bottom:"feet",  mouth:"cat",   tail:"curl"},
+  bunny:   {ears:"bunny", side:"arms", bottom:"feet",  mouth:"smile", tail:"puff"},
+  bear:    {ears:"bear",  side:"arms", bottom:"feet",  mouth:"smile"},
+  fox:     {ears:"cat",   side:"arms", bottom:"feet",  mouth:"smile", tail:"big"},
+  frog:    {ears:"frogeye",side:"arms",bottom:"feet",  mouth:"wide",  wide:1},
+  bird:    {ears:"tuft",  side:"wings",bottom:"feet",  mouth:"beak"},
+  fish:    {ears:"fintop",side:"fins", bottom:"fishtail",mouth:"open"},
+  octopus: {ears:"none",  side:"none", bottom:"tentacles",mouth:"smile", wide:1},
+  dino:    {ears:"spike", side:"arms", bottom:"feet",  mouth:"smile", tail:"big"},
+  trike:   {ears:"horns3",side:"arms", bottom:"feet",  mouth:"smile", tail:"big"},
+  ptero:   {ears:"crest", side:"wings",bottom:"feet",  mouth:"beak",  tail:"big"},
+  seahorse:{ears:"fintop",side:"none", bottom:"curltail",mouth:"snout"},
+  bug:     {ears:"antenna",side:"wings",bottom:"feet", mouth:"smile"},
+  ghost:   {ears:"none",  side:"arms", bottom:"ghost", mouth:"open"},
+  monster: {ears:"horns", side:"arms", bottom:"feet",  mouth:"fang"},
+  crab:    {ears:"eyestalk",side:"claws",bottom:"feet",mouth:"smile", wide:1},
+  deer:    {ears:"antler",side:"arms", bottom:"feet",  mouth:"smile", tail:"puff"},
+  squirrel:{ears:"bear",  side:"arms", bottom:"feet",  mouth:"smile", tail:"big"},
+};
+function creatureSVG(c, size=140){
+  const k=KINDS[c.kind]||KINDS.round;
+  const col=c.color, light=(c.pal&&c.pal[0])||"#ffffff", dark=(c.pal&&c.pal[1])||"#555";
+  const cx=60, cy=k.wide?66:60, rx=k.wide?44:40, ry=k.wide?38:42;
+  const eL=46, eR=74, eyY=cy-4;
+  let g="";
+  // soft shadow
+  g+=`<ellipse cx="60" cy="110" rx="30" ry="6" fill="rgba(0,0,0,.12)"/>`;
+  // back tail / back wings
+  if(k.tail==="big") g+=`<path d="M${cx+rx-6} ${cy+6} q34 -6 30 26 q-14 4 -30 -8 Z" fill="${col}"/>`;
+  if(k.tail==="curl") g+=`<path d="M${cx+rx-4} ${cy+10} q28 0 22 24" stroke="${col}" stroke-width="10" fill="none" stroke-linecap="round"/>`;
+  if(k.tail==="puff") g+=`<circle cx="${cx+rx+2}" cy="${cy+14}" r="11" fill="${light}"/>`;
+  if(k.tail==="curltail") g+=`<path d="M${cx} ${cy+ry-4} q24 18 2 30 q-14 6 -16 -8" stroke="${col}" stroke-width="14" fill="none" stroke-linecap="round"/>`;
+  if(k.side==="wings"){ g+=`<ellipse cx="${cx-rx-2}" cy="${cy}" rx="16" ry="22" fill="${light}" stroke="${dark}" stroke-width="2"/>`;
+    g+=`<ellipse cx="${cx+rx+2}" cy="${cy}" rx="16" ry="22" fill="${light}" stroke="${dark}" stroke-width="2"/>`; }
+  if(k.bottom==="tentacles"){ for(let i=0;i<5;i++){ const x=cx-30+i*15; g+=`<path d="M${x} ${cy+ry-6} q-4 22 4 30" stroke="${col}" stroke-width="11" fill="none" stroke-linecap="round"/>`; } }
+  if(k.bottom==="fishtail") g+=`<path d="M${cx+rx-4} ${cy} l30 -16 v32 Z" fill="${col}"/>`;
+  if(k.bottom==="ghost") g+=`<path d="M${cx-rx} ${cy} q0 50 ${rx} 50 q${rx} 0 ${rx} -50 q-10 14 -${rx*0.5} 6 q-10 14 -${rx*0.5} 0 q-10 14 -${rx*0.5} 6 Z" fill="${col}"/>`;
+  // main body
+  if(k.bottom!=="ghost") g+=`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${col}"/>`;
+  g+=`<ellipse cx="${cx-rx*0.35}" cy="${cy-ry*0.45}" rx="${rx*0.32}" ry="${ry*0.28}" fill="#fff" opacity=".22"/>`; // sheen
+  // pattern / belly
+  if(c.pattern==="belly") g+=`<ellipse cx="${cx}" cy="${cy+8}" rx="${rx*0.55}" ry="${ry*0.5}" fill="${light}" opacity=".85"/>`;
+  if(c.pattern==="spots"){ g+=`<circle cx="${cx-16}" cy="${cy+14}" r="6" fill="${dark}" opacity=".3"/><circle cx="${cx+14}" cy="${cy+6}" r="5" fill="${dark}" opacity=".3"/><circle cx="${cx+4}" cy="${cy+20}" r="4" fill="${dark}" opacity=".3"/>`; }
+  if(c.pattern==="stripes"){ for(let i=0;i<3;i++) g+=`<rect x="${cx-rx+8}" y="${cy-6+i*12}" width="${rx*2-16}" height="5" rx="3" fill="${dark}" opacity=".25"/>`; }
+  if(c.pattern==="star") g+=`<text x="${cx}" y="${cy+18}" font-size="20" text-anchor="middle" opacity=".8">✨</text>`;
+  // ears / top (behind/over head)
+  if(k.ears==="cat"){ g+=`<path d="M${cx-26} ${cy-ry+6} l-4 -22 l20 12 Z" fill="${col}"/><path d="M${cx+26} ${cy-ry+6} l4 -22 l-20 12 Z" fill="${col}"/>`;
+    g+=`<path d="M${cx-24} ${cy-ry+2} l-2 -12 l10 7 Z" fill="${light}"/><path d="M${cx+24} ${cy-ry+2} l2 -12 l-10 7 Z" fill="${light}"/>`; }
+  if(k.ears==="bear"){ g+=`<circle cx="${cx-24}" cy="${cy-ry+2}" r="11" fill="${col}"/><circle cx="${cx+24}" cy="${cy-ry+2}" r="11" fill="${col}"/><circle cx="${cx-24}" cy="${cy-ry+2}" r="5" fill="${light}"/><circle cx="${cx+24}" cy="${cy-ry+2}" r="5" fill="${light}"/>`; }
+  if(k.ears==="bunny"){ g+=`<ellipse cx="${cx-15}" cy="${cy-ry-12}" rx="8" ry="22" fill="${col}"/><ellipse cx="${cx+15}" cy="${cy-ry-12}" rx="8" ry="22" fill="${col}"/><ellipse cx="${cx-15}" cy="${cy-ry-12}" rx="4" ry="15" fill="${light}"/><ellipse cx="${cx+15}" cy="${cy-ry-12}" rx="4" ry="15" fill="${light}"/>`; }
+  if(k.ears==="horns"){ g+=`<path d="M${cx-22} ${cy-ry+4} q-6 -16 4 -22 q6 8 4 22 Z" fill="${dark}"/><path d="M${cx+22} ${cy-ry+4} q6 -16 -4 -22 q-6 8 -4 22 Z" fill="${dark}"/>`; }
+  if(k.ears==="horns3"){ g+=`<path d="M${cx} ${cy-ry-6} l-7 -18 l14 0 Z" fill="${light}"/><path d="M${cx-22} ${cy-ry+8} l-6 -14 l12 0 Z" fill="${light}"/><path d="M${cx+22} ${cy-ry+8} l6 -14 l-12 0 Z" fill="${light}"/>`; }
+  if(k.ears==="antler"){ g+=`<path d="M${cx-16} ${cy-ry} q-8 -18 -2 -24 m2 12 l-12 -6 m12 -6 l-10 -10" stroke="${dark}" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M${cx+16} ${cy-ry} q8 -18 2 -24 m-2 12 l12 -6 m-12 -6 l10 -10" stroke="${dark}" stroke-width="3" fill="none" stroke-linecap="round"/>`; }
+  if(k.ears==="antenna"){ g+=`<path d="M${cx-12} ${cy-ry+2} q-6 -18 -14 -22" stroke="${dark}" stroke-width="3" fill="none"/><path d="M${cx+12} ${cy-ry+2} q6 -18 14 -22" stroke="${dark}" stroke-width="3" fill="none"/><circle cx="${cx-26}" cy="${cy-ry-20}" r="5" fill="${dark}"/><circle cx="${cx+26}" cy="${cy-ry-20}" r="5" fill="${dark}"/>`; }
+  if(k.ears==="spike"){ g+=`<path d="M${cx-20} ${cy-ry+8} l-3 -12 l9 6 Z M${cx-4} ${cy-ry} l-3 -14 l9 8 Z M${cx+14} ${cy-ry+6} l3 -12 l-9 6 Z" fill="${dark}"/>`; }
+  if(k.ears==="crest") g+=`<path d="M${cx} ${cy-ry+2} q22 -10 30 4 q-16 2 -30 2 Z" fill="${dark}"/>`;
+  if(k.ears==="tuft") g+=`<path d="M${cx} ${cy-ry-2} q-5 -14 0 -16 q5 2 0 16" fill="${dark}"/>`;
+  if(k.ears==="fintop") g+=`<path d="M${cx} ${cy-ry+2} q-12 -16 0 -20 q12 4 0 20" fill="${light}"/>`;
+  if(k.ears==="eyestalk"){ g+=`<line x1="${cx-14}" y1="${cy-ry+6}" x2="${cx-18}" y2="${cy-ry-14}" stroke="${col}" stroke-width="5"/><line x1="${cx+14}" y1="${cy-ry+6}" x2="${cx+18}" y2="${cy-ry-14}" stroke="${col}" stroke-width="5"/><circle cx="${cx-18}" cy="${cy-ry-16}" r="8" fill="#fff"/><circle cx="${cx+18}" cy="${cy-ry-16}" r="8" fill="#fff"/><circle cx="${cx-18}" cy="${cy-ry-15}" r="4" fill="#222"/><circle cx="${cx+18}" cy="${cy-ry-15}" r="4" fill="#222"/>`; }
+  // arms / claws
+  if(k.side==="arms"){ g+=`<circle cx="${cx-rx+2}" cy="${cy+10}" r="8" fill="${col}"/><circle cx="${cx+rx-2}" cy="${cy+10}" r="8" fill="${col}"/>`; }
+  if(k.side==="claws"){ g+=`<circle cx="${cx-rx-4}" cy="${cy+6}" r="12" fill="${col}"/><circle cx="${cx+rx+4}" cy="${cy+6}" r="12" fill="${col}"/><path d="M${cx-rx-10} ${cy-2} l-6 -6 M${cx-rx-10} ${cy+2} l-7 2" stroke="${col}" stroke-width="4" stroke-linecap="round"/>`; }
+  if(k.side==="fins"){ g+=`<path d="M${cx-rx} ${cy} l-12 -8 v16 Z" fill="${light}"/><path d="M${cx+rx} ${cy} l12 -8 v16 Z" fill="${light}"/>`; }
+  // feet
+  if(k.bottom==="feet"){ g+=`<ellipse cx="${cx-14}" cy="${cy+ry-2}" rx="10" ry="6" fill="${dark}"/><ellipse cx="${cx+14}" cy="${cy+ry-2}" rx="10" ry="6" fill="${dark}"/>`; }
+  // eyes
+  g+=eyesSVG(c.eyes,eL,eR,eyY);
+  // cheeks
+  g+=`<circle cx="${eL-10}" cy="${eyY+14}" r="6" fill="#ff9aa2" opacity=".55"/><circle cx="${eR+10}" cy="${eyY+14}" r="6" fill="#ff9aa2" opacity=".55"/>`;
+  // mouth
+  g+=mouthSVG(k.mouth,cx,eyY+18);
+  // legend sparkle aura
+  if(c.legend) g+=`<text x="14" y="24" font-size="18">👑</text><text x="92" y="100" font-size="14">✨</text>`;
+  return `<svg viewBox="0 0 120 124" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
+}
+function eyesSVG(style,eL,eR,y){
+  const wh=`<circle cx="${eL}" cy="${y}" r="11" fill="#fff"/><circle cx="${eR}" cy="${y}" r="11" fill="#fff"/>`;
+  if(style==="happy") return `<path d="M${eL-9} ${y+2} q9 -12 18 0" stroke="#2b2b2b" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M${eR-9} ${y+2} q9 -12 18 0" stroke="#2b2b2b" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  if(style==="sleepy") return wh+`<path d="M${eL-7} ${y} a7 7 0 0 0 14 0" fill="#2b2b2b"/><path d="M${eR-7} ${y} a7 7 0 0 0 14 0" fill="#2b2b2b"/>`;
+  if(style==="wink") return `<circle cx="${eL}" cy="${y}" r="11" fill="#fff"/><circle cx="${eL}" cy="${y+1}" r="6" fill="#2b2b2b"/><circle cx="${eL+2}" cy="${y-2}" r="2.4" fill="#fff"/><path d="M${eR-9} ${y} q9 -10 18 0" stroke="#2b2b2b" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  // sparkle / round (default): big pupils + highlights
+  const hl = style==="sparkle";
+  return wh+`<circle cx="${eL}" cy="${y+1}" r="6.5" fill="#2b2b2b"/><circle cx="${eR}" cy="${y+1}" r="6.5" fill="#2b2b2b"/>`+
+    `<circle cx="${eL+2.5}" cy="${y-2}" r="2.6" fill="#fff"/><circle cx="${eR+2.5}" cy="${y-2}" r="2.6" fill="#fff"/>`+
+    (hl?`<circle cx="${eL-2}" cy="${y+3}" r="1.4" fill="#fff"/><circle cx="${eR-2}" cy="${y+3}" r="1.4" fill="#fff"/>`:"");
+}
+function mouthSVG(style,cx,y){
+  if(style==="cat") return `<path d="M${cx-9} ${y} q4.5 6 9 0 q4.5 6 9 0" stroke="#2b2b2b" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  if(style==="wide") return `<path d="M${cx-14} ${y-2} q14 14 28 0" stroke="#2b2b2b" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  if(style==="open") return `<ellipse cx="${cx}" cy="${y+2}" rx="6" ry="7" fill="#a23b3b"/>`;
+  if(style==="beak") return `<path d="M${cx-7} ${y} l7 8 l7 -8 Z" fill="#f4a300"/>`;
+  if(style==="fang") return `<path d="M${cx-9} ${y} q9 8 18 0" stroke="#2b2b2b" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M${cx-5} ${y+2} l0 5 l3 0 Z" fill="#fff"/><path d="M${cx+5} ${y+2} l0 5 l-3 0 Z" fill="#fff"/>`;
+  if(style==="snout") return `<ellipse cx="${cx}" cy="${y}" rx="5" ry="6" fill="#2b2b2b" opacity=".7"/>`;
+  return `<path d="M${cx-8} ${y} q8 9 16 0" stroke="#2b2b2b" stroke-width="3.5" fill="none" stroke-linecap="round"/>`; // smile
+}
+
+/* ===================== CUTE EGG RENDERER ===================== */
+function eggSVG(egg, crack=0){
+  const base=egg.base, ac2=egg.accent;
+  let pat="";
+  const P=egg.pattern;
+  if(P==="dots") for(let i=0;i<7;i++){ const x=30+(i%3)*30+(i%2)*8, y=46+Math.floor(i/3)*32; pat+=`<circle cx="${x}" cy="${y}" r="6" fill="${ac2}" opacity=".5"/>`; }
+  if(P==="stars") for(let i=0;i<5;i++){ const x=30+(i%2)*42, y=46+i*16; pat+=`<text x="${x}" y="${y}" font-size="16" fill="${ac2}">★</text>`; }
+  if(P==="hearts") for(let i=0;i<5;i++){ const x=34+(i%2)*40, y=52+i*17; pat+=`<text x="${x}" y="${y}" font-size="15">💗</text>`; }
+  if(P==="scales") for(let r=0;r<3;r++) for(let i=0;i<4;i++){ const x=24+i*24+(r%2)*12, y=50+r*26; pat+=`<path d="M${x} ${y} q8 -10 16 0" stroke="${ac2}" stroke-width="3" fill="none" opacity=".5"/>`; }
+  if(P==="waves") for(let r=0;r<3;r++){ const y=52+r*26; pat+=`<path d="M18 ${y} q12 -8 24 0 t24 0 t24 0" stroke="${ac2}" stroke-width="3" fill="none" opacity=".5"/>`; }
+  if(P==="sparkle") pat=`<text x="34" y="60" font-size="20">✨</text><text x="68" y="92" font-size="16">✨</text><text x="50" y="120" font-size="14">⭐</text>`;
+  if(P==="crown") pat=`<text x="44" y="62" font-size="26">👑</text>`+Array.from({length:5},(_,i)=>`<text x="${28+i*16}" y="100" font-size="13" fill="${ac2}">★</text>`).join("");
+  // crack lines progress
+  let cracks="";
+  if(crack>=1) cracks+=`<path d="M40 60 l10 10 l-8 8 l12 6" stroke="#6b4a1e" stroke-width="2.5" fill="none"/>`;
+  if(crack>=2) cracks+=`<path d="M80 70 l-8 12 l10 6 l-6 10" stroke="#6b4a1e" stroke-width="2.5" fill="none"/>`;
+  if(crack>=3) cracks+=`<path d="M30 95 l16 6 l-6 10 M88 100 l-12 8" stroke="#6b4a1e" stroke-width="2.5" fill="none"/>`;
+  return `<svg class="egg" viewBox="0 0 120 150" onclick="tapEgg()">
+    <defs><radialGradient id="eg" cx="40%" cy="30%"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="${base}"/></radialGradient></defs>
+    <path d="M60 4 C24 4 10 70 10 100 C10 132 34 146 60 146 C86 146 110 132 110 100 C110 70 96 4 60 4Z" fill="url(#eg)" stroke="${ac2}" stroke-width="4"/>
+    ${pat}
+    <ellipse cx="42" cy="40" rx="12" ry="18" fill="#fff" opacity=".5"/>
+    ${cracks}
+  </svg>`;
+}
+
+/* ===================== ROUTER ===================== */
+function show(id){
+  $$(".screen").forEach(s=>s.classList.toggle("active", s.id===id));
+  $$(".nav").forEach(n=>renderNav(n));
+  if(id==="album") renderAlbum();
+  if(id==="home")  renderHome();
+  if(id==="world") renderWorld();
+  if(id==="parent")renderParent();
+  if(id==="hatch") syncWallet();
+  $$(".nav button").forEach(b=>b.classList.toggle("sel", b.dataset.scr===id));
+}
+function renderNav(nav){
+  const items=[["hatch","🥚","nav_hatch"],["album","📚","nav_album"],["home","🏡","nav_home"],["world","🗺️","nav_world"]];
+  nav.innerHTML=items.map(([scr,ic,lab])=>`<button data-scr="${scr}" onclick="show('${scr}')"><span class="ic">${ic}</span>${t(lab)}</button>`).join("");
+}
+
+/* ===================== ONBOARDING ===================== */
+function populateOnboard(){
+  const f=$("#obFloaters"); if(!f) return;
+  const pics=[["anchor_pip",4,12],["bird",80,9],["bram",1,46],["octopus",83,44],["dino",9,77],["seahorse",82,73]];
+  f.innerHTML=pics.map((p,i)=>`<img src="assets/creatures/${p[0]}.png" alt="" style="left:${p[1]}%;top:${p[2]}%;animation-delay:${(i*0.45).toFixed(2)}s">`).join("");
+}
+function applyStaticI18n(){
+  $("#ob_tag").textContent=t("tagline"); $("#ob_q").textContent=t("age_q");
+  $("#ob_sell").textContent=t("sell"); $("#ob_trust").textContent=t("trust");
+  $("#prof_line").textContent=nm(DATA.story);
+  $("#t_album").textContent=t("album"); $("#t_home").textContent=t("home"); $("#t_world").textContent=t("world");
+  $("#t_parent").textContent=t("parentzone"); $("#rw_next").textContent=t("next");
+  $("#d_title").textContent=t("daily_title"); $("#d_sub").textContent=t("daily_sub"); $("#d_claim").textContent=t("daily_claim");
+  $("#g_cancel").textContent=t("gate_cancel"); $("#g_title").textContent=t("parentzone");
+  $("#p_week").textContent=t("week"); $("#p_skillsh").textContent=t("skillsh"); $("#p_settings").textContent=t("settings");
+  $("#p_lang_l").textContent=t("lang_l"); $("#p_reset").textContent=t("reset"); $("#p_compliance").textContent=t("compliance");
+  $("#prof_av").innerHTML=`<img src="assets/creatures/ghost.png" alt="" style="width:60px;height:60px;object-fit:contain">`;
+  populateOnboard();
+  document.documentElement.lang=S.locale;
+}
+function setAge(a){ SFX.tap(); S.ageBand=a; S.onboarded=true;
+  const startTier=a<=3?1:2;
+  DATA.skills.forEach(sk=>{ S.skillProgress[sk.id]={tier:startTier,last5:[]}; });
+  save(); show("hatch"); maybeDaily(); newEgg();
+}
+
+/* ===================== CORE LOOP ===================== */
+let LOOP={crack:0,egg:null,creature:null,challenge:null,wrongs:0,isNew:false};
+function syncWallet(){
+  $("#w_stars").textContent=S.currencies.stars; $("#w_coins").textContent=S.currencies.coins; $("#w_dust").textContent=S.currencies.stardust;
+  $("#worldName").textContent=nm(world(S.currentWorld).name);
+  const st=document.querySelector('#hatch .stage'); const b=BG[S.currentWorld];
+  if(st) st.style.background = b? `linear-gradient(rgba(255,251,240,.60),rgba(255,251,240,.82)), url('${b}') center/cover no-repeat` : '';
+  const gc=$("#goalChip"); if(gc){ const ow=ownedCount(); const nx=DATA.worlds.find(w=>!S.worldsUnlocked.includes(w.id));
+    gc.textContent = nx ? `🥚 ${Math.max(0,nx.unlock-ow)} ${t('creatures')} → ${nm(nx.name)}` : ''; }
+}
+function pickEgg(){ const w=world(S.currentWorld); const ids=w.eggIds.filter(id=>DATA.eggs.find(e=>e.id===id));
+  return DATA.eggs.find(e=>e.id===(Math.random()<0.8?ids[0]:(ids[1]||ids[0]))); }
+function newEgg(){
+  LOOP={crack:0,egg:pickEgg(),creature:null,challenge:null,wrongs:0,isNew:false};
+  $("#eggwrap").innerHTML=eggMarkup(LOOP.egg);
+  setCue(t("tap_cue")); updateDots(); syncWallet();
+  clearTimeout(window._idle);
+  window._idle=setTimeout(()=>{ if(LOOP.crack===0){ if(AUDIO_READY){ if(!vo('tap')) speak(t("tap_cue")); } bounceEgg(); } },2500);
+}
+function setCue(x){ $("#cue").textContent=x; }
+function updateDots(){ const need=LOOP.egg.crackStates;
+  $("#tapdots").innerHTML=Array.from({length:need},(_,i)=>`<i class="${i<LOOP.crack?'on':''}"></i>`).join(""); }
+function bounceEgg(){ const e=$(".egg"); if(e){ e.classList.remove("shake"); void e.offsetWidth; e.classList.add("shake"); } }
+function tapEgg(){
+  if(LOOP.creature) return;
+  clearTimeout(window._idle);
+  LOOP.crack++; SFX.crack(LOOP.crack); bounceEgg(); burst(6,$("#eggwrap"));
+  if(!EGGIMG[LOOP.egg.id]) $("#eggwrap").innerHTML=eggSVG(LOOP.egg,LOOP.crack);
+  updateDots();
+  if(LOOP.crack>=LOOP.egg.crackStates) hatch();
+}
+function rollCreature(egg){
+  const dt=DATA.dropTables[egg.dropTableId]; const w=world(S.currentWorld);
+  const pool=creaturesOf(w.sets).filter(c=>!c.legend); // legendaries only via set completion
+  S.pity[egg.dropTableId]=(S.pity[egg.dropTableId]||0)+1;
+  const unowned=pool.filter(c=>!S.owned[c.id]);
+  if(unowned.length && S.pity[egg.dropTableId]>=dt.pity){ S.pity[egg.dropTableId]=0; return unowned[Math.floor(Math.random()*unowned.length)]; }
+  const total=dt.entries.reduce((s,e)=>s+e.weight,0); let r=Math.random()*total, picked=dt.entries[0];
+  for(const e of dt.entries){ r-=e.weight; if(r<=0){ picked=e; break; } }
+  let cand=pool.filter(c=>c.rarity===picked.rarity); if(!cand.length) cand=pool;
+  const chosen=cand[Math.floor(Math.random()*cand.length)];
+  if(!S.owned[chosen.id]) S.pity[egg.dropTableId]=0;
+  return chosen;
+}
+function hatch(){
+  const c=rollCreature(LOOP.egg); LOOP.creature=c; LOOP.isNew=!S.owned[c.id];
+  SFX.hatch(); burst(40,$("#fx"),true);
+  S.owned[c.id]=(S.owned[c.id]||0)+1; S.stats.hatches++;
+  awardBadges();
+  $("#eggwrap").innerHTML=`<div class="hatched floaty">${creatureMarkup(c,210)}</div>`;
+  setCue(""); $("#tapdots").innerHTML="";
+  setTimeout(()=>{ SFX.signature(c.id); speak(`${nm(c.name)}! ${t("greet")}`); },350);
+  setTimeout(()=>startChallenge(c), 1500);
+  save();
+}
+
+/* ---- adaptive difficulty ---- */
+function tierFor(s){ return (S.skillProgress[s]?.tier)||1; }
+function recordAttempt(s,ok){
+  const sp=S.skillProgress[s]||(S.skillProgress[s]={tier:1,last5:[]});
+  sp.last5.push(ok?1:0); if(sp.last5.length>5) sp.last5.shift();
+  if(sp.last5.length>=5){ const r=sp.last5.reduce((a,b)=>a+b,0)/5; if(r>=0.8&&sp.tier<3)sp.tier++; else if(r<=0.4&&sp.tier>1)sp.tier--; }
+  if(ok){ S.stats.correct++; if(!S.stats.weekSkills.includes(s)) S.stats.weekSkills.push(s); }
+}
+function pickChallenge(){
+  const skills=DATA.skills.map(s=>s.id);
+  const sk=skills[(S.stats.challengesPassed+S.stats.hatches)%skills.length];
+  const tier=tierFor(sk);
+  let pool=DATA.challenges.filter(c=>c.skill===sk&&c.tier===tier);
+  if(!pool.length) pool=DATA.challenges.filter(c=>c.skill===sk);
+  if(!pool.length) pool=DATA.challenges.filter(c=>c.tier===tier);
+  if(!pool.length) pool=DATA.challenges;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+let SEQ={expect:1,total:0};
+function startChallenge(asker){
+  const ch=pickChallenge(); LOOP.challenge=ch; LOOP.wrongs=0;
+  $("#ch_av").innerHTML=creatureMarkup(asker,70);
+  $("#ch_prompt").textContent=nm(ch.prompt);
+  $("#ch_sample").innerHTML="";
+  $("#ch_options").innerHTML="";
+  $("#challengeOverlay").classList.add("active");
+  setTimeout(()=>{ if(!(PROMPTVO[ch.id]&&vo(PROMPTVO[ch.id]))) speak(nm(ch.prompt)); },250);
+
+  if(ch.archetype==="MEMORY"){
+    $("#ch_sample").innerHTML=`<div class="samplebox">${ch.sample}</div>`;
+    if(!vo("remember")) speak(t("remember")); setCueSample(t("remember"));
+    setTimeout(()=>{ $("#ch_sample").innerHTML=`<div class="muted">${t("remember")} ✔</div>`; renderOptions(ch); },1600);
+    return;
+  }
+  if(ch.archetype==="MATCH"){ $("#ch_sample").innerHTML=`<div class="samplebox">${ch.sample}</div>`; }
+  if(ch.archetype==="SEQUENCE"){ SEQ={expect:1,total:ch.options.length}; }
+  renderOptions(ch);
+}
+function setCueSample(txt){ $("#ch_prompt").setAttribute("data-x",txt); }
+function renderOptions(ch){
+  const opts=[...ch.options].sort(()=>Math.random()-0.5);
+  if(ch.archetype==="SEQUENCE"){
+    $("#ch_options").innerHTML=opts.map(o=>
+      `<div class="opt" data-order="${o.order}" onclick="answerSeq(this)" style="position:relative">
+        <span class="em" style="transform:scale(${o.scale||1})">${o.v}</span></div>`).join("");
+  } else {
+    const cls=ch.archetype==="COUNT"?" count":"";
+    $("#ch_options").innerHTML=opts.map(o=>
+      `<div class="opt${cls}" data-correct="${o.correct}" onclick="answer(this)">
+        <span class="em" style="transform:scale(${o.scale||1})">${o.v}</span></div>`).join("");
+  }
+}
+function answer(el){
+  if(el.classList.contains("dim")||el.classList.contains("right")) return;
+  const correct=el.dataset.correct==="true"; const ch=LOOP.challenge;
+  if(correct){ SFX.correct(); el.classList.add("right"); recordAttempt(ch.skill,true); S.stats.challengesPassed++;
+    burst(24,$("#fx"),true); const p=DATA.praise[S.locale][Math.floor(Math.random()*DATA.praise[S.locale].length)];
+    if(!voPraise()) speak(p); setCue(p); awardBadges();
+    setTimeout(()=>{ $("#challengeOverlay").classList.remove("active"); reward(); },700);
+  } else { SFX.oops(); el.classList.add("wrong","dim"); LOOP.wrongs++; recordAttempt(ch.skill,false);
+    if(!vo("oops")) speak(DATA.oops[S.locale][Math.floor(Math.random()*DATA.oops[S.locale].length)]); escalateHint(); }
+}
+function answerSeq(el){
+  const ord=parseInt(el.dataset.order,10); const ch=LOOP.challenge;
+  if(el.classList.contains("picked")) return;
+  if(ord===SEQ.expect){ SFX.star(); el.classList.add("picked"); SEQ.expect++;
+    if(SEQ.expect>SEQ.total){ SFX.correct(); recordAttempt(ch.skill,true); S.stats.challengesPassed++; burst(24,$("#fx"),true);
+      const p=DATA.praise[S.locale][0]; if(!voPraise()) speak(p); setCue(p); awardBadges();
+      setTimeout(()=>{ $("#challengeOverlay").classList.remove("active"); reward(); },700); }
+  } else { SFX.oops(); el.classList.add("wrong"); LOOP.wrongs++;
+    speak(DATA.oops[S.locale][0]);
+    // gentle hint: pulse the smallest remaining
+    if(LOOP.wrongs>=2){ const next=[...$$("#ch_options .opt")].find(o=>parseInt(o.dataset.order,10)===SEQ.expect); if(next) next.classList.add("hint"); }
+    if(LOOP.wrongs>=3){ recordAttempt(ch.skill,true); S.stats.challengesPassed++; const p=DATA.praise[S.locale][0]; speak(p);
+      setTimeout(()=>{ $("#challengeOverlay").classList.remove("active"); reward(); },600); }
+  }
+}
+function escalateHint(){
+  const opts=$$("#ch_options .opt"); const right=opts.find(o=>o.dataset.correct==="true");
+  if(LOOP.wrongs===1){ right.classList.add("hint"); }
+  else if(LOOP.wrongs===2){ opts.forEach(o=>{ if(o.dataset.correct!=="true"&&!o.classList.contains("dim")) o.classList.add("dim"); }); right.classList.add("hint"); }
+  else if(LOOP.wrongs>=3){ right.classList.add("hint");
+    setTimeout(()=>{ right.classList.add("right"); SFX.correct(); recordAttempt(LOOP.challenge.skill,true); S.stats.challengesPassed++;
+      if(!voPraise()) speak(DATA.praise[S.locale][0]); setTimeout(()=>{ $("#challengeOverlay").classList.remove("active"); reward(); },700); },900); }
+}
+function reward(){
+  const c=LOOP.creature; const count=S.owned[c.id]; const stars=3; S.currencies.stars+=stars; SFX.star();
+  let gain="";
+  if(LOOP.isNew){ const coins=15; S.currencies.coins+=coins; gain=`+${stars}⭐  +${coins}🪙`; }
+  else { const dt=DATA.dropTables[LOOP.egg.dropTableId]; S.currencies[dt.dupCurrency]+=dt.dupAmount;
+    gain=`+${stars}⭐  +${dt.dupAmount}${dt.dupCurrency==="coins"?"🪙":"✨"}`; }
+  setTimeout(()=>SFX.coin(),200);
+  $("#rw_card").innerHTML=`${creatureMarkup(c,150)}<div style="font-weight:800;margin-top:2px">${nm(c.name)}</div>
+    <div class="rar" style="position:static;background:${RARCOLOR[c.rarity]};margin-top:4px">${rarLabel(c.rarity)}</div>`;
+  $("#rw_name").textContent="";
+  $("#rw_new").innerHTML=LOOP.isNew?`<span class="newbadge">${t("newbadge")}</span>`:`<span class="newbadge" style="background:var(--sky)">${S.locale==='id'?'Sudah punya!':'Already owned!'} 🎉 x${count}</span>`;
+  $("#rw_gain").textContent=gain;
+  $("#rw_share").style.display=(["rare","magic","legend"].includes(c.rarity))?"inline-block":"none";
+  $("#rewardOverlay").classList.add("active");
+  syncWallet(); checkUnlocks(); checkSets(); save();
+}
+function nextEgg(){ SFX.tap(); $("#rewardOverlay").classList.remove("active"); newEgg(); }
+
+function checkUnlocks(){
+  const owned=ownedCount();
+  DATA.worlds.forEach(w=>{ if(!S.worldsUnlocked.includes(w.id)&&owned>=w.unlock){ S.worldsUnlocked.push(w.id); toast(`🎉 ${nm(w.name)}!`); } });
+}
+function checkSets(){
+  DATA.worlds.forEach(w=>{ w.sets.forEach(setId=>{
+    if(S.setsAwarded.includes(setId)) return;
+    const members=DATA.creatures.filter(c=>c.set===setId&&!c.legend);
+    const done=members.every(c=>S.owned[c.id]);
+    if(done && members.length){
+      S.setsAwarded.push(setId);
+      const leg=DATA.creatures.find(c=>c.set===setId&&c.legend);
+      if(leg && !S.owned[leg.id]){ S.owned[leg.id]=1; SFX.legend(); awardBadge("set_"+setId); showLegend(leg); }
+    }
+  }); });
+}
+function showLegend(leg){
+  $("#lg_card").innerHTML=creatureMarkup(leg,150)+`<div style="font-weight:800;margin-top:4px">${nm(leg.name)}</div>`;
+  $("#lg_sub").textContent=t("legend_sub");
+  openModal("legendModal"); burst(50,$("#device"),true); save();
+}
+
+/* ---- badges ---- */
+function awardBadge(id){ if(!S.badges.includes(id)){ S.badges.push(id); const b=DATA.badges.find(x=>x.id===id); if(b) toast(`🏅 ${nm(b.label)}`); } }
+function awardBadges(){
+  if(S.stats.hatches>=1) awardBadge("first_hatch");
+  if(S.stats.hatches>=10) awardBadge("hatch10");
+  if(S.stats.hatches>=50) awardBadge("hatch50");
+  if(S.stats.correct>=20) awardBadge("smart20");
+}
+
+/* ===================== HATCH CARD (share keepsake) ===================== */
+function shareHatch(){
+  const c=LOOP.creature; drawCard(c); openModal("cardModal");
+}
+let LAST_CARD=null;
+function drawCard(c){
+  const cv=$("#hatchCanvas"), x=cv.getContext("2d"); const W=cv.width,H=cv.height;
+  const g=x.createLinearGradient(0,0,0,H); g.addColorStop(0,"#fff7e6"); g.addColorStop(1,(c.pal&&c.pal[0])||"#ffe3c2");
+  x.fillStyle=g; x.fillRect(0,0,W,H);
+  // rounded border
+  x.strokeStyle=c.color; x.lineWidth=14; x.strokeRect(20,20,W-40,H-40);
+  // confetti dots
+  for(let i=0;i<40;i++){ x.fillStyle=["#ff8a3d","#7BC950","#C77DFF","#48CAE4","#FFD166"][i%5]; x.globalAlpha=.5;
+    x.fillRect(40+ (i*53)%(W-80), 60+(i*97)%(H-120), 10,10); } x.globalAlpha=1;
+  // title
+  x.fillStyle="#3b2a1d"; x.textAlign="center"; x.font="bold 34px sans-serif";
+  x.fillText(t("share_title"), W/2, 90);
+  // creature image
+  const svg=creatureSVG(c,300); const img=new Image();
+  const url="data:image/svg+xml;base64,"+btoa(unescape(encodeURIComponent(svg)));
+  img.onload=()=>{ x.drawImage(img,(W-300)/2,140,300,300);
+    x.fillStyle=c.color; x.font="bold 52px sans-serif"; x.fillText(nm(c.name),W/2,540);
+    x.fillStyle="#7a6a5b"; x.font="bold 26px sans-serif"; x.fillText(c.rarity.toUpperCase(),W/2,580);
+    x.font="bold 30px sans-serif"; x.fillStyle="#ff8a3d"; x.fillText("🥚 Egg Tap",W/2,650);
+    try{ LAST_CARD=cv.toDataURL("image/png"); }catch(e){ LAST_CARD=null; }
+  };
+  img.crossOrigin="anonymous";
+  img.src=IMG[c.id]||url;
+}
+function downloadCard(){
+  if(!LAST_CARD){ LAST_CARD=$("#hatchCanvas").toDataURL("image/png"); }
+  const a=document.createElement("a"); a.href=LAST_CARD; a.download="egg-tap-"+(LOOP.creature?LOOP.creature.id:"hatch")+".png"; a.click();
+}
+
+/* ===================== ALBUM ===================== */
+function renderAlbum(){
+  const scroll=$("#albumScroll"); let total=0,have=0,html="";
+  // badges strip
+  html+=`<div class="setbar"><span>🏅 ${t("badges")}</span><span>${S.badges.length}/${DATA.badges.length}</span></div>`;
+  html+=`<div class="badgestrip">`+DATA.badges.map(b=>{ const got=S.badges.includes(b.id);
+    return `<div class="badge ${got?'':'locked'}"><div class="bc">${b.emoji}</div>${nm(b.label)}</div>`; }).join("")+`</div>`;
+  DATA.worlds.forEach(w=>{
+    const cs=creaturesOf(w.sets); if(!cs.length) return;
+    const base=cs.filter(c=>!c.legend); const setHave=base.filter(c=>S.owned[c.id]).length;
+    total+=cs.length; have+=cs.filter(c=>S.owned[c.id]).length;
+    html+=`<div class="setbar"><span>${w.emoji} ${nm(w.name)}</span><span>${setHave}/${base.length}${setHave===base.length?" "+t("set_done"):""}</span></div>`;
+    html+=`<div class="grid">`+cs.map(c=>{ const owned=!!S.owned[c.id];
+      return `<div class="cardlet ${owned?'':'locked'}" onclick="albumTap('${c.id}',${owned})">
+        <div class="rar" style="background:${RARCOLOR[c.rarity]}">${owned?rarLabel(c.rarity):'?'}</div>
+        <div class="sil">${creatureMarkup(c,82)}</div>
+        <div class="nm">${owned?nm(c.name):'???'}</div>
+        ${owned&&S.owned[c.id]>1?`<div class="muted" style="font-size:11px">x${S.owned[c.id]}</div>`:''}</div>`;
+    }).join("")+`</div>`;
+  });
+  scroll.innerHTML=html; $("#ab_count").textContent=have; $("#ab_total").textContent=total;
+}
+function albumTap(id,owned){ if(!owned) return; SFX.signature(id); speak(nm(creature(id).name)+"!"); }
+
+/* ===================== HOME ===================== */
+function renderHome(){
+  $("#hm_coins").textContent=S.currencies.coins;
+  const w=world(S.currentWorld); const room=$("#room");
+  room.style.background = BG[w.id] ? `url('${BG[w.id]}') center/cover no-repeat` : `linear-gradient(180deg,${w.bg[0]},${w.bg[1]} 55%,${w.bg[2]})`;
+  room.innerHTML=`<div class="floatlabel">${t("placed_hint")}</div>`;
+  S.home.forEach((it,idx)=>{ const el=document.createElement("div"); el.className="placed"; el.style.left=it.x+"px"; el.style.top=it.y+"px";
+    if(it.decoId){ const d=DATA.decorations.find(x=>x.id===it.decoId); el.innerHTML=`<div style="font-size:54px">${d?d.emoji:'❓'}</div>`; }
+    else { el.innerHTML=creatureMarkup(creature(it.creatureId),86); el.classList.add("floaty"); }
+    makeDraggable(el,idx); room.appendChild(el); });
+  const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);
+  const owned=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);
+  let html=`<div class="traytag">🎨<div>${S.locale==='id'?'Hias':'Decor'}</div></div>`;
+  html+=decos.map(d=>{ const af=S.currencies.coins>=d.cost;
+    return `<div class="trayitem ${af?'':'cantafford'}" onclick="buyPlaceDeco('${d.id}')"><div style="font-size:34px">${d.emoji}</div>${nm(d.label)}<div class="muted">🪙${d.cost}</div></div>`; }).join("");
+  html+=`<div class="traytag">🐾<div>${S.locale==='id'?'Teman':'Pets'}</div></div>`;
+  html+= owned.length? owned.map(c=>`<div class="trayitem" onclick="placeCreature('${c.id}')">${creatureMarkup(c,52)}${nm(c.name)}</div>`).join("")
+    : `<div class="trayitem cantafford" style="cursor:default">${S.locale==='id'?'Tetaskan dulu':'Hatch first'} 🥚</div>`;
+  $("#tray").innerHTML=html;
+}
+function placeSpot(){ const r=$("#room"); const W=r.clientWidth||300, H=r.clientHeight||420; return {x:Math.round(24+Math.random()*(W-130)), y:Math.round(H*0.42+Math.random()*(H*0.34))}; }
+function buyPlaceDeco(id){ const d=DATA.decorations.find(x=>x.id===id);
+  if(S.currencies.coins<d.cost){ SFX.oops(); toast(t("afford")); return; }
+  S.currencies.coins-=d.cost; SFX.coin(); S.home.push({decoId:id, ...placeSpot()}); save(); renderHome(); }
+function placeCreature(id){ SFX.signature(id); S.home.push({creatureId:id, ...placeSpot()}); save(); renderHome(); }
+function makeDraggable(el,idx){ let sx,sy,ox,oy,drag=false;
+  el.addEventListener("pointerdown",e=>{ drag=true; sx=e.clientX; sy=e.clientY; ox=parseFloat(el.style.left); oy=parseFloat(el.style.top); el.setPointerCapture(e.pointerId); });
+  el.addEventListener("pointermove",e=>{ if(!drag)return; el.style.left=(ox+e.clientX-sx)+"px"; el.style.top=(oy+e.clientY-sy)+"px"; });
+  el.addEventListener("pointerup",e=>{ if(drag){ drag=false; if(Math.abs(e.clientX-sx)<4&&Math.abs(e.clientY-sy)<4&&S.home[idx].creatureId) SFX.signature(S.home[idx].creatureId);
+    S.home[idx].x=parseFloat(el.style.left); S.home[idx].y=parseFloat(el.style.top); save(); } });
+}
+
+/* ===================== WORLD MAP ===================== */
+function renderWorld(){
+  const owned=ownedCount();
+  $("#worldScroll").innerHTML=DATA.worlds.map(w=>{ const un=S.worldsUnlocked.includes(w.id); const cur=S.currentWorld===w.id;
+    const pct=Math.min(100,w.unlock===0?100:Math.round(owned/w.unlock*100));
+    return `<div class="worldrow ${un?'':'locked'}" onclick="${un?`pickWorld('${w.id}')`:''}">
+      <div class="orb" style="background:${cur?'#ffe1b8':'#f1e6d4'}">${un?w.emoji:'🔒'}</div>
+      <div class="meta"><div style="font-weight:800">${nm(w.name)} ${cur?'• ✓':''}</div>
+        <div class="pill">${un?'':`${t('need')} ${w.unlock} ${t('creatures')} (${owned}/${w.unlock})`}</div>
+        ${un?'':`<div class="prog"><i style="width:${pct}%"></i></div>`}</div></div>`; }).join("");
+}
+function pickWorld(id){ SFX.tap(); S.currentWorld=id; save(); show("hatch"); newEgg(); }
+
+/* ===================== DAILY ===================== */
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+function maybeDaily(){ if(S.daily.lastClaim===todayStr()) return; renderStreak(); openModal("dailyModal"); }
+function renderStreak(){ const cur=S.daily.streak%7; $("#streakStrip").innerHTML=[1,2,3,4,5,6,7].map(d=>{
+  const done=d<=cur, today=d===cur+1, gift=d===3?'🥚':d===7?'✨':''; return `<div class="sd ${done?'done':''} ${today?'today':''}">${gift||d}</div>`; }).join(""); }
+function claimDaily(){ S.daily.lastClaim=todayStr(); S.daily.streak++; S.currencies.coins+=20; SFX.coin();
+  if(S.daily.streak%7===0) S.currencies.stardust+=30; else if(S.daily.streak%3===0) S.currencies.coins+=30;
+  save(); closeModal("dailyModal"); toast("🎁 +20🪙"); syncWallet(); }
+
+/* ===================== PARENT GATE / ZONE ===================== */
+let GATE_TARGET=47;
+const NUMWORDS={31:{id:"tiga puluh satu",en:"thirty-one"},47:{id:"empat puluh tujuh",en:"forty-seven"},52:{id:"lima puluh dua",en:"fifty-two"},68:{id:"enam puluh delapan",en:"sixty-eight"},73:{id:"tujuh puluh tiga",en:"seventy-three"},29:{id:"dua puluh sembilan",en:"twenty-nine"}};
+function openGate(){ GATE_TARGET=[31,47,52,68,73,29][Math.floor(Math.random()*6)];
+  $("#g_sub").innerHTML=`${t("gate_sub")} <b>${nm(NUMWORDS[GATE_TARGET])}</b>`;
+  speak(`${t("gate_sub")} ${nm(NUMWORDS[GATE_TARGET])}`);
+  const nums=new Set([GATE_TARGET]); while(nums.size<9) nums.add(20+Math.floor(Math.random()*60));
+  $("#gateNums").innerHTML=[...nums].sort(()=>Math.random()-0.5).map(n=>`<button onclick="tryGate(${n})">${n}</button>`).join("");
+  openModal("gateModal"); }
+function tryGate(n){ if(n===GATE_TARGET){ SFX.correct(); closeModal("gateModal"); show("parent"); } else { SFX.oops(); bounceModal("gateModal"); } }
+function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newSkills=S.stats.weekSkills.length;
+  $("#p_summary").innerHTML=S.locale==="id"
+    ? `Si kecil menetaskan <b>${S.stats.hatches}</b> telur, mengoleksi <b>${owned}</b> makhluk, menyelesaikan <b>${S.stats.challengesPassed}</b> tantangan (<b>${S.stats.correct}</b> jawaban benar). Keterampilan baru: <b>${newSkills}</b>. Streak: <b>${S.daily.streak}</b> hari. Lencana: <b>${S.badges.length}</b>.`
+    : `Your child hatched <b>${S.stats.hatches}</b> eggs, collected <b>${owned}</b> creatures, completed <b>${S.stats.challengesPassed}</b> challenges (<b>${S.stats.correct}</b> correct). New skills: <b>${newSkills}</b>. Streak: <b>${S.daily.streak}</b> days. Badges: <b>${S.badges.length}</b>.`;
+  $("#skillList").innerHTML=DATA.skills.map(sk=>{ const sp=S.skillProgress[sk.id]||{tier:1,last5:[]};
+    const dots=Array.from({length:5},(_,i)=>{ const v=sp.last5[i]; return `<i class="${v===1?'ok':v===0?'no':''}"></i>`; }).join("");
+    return `<div class="skillrow"><div class="lab">${nm(sk.label)}</div><div class="dots5">${dots}</div><div class="tiertag">T${sp.tier}</div></div>`; }).join("");
+  $("#lang_id").classList.toggle("on",S.locale==="id"); $("#lang_en").classList.toggle("on",S.locale==="en");
+}
+function setLang(l){ S.locale=l; save(); applyStaticI18n(); renderParent(); }
+function resetGame(){ if(confirm(S.locale==="id"?"Hapus semua data?":"Erase all data?")){ localStorage.removeItem(SAVE_KEY); location.reload(); } }
+
+/* ===================== MODALS / TOAST / PARTICLES ===================== */
+function openModal(id){ $("#"+id).classList.add("active"); }
+function closeModal(id){ $("#"+id).classList.remove("active"); }
+function bounceModal(id){ const b=$("#"+id+" .modalbox"); b.style.animation="none"; void b.offsetWidth; b.style.animation="shake .3s"; }
+function toast(msg){ const d=document.createElement("div");
+  d.textContent=msg; d.style.cssText="position:absolute;left:50%;top:64px;transform:translateX(-50%);background:#fff;padding:10px 18px;border-radius:999px;font-weight:800;box-shadow:var(--shadow);z-index:80;animation:rise .3s";
+  $("#device").appendChild(d); setTimeout(()=>d.remove(),1600); }
+function burst(n,parent,big){ const colors=["#ff8a3d","#7BC950","#C77DFF","#48CAE4","#FFD166","#ff6b9d"];
+  const rect=parent.getBoundingClientRect(), host=$("#device").getBoundingClientRect();
+  const cx=rect.left-host.left+rect.width/2, cy=rect.top-host.top+rect.height/2;
+  for(let i=0;i<n;i++){ const p=document.createElement("div"); p.className="particle"; p.style.background=colors[i%colors.length];
+    p.style.left=cx+"px"; p.style.top=cy+"px"; if(Math.random()<0.4) p.style.borderRadius="50%"; $("#device").appendChild(p);
+    const a=Math.random()*Math.PI*2, dist=(big?80:40)+Math.random()*(big?140:50), dx=Math.cos(a)*dist, dy=Math.sin(a)*dist-(big?40:0);
+    p.animate([{transform:"translate(0,0) rotate(0) scale(1)",opacity:1},{transform:`translate(${dx}px,${dy}px) rotate(${Math.random()*720}deg) scale(.4)`,opacity:0}],
+      {duration:(big?900:600)+Math.random()*300,easing:"cubic-bezier(.2,.6,.3,1)"}).onfinish=()=>p.remove(); }
+}
+
+/* ===================== BOOT ===================== */
+function boot(){
+  load(); applyStaticI18n();
+  setInterval(()=>{ S.stats.playSeconds++; if(S.stats.playSeconds%20===0) save(); },1000);
+  window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; },{once:true});
+  renderNav($("#nav"));
+  if(S.onboarded){ show("hatch"); maybeDaily(); newEgg(); } else { show("onboard"); }
+}
+boot();
+</script>
+</body>
+</html>

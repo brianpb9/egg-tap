@@ -251,6 +251,8 @@
   /* first-run tutorial pointer */
   #tapHint{position:absolute;left:50%;top:60%;transform:translateX(-50%);font-weight:800;font-size:22px;color:var(--btn);pointer-events:none;z-index:4;text-shadow:0 1px 2px #fff,0 0 8px #fff;animation:taphint 1.1s ease-in-out infinite;}
   @keyframes taphint{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-16px)}}
+  /* Home: ground band so placed items sit on a floor (depth) */
+  #home .room .ground{position:absolute;left:0;right:0;bottom:0;height:32%;background:linear-gradient(180deg,transparent,rgba(90,60,25,.16));pointer-events:none;z-index:1;}
 </style>
 </head>
 <body>
@@ -1428,8 +1430,10 @@ function renderHome(){
   const lvl=Math.min(5,1+Math.floor(S.home.length/3)); $("#t_home").textContent=`${t("home")} · Lv${lvl} ${nm(HOME_LEVELS[lvl])}`;
   const w=world(S.currentWorld); const room=$("#room");
   room.style.background = BG[w.id] ? `url('${BG[w.id]}') center/cover no-repeat` : `linear-gradient(180deg,${w.bg[0]},${w.bg[1]} 55%,${w.bg[2]})`;
-  room.innerHTML=`<div class="floatlabel">${t("placed_hint")}</div>`;
-  S.home.forEach((it,idx)=>{ const el=document.createElement("div"); el.className="placed"; el.style.left=it.x+"px"; el.style.top=it.y+"px";
+  const toNext=lvl<5?(3-(S.home.length%3)):0;
+  const hint=lvl<5?`${t("placed_hint")} · ${toNext} → Lv${lvl+1} ${nm(HOME_LEVELS[lvl+1])}`:t("placed_hint");
+  room.innerHTML=`<div class="ground"></div><div class="floatlabel">${hint}</div>`;
+  S.home.forEach((it,idx)=>{ const el=document.createElement("div"); el.className="placed"; el.style.left=it.x+"px"; el.style.top=it.y+"px"; el.style.zIndex=Math.round(it.y); // z-order by Y = depth
     if(it.decoId){ const d=DATA.decorations.find(x=>x.id===it.decoId); el.innerHTML=d?decoMarkup(d,72):'❓'; }
     else { el.innerHTML=creatureMarkup(creature(it.creatureId),86); el.classList.add("floaty"); }
     makeDraggable(el,idx); room.appendChild(el); });
@@ -1451,7 +1455,12 @@ function placeCreature(id){ SFX.signature(id); S.home.push({creatureId:id, ...pl
 function makeDraggable(el,idx){ let sx,sy,ox,oy,drag=false;
   el.addEventListener("pointerdown",e=>{ drag=true; sx=e.clientX; sy=e.clientY; ox=parseFloat(el.style.left); oy=parseFloat(el.style.top); el.setPointerCapture(e.pointerId); });
   el.addEventListener("pointermove",e=>{ if(!drag)return; el.style.left=(ox+e.clientX-sx)+"px"; el.style.top=(oy+e.clientY-sy)+"px"; });
-  el.addEventListener("pointerup",e=>{ if(drag){ drag=false; if(Math.abs(e.clientX-sx)<4&&Math.abs(e.clientY-sy)<4&&S.home[idx].creatureId) SFX.signature(S.home[idx].creatureId);
+  el.addEventListener("pointerup",e=>{ if(drag){ drag=false;
+    const tap=Math.abs(e.clientX-sx)<4&&Math.abs(e.clientY-sy)<4;
+    if(tap&&S.home[idx].creatureId) SFX.signature(S.home[idx].creatureId);
+    if(!tap){ const r=$("#room"),G=24; let nx=Math.round(parseFloat(el.style.left)/G)*G, ny=Math.round(parseFloat(el.style.top)/G)*G; // grid snap + clamp
+      nx=Math.max(4,Math.min(nx,r.clientWidth-72)); ny=Math.max(4,Math.min(ny,r.clientHeight-72));
+      el.style.left=nx+"px"; el.style.top=ny+"px"; el.style.zIndex=Math.round(ny); }
     S.home[idx].x=parseFloat(el.style.left); S.home[idx].y=parseFloat(el.style.top); save(); } });
 }
 

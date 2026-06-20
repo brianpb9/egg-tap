@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Egg Tap</title>
+<title>Wonder Egg World</title>
 <style>
   /* ============================================================
      EGG TAP — playable vertical slice (v2: cute visuals + depth)
@@ -262,7 +262,7 @@
   @keyframes hatchrays{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(0)}28%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35) rotate(45deg)}}
   .eggglow{position:absolute;left:50%;top:50%;width:240px;height:240px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,238,160,.95),rgba(255,205,90,0) 68%);opacity:0;z-index:0;pointer-events:none;transition:opacity .18s;}
   .crackfx{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);z-index:3;opacity:0;pointer-events:none;}
-  .crackfx path{stroke:#6a4416;stroke-width:3.4;fill:none;stroke-linecap:round;filter:drop-shadow(0 0 5px rgba(255,246,200,1));}
+  .crackfx path{stroke:#fff;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px #ffe27a) drop-shadow(0 0 9px rgba(255,196,70,.85)) drop-shadow(0 1px 1px rgba(80,55,20,.55));}
   #eggwrap.jolt{animation:eggjolt .18s ease-out;}
   @keyframes eggjolt{0%{transform:scale(1)}40%{transform:scale(1.13) rotate(-3deg)}72%{transform:scale(.95) rotate(3deg)}100%{transform:scale(1)}}
   /* ===== Title / landing (Candy-Crush-style) ===== */
@@ -277,8 +277,9 @@
   .title-logo .inner{display:inline-block;animation:titlefloat 4s ease-in-out 1s infinite;}
   @keyframes titlein{0%{transform:scale(.5) translateY(24px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}
   @keyframes titlefloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
-  .biglogo{font-size:62px;font-weight:800;letter-spacing:-1px;text-align:center;line-height:.96;-webkit-text-stroke:4px #fff;paint-order:stroke fill;text-shadow:0 5px 0 rgba(120,90,40,.18),0 9px 14px rgba(0,0,0,.18);}
+  .biglogo{font-size:54px;font-weight:800;letter-spacing:-1px;text-align:center;line-height:.96;-webkit-text-stroke:4px #fff;paint-order:stroke fill;text-shadow:0 5px 0 rgba(120,90,40,.18),0 9px 14px rgba(0,0,0,.18);}
   .biglogo .lg-egg{color:#f2c64a;} .biglogo .lg-tap{color:#7cc35f;}
+  .biglogo .lg-wonder{display:block;font-size:.62em;color:#f6a93c;letter-spacing:1px;margin-bottom:2px;}
   .biglogo small{display:block;font-size:16px;font-weight:800;color:#5a8f3a;-webkit-text-stroke:0;letter-spacing:.3px;margin-top:14px;text-shadow:0 1px 2px rgba(255,255,255,.8);}
   .play-btn{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);border:none;border-radius:999px;font-family:inherit;font-weight:800;font-size:30px;color:#fff;background:linear-gradient(180deg,#8be36b,#5fb83e);box-shadow:0 7px 0 #3f8f24,0 12px 20px rgba(0,0,0,.28);padding:16px 76px;cursor:pointer;z-index:3;animation:playpulse 1.4s ease-in-out infinite;}
   @keyframes playpulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
@@ -357,7 +358,7 @@
   <section id="title" class="screen active">
     <div class="title-scene"></div>
     <div class="title-fx" id="titleFx"></div>
-    <div class="title-logo"><div class="inner"><div class="biglogo"><span class="lg-egg">Egg</span> <span class="lg-tap">Tap</span><small id="title_tag">Your friends are waiting! 💛</small></div></div></div>
+    <div class="title-logo"><div class="inner"><div class="biglogo"><span class="lg-wonder">Wonder</span><span class="lg-egg">Egg</span> <span class="lg-tap">World</span><small id="title_tag">Your friends are waiting! 💛</small></div></div></div>
     <button class="play-btn" id="playBtn" onclick="startPlay()">▶ Play</button>
     <button class="play-mini" id="titleParent" title="Parent" onclick="openGate()"></button>
   </section>
@@ -368,7 +369,7 @@
     <div class="ob-content">
       <div class="ob-hero">
         <img class="ob-egg" src="assets/eggs/egg_legend.png" alt="" />
-        <div class="logo">Egg Tap <small id="ob_tag">Tetaskan · Belajar · Koleksi</small></div>
+        <div class="logo">Wonder Egg World <small id="ob_tag">Tetaskan · Belajar · Koleksi</small></div>
       </div>
       <div class="ob-sell" id="ob_sell">✨ Tetaskan 50+ makhluk lucu & belajar sambil bermain!</div>
       <div class="prof" style="background:rgba(255,255,255,.92)"><div style="width:60px;flex:0 0 auto" id="prof_av"></div>
@@ -1514,7 +1515,7 @@ function drawCard(c){
   img.onload=()=>{ x.drawImage(img,(W-300)/2,140,300,300);
     x.fillStyle=c.color; x.font="bold 52px sans-serif"; x.fillText(nm(c.name),W/2,540);
     x.fillStyle="#7a6a5b"; x.font="bold 26px sans-serif"; x.fillText(c.rarity.toUpperCase(),W/2,580);
-    x.font="bold 30px sans-serif"; x.fillStyle="#ff8a3d"; x.fillText("🥚 Egg Tap",W/2,650);
+    x.font="bold 30px sans-serif"; x.fillStyle="#ff8a3d"; x.fillText("🥚 Wonder Egg World",W/2,650);
     try{ LAST_CARD=cv.toDataURL("image/png"); }catch(e){ LAST_CARD=null; }
   };
   img.crossOrigin="anonymous";
@@ -1596,13 +1597,18 @@ function renderHome(){
   S.home=(S.home||[]).filter(it=>it.decoId);
   const w=world(S.currentWorld), room=$("#room");
   const friendsAll=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);
-  const cap=homeCapacity(), friends=friendsAll.slice(0,cap), decor=S.home;
-  const lvl=homeLevel(friends.length+decor.length);
+  const decor=S.home;
+  const visitorPool=Object.keys(S.owned).map(creature).filter(c=>c&&c.world!==S.currentWorld);
+  const visitors=visitorPool.slice(0, decor.length*2); // each decoration invites 2 friends from other worlds to visit
+  const showFriends=friendsAll.concat(visitors); // owned-world friends ALWAYS show; visitors are a bonus
+  const lvl=homeLevel(friendsAll.length+decor.length);
   $("#t_home").textContent=`${t("home")} · Lv${lvl} ${nm(HOME_LEVELS[lvl])}`;
   room.style.background=`url('${HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`;
-  const extra=friendsAll.length-friends.length;
+  const canInvite=visitorPool.length>visitors.length;
   const chip = !friendsAll.length ? (S.locale==='id'?'Tetaskan teman dulu! 🥚':'Hatch some friends first! 🥚')
-    : `🐾 ${friends.length}/${friendsAll.length} `+(S.locale==='id'?'teman':'friends')+(extra>0?` · ${S.locale==='id'?'beli dekor untuk undang +'+extra:'buy decor to invite +'+extra}`:'');
+    : `🐾 ${friendsAll.length} `+(S.locale==='id'?'teman':'friends')
+      +(visitors.length?` · +${visitors.length} ${S.locale==='id'?'berkunjung':'visiting'}`:'')
+      +(canInvite?` · ${S.locale==='id'?'beli dekor untuk undang teman':'buy decor to invite friends over'}`:'');
   room.innerHTML=`<div class="ground"></div><div class="floatlabel">${chip}</div>`;
   const rw=room.clientWidth||340, rh=room.clientHeight||440;
   const clampX=v=>Math.max(8,Math.min(rw-72,v)), clampY=v=>Math.max(rh*0.16,Math.min(rh-94,v));
@@ -1613,12 +1619,12 @@ function renderHome(){
     const col=i%dcols, rowi=Math.floor(i/dcols);
     const x=clampX(rw*(0.18+0.30*col)-32), y=clampY(rh*(0.30+0.15*rowi));
     const de=document.createElement("div"); de.className="placed"; de.style.left=x+"px"; de.style.top=y+"px"; de.style.zIndex=Math.round(y); de.innerHTML=decoMarkup(d,76); room.appendChild(de);
-    const host=Math.min(2,friends.length-assigned);
-    for(let k=0;k<host;k++){ const c=friends[assigned++]; const off=k===0?-30:34;
+    const host=Math.min(2,showFriends.length-assigned);
+    for(let k=0;k<host;k++){ const c=showFriends[assigned++]; const off=k===0?-30:34;
       mkFriend(room,c,clampX(x+off),clampY(y+(k===0?28:10)),54,Math.round(y)+30,'atdecor'); }
   });
   // remaining friends auto-arranged on the floor — tap any to pet
-  const rest=friends.slice(assigned), n=rest.length;
+  const rest=showFriends.slice(assigned), n=rest.length;
   if(n){ const cols=Math.max(2,Math.min(4,Math.ceil(Math.sqrt(n)))), rows=Math.ceil(n/cols);
     const padX=rw*0.06, padTop=rh*0.18, padBot=rh*0.10;
     const cellW=(rw-2*padX)/cols, cellH=(rh-padTop-padBot)/rows;
@@ -1738,7 +1744,7 @@ function burst(n,parent,big){ const colors=["#ff8a3d","#7BC950","#C77DFF","#48CA
 }
 
 /* ===================== BOOT ===================== */
-const CRACKFX='<svg class="crackfx" id="crackFx" viewBox="0 0 188 236" width="188" height="236" aria-hidden="true"><path d="M94 26 L84 68 L102 96 L82 132 L100 168 L86 210"/><path d="M84 68 L56 84"/><path d="M102 96 L132 108"/><path d="M82 132 L54 152"/><path d="M100 168 L130 184"/></svg>';
+const CRACKFX='<svg class="crackfx" id="crackFx" viewBox="0 0 188 236" width="188" height="236" aria-hidden="true"><path d="M94 30 L88 58 L100 76 L86 102 L98 124 L84 150 L96 176 L90 206"/><path d="M100 76 L120 68"/><path d="M86 102 L66 95"/><path d="M98 124 L118 132"/><path d="M84 150 L64 158"/><path d="M96 176 L116 183"/></svg>';
 function populateTitle(){
   const owned=Object.keys(S.owned||{}).length;
   const tt=$("#title_tag"); if(tt) tt.textContent = owned

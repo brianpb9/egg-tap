@@ -1,10 +1,10 @@
-# Egg Tap — Store Listing Package
+# Wonder Egg World — Store Listing Package
 
 > Kids educational collection game. Global launch: **English first**, Indonesian second.
 > Compliance target: Apple Kids Category + Google Designed for Families (COPPA / GDPR-K / UU PDP).
 
 ## App name
-**Egg Tap — Hatch, Learn & Collect**
+**Wonder Egg World — Hatch, Learn & Collect**
 
 ## Subtitle / short description (≤ 80 chars)
 Tap eggs, hatch 100+ cute creatures, and learn colors, numbers & more!
@@ -13,7 +13,7 @@ Tap eggs, hatch 100+ cute creatures, and learn colors, numbers & more!
 No ads. No chat. Just adorable surprises and gentle, no-fail learning for ages 3–6.
 
 ## Long description
-Egg Tap is a cozy, no-fail learning game for little ones aged 3–6.
+Wonder Egg World is a cozy, no-fail learning game for little ones aged 3–6.
 
 🥚 **Tap to hatch** — every egg cracks open with sparkles and confetti to reveal a brand-new cute creature. The surprise never gets old!
 

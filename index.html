@@ -296,7 +296,8 @@
   .wpanel.locked{filter:grayscale(.25);opacity:.96;cursor:default;border-color:#cdbfa8;background:#f4efe6;}
   .wpanel.here{border-color:#ffcf5c;animation:herepulse 1.6s ease-in-out infinite;}
   @keyframes herepulse{0%,100%{box-shadow:0 0 0 3px rgba(255,207,92,.5),0 6px 16px rgba(0,0,0,.2)}50%{box-shadow:0 0 0 9px rgba(255,207,92,.28),0 6px 16px rgba(0,0,0,.2)}}
-  .wp-thumb{width:52px;height:52px;border-radius:50%;background:#eadfce center/cover no-repeat;flex:0 0 auto;border:3px solid #fff;position:relative;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .wp-thumb{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 50% 36%,#eaf6ff,#bfe0f2);flex:0 0 auto;border:3px solid #fff;position:relative;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);overflow:visible;}
+  .wp-thumb img{width:46px;height:46px;object-fit:contain;display:block;}
   .wp-star{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:17px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
   .wp-lockbig{font-size:24px;}
   .wp-body{min-width:0;flex:1;}
@@ -1687,13 +1688,13 @@ function renderWorld(){
   const owned=ownedCount();
   const POS=[6,22.5,39,55.5,72,88]; // vertical % positions weaving down the path
   const nodes=DATA.worlds.map((w,i)=>{ const un=S.worldsUnlocked.includes(w.id); const cur=S.currentWorld===w.id;
-    const all=creaturesOf(w.sets); const got=all.filter(c=>S.owned[c.id]).length; const done=all.length>0&&got>=all.length;
+    const all=creaturesOf(w.sets); const got=all.filter(c=>S.owned[c.id]).length; const done=all.length>0&&got>=all.length; const mascot=all.find(c=>!c.legend);
     const upct=w.unlock===0?100:Math.min(100,Math.round(owned/w.unlock*100));
     const cpct=all.length?Math.round(got/all.length*100):100;
     const side=i%2?'right':'left'; const bg=BG[w.id];
     const friends=S.locale==='id'?'teman':'friends';
     return `<div class="wpanel ${side} ${un?'':'locked'} ${cur?'here':''}" style="top:${POS[i]!=null?POS[i]:6+i*16}%" onclick="${un?`pickWorld('${w.id}')`:''}">
-      <div class="wp-thumb" style="${un&&bg?`background-image:url('${bg}')`:''}">${cur?'<span class="wp-star">⭐</span>':''}${un?(done?'':''):'<span class="wp-lockbig">🔒</span>'}</div>
+      <div class="wp-thumb">${cur?'<span class="wp-star">⭐</span>':''}${un?(mascot?creatureMarkup(mascot,46):''):'<span class="wp-lockbig">🔒</span>'}</div>
       <div class="wp-body">
         <div class="wp-name">${nm(w.name)}</div>
         ${un ? `<div class="wp-sub">${got}/${all.length} ${friends}${done?' ✓':''}</div>`

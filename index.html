@@ -273,19 +273,22 @@
   .play-mini.right{left:auto;right:18px;padding:6px;}
   .play-mini svg{width:100%;height:100%;display:block;}
   .play-mini img{width:100%;height:100%;object-fit:contain;}
-  /* ===== World journey map ===== */
-  .worldmap{position:relative;padding:26px 14px 36px;display:flex;flex-direction:column;gap:26px;}
-  .worldmap::before{content:"";position:absolute;top:18px;bottom:18px;left:50%;width:6px;transform:translateX(-50%);background:repeating-linear-gradient(#ffd591 0 13px,transparent 13px 26px);border-radius:4px;z-index:0;}
-  .mapnode{position:relative;z-index:1;display:flex;align-items:center;gap:14px;width:84%;cursor:pointer;}
-  .mapnode.left{align-self:flex-start;}
-  .mapnode.right{align-self:flex-end;flex-direction:row-reverse;text-align:right;}
-  .mapdot{position:relative;width:84px;height:84px;flex:0 0 auto;border-radius:50%;background:#f1e6d4 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 5px 0 rgba(0,0,0,.12),var(--shadow);border:4px solid #fff;}
-  .mapnode.locked{filter:grayscale(.45) opacity(.7);cursor:default;}
-  .mapnode.locked .mapdot{font-size:30px;background:#e7ddd0;}
-  .mapnode.here .mapdot{border-color:#ffcf5c;box-shadow:0 0 0 4px rgba(255,207,92,.55),var(--shadow);animation:playpulse 1.5s ease-in-out infinite;}
-  .herepin{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:20px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
-  .mapinfo{min-width:0;}
-  .mapname{font-weight:800;font-size:16px;}
+  /* ===== World map (illustrated background + overlay panels) ===== */
+  .worldmap-wrap{position:relative;width:100%;aspect-ratio:752/1344;background:url('assets/bg/worldmap.png') top center/100% 100% no-repeat;}
+  .wpanel{position:absolute;display:flex;align-items:center;gap:9px;width:62%;background:#fffdf8;border-radius:22px;padding:7px 12px 7px 7px;box-shadow:0 6px 16px rgba(0,0,0,.2);border:3px solid #ffd591;cursor:pointer;z-index:2;transition:transform .15s ease;}
+  .wpanel:active{transform:scale(.97);}
+  .wpanel.left{left:3%;} .wpanel.right{right:3%;}
+  .wpanel.locked{filter:grayscale(.25);opacity:.96;cursor:default;border-color:#cdbfa8;background:#f4efe6;}
+  .wpanel.here{border-color:#ffcf5c;animation:herepulse 1.6s ease-in-out infinite;}
+  @keyframes herepulse{0%,100%{box-shadow:0 0 0 3px rgba(255,207,92,.5),0 6px 16px rgba(0,0,0,.2)}50%{box-shadow:0 0 0 9px rgba(255,207,92,.28),0 6px 16px rgba(0,0,0,.2)}}
+  .wp-thumb{width:52px;height:52px;border-radius:50%;background:#eadfce center/cover no-repeat;flex:0 0 auto;border:3px solid #fff;position:relative;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);}
+  .wp-star{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:17px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
+  .wp-lockbig{font-size:24px;}
+  .wp-body{min-width:0;flex:1;}
+  .wp-name{font-weight:800;font-size:15px;color:var(--ink);line-height:1.05;}
+  .wp-sub{font-size:11px;font-weight:800;color:#8a7a66;margin-top:1px;}
+  .wp-bar{height:8px;background:#e7ddcd;border-radius:6px;margin-top:4px;overflow:hidden;}
+  .wp-bar i{display:block;height:100%;background:linear-gradient(90deg,#8be36b,#5fb83e);border-radius:6px;}
   #device.screenshake{animation:screenshake .5s;}
   @keyframes screenshake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(7px,-3px)}60%{transform:translate(-5px,-2px)}80%{transform:translate(5px,2px)}}
   .hatchflash{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(circle at 50% 45%,#fff,rgba(255,255,255,0) 62%);opacity:0;}
@@ -1590,19 +1593,22 @@ function makeDraggable(el,idx){ let sx,sy,ox,oy,drag=false;
 /* ===================== WORLD MAP ===================== */
 function renderWorld(){
   const owned=ownedCount();
+  const POS=[6,22.5,39,55.5,72,88]; // vertical % positions weaving down the path
   const nodes=DATA.worlds.map((w,i)=>{ const un=S.worldsUnlocked.includes(w.id); const cur=S.currentWorld===w.id;
     const all=creaturesOf(w.sets); const got=all.filter(c=>S.owned[c.id]).length; const done=all.length>0&&got>=all.length;
-    const pct=w.unlock===0?100:Math.min(100,Math.round(owned/w.unlock*100));
+    const upct=w.unlock===0?100:Math.min(100,Math.round(owned/w.unlock*100));
+    const cpct=all.length?Math.round(got/all.length*100):100;
     const side=i%2?'right':'left'; const bg=BG[w.id];
     const friends=S.locale==='id'?'teman':'friends';
-    return `<div class="mapnode ${side} ${un?'':'locked'} ${cur?'here':''}" onclick="${un?`pickWorld('${w.id}')`:''}">
-      <div class="mapdot" style="${un&&bg?`background-image:url('${bg}')`:''}">${un?(done?'✓':w.emoji):'🔒'}${cur?'<span class="herepin">★</span>':''}</div>
-      <div class="mapinfo">
-        <div class="mapname">${nm(w.name)}</div>
-        ${un ? `<div class="pill">${got}/${all.length} ${friends}${done?' • '+(S.locale==='id'?'Lengkap!':'Complete!'):''}</div>`
-             : `<div class="pill">🔒 ${t('need')} ${w.unlock} ${t('creatures')} (${owned}/${w.unlock})</div><div class="prog"><i style="width:${pct}%"></i></div>`}
+    return `<div class="wpanel ${side} ${un?'':'locked'} ${cur?'here':''}" style="top:${POS[i]!=null?POS[i]:6+i*16}%" onclick="${un?`pickWorld('${w.id}')`:''}">
+      <div class="wp-thumb" style="${un&&bg?`background-image:url('${bg}')`:''}">${cur?'<span class="wp-star">⭐</span>':''}${un?(done?'':''):'<span class="wp-lockbig">🔒</span>'}</div>
+      <div class="wp-body">
+        <div class="wp-name">${nm(w.name)}</div>
+        ${un ? `<div class="wp-sub">${got}/${all.length} ${friends}${done?' ✓':''}</div>`
+             : `<div class="wp-sub">${t('need')} ${w.unlock} (${owned}/${w.unlock})</div>`}
+        <div class="wp-bar"><i style="width:${un?cpct:upct}%"></i></div>
       </div></div>`; }).join("");
-  $("#worldScroll").innerHTML=`<div class="worldmap">${nodes}</div>`;
+  $("#worldScroll").innerHTML=`<div class="worldmap-wrap">${nodes}</div>`;
 }
 function pickWorld(id){ SFX.tap(); S.currentWorld=id; save(); show("hatch"); newEgg(); }
 

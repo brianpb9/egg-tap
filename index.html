@@ -245,6 +245,28 @@
   @keyframes dimin{from{opacity:0}to{opacity:1}}
   .egg.crackburst{animation:crackburst .5s ease-out;}
   @keyframes crackburst{0%{transform:scale(1)}30%{transform:scale(1.2) rotate(-4deg)}60%{transform:scale(.88) rotate(4deg)}100%{transform:scale(1.06)}}
+  /* progressive cracking FX */
+  .eggglow{position:absolute;left:50%;top:50%;width:240px;height:240px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,238,160,.95),rgba(255,205,90,0) 68%);opacity:0;z-index:0;pointer-events:none;transition:opacity .18s;}
+  .crackfx{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);z-index:3;opacity:0;pointer-events:none;}
+  .crackfx path{stroke:#6a4416;stroke-width:3.4;fill:none;stroke-linecap:round;filter:drop-shadow(0 0 5px rgba(255,246,200,1));}
+  #eggwrap.jolt{animation:eggjolt .18s ease-out;}
+  @keyframes eggjolt{0%{transform:scale(1)}40%{transform:scale(1.13) rotate(-3deg)}72%{transform:scale(.95) rotate(3deg)}100%{transform:scale(1)}}
+  /* ===== Title / landing (Candy-Crush-style) ===== */
+  #title{overflow:hidden;}
+  .title-clouds{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+  .title-clouds i{position:absolute;width:80px;height:28px;background:#fff;border-radius:50px;box-shadow:26px 6px 0 -2px #fff,-26px 8px 0 -4px #fff;opacity:.92;animation:clouddrift linear infinite;}
+  @keyframes clouddrift{from{transform:translateX(-160px)}to{transform:translateX(560px)}}
+  .title-content{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;padding:0 24px 15%;gap:26px;}
+  .title-logo{display:flex;flex-direction:column;align-items:center;margin-top:auto;}
+  .title-egg{width:128px;height:128px;object-fit:contain;filter:drop-shadow(0 12px 16px rgba(120,70,20,.32));animation:titlebob 3s ease-in-out infinite;}
+  @keyframes titlebob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-15px) rotate(3deg)}}
+  .biglogo{font-size:54px;font-weight:800;letter-spacing:-1px;color:#fff;text-align:center;line-height:.96;text-shadow:0 3px 0 #e0962b,0 7px 12px rgba(0,0,0,.22);-webkit-text-stroke:2.5px #cf8a2c;paint-order:stroke fill;}
+  .biglogo small{display:block;font-size:14px;font-weight:800;color:#fff;-webkit-text-stroke:0;letter-spacing:1px;margin-top:9px;text-shadow:0 2px 4px rgba(0,0,0,.3);}
+  .play-btn{border:none;border-radius:999px;font-family:inherit;font-weight:800;font-size:30px;color:#fff;background:linear-gradient(180deg,#8be36b,#5fb83e);box-shadow:0 7px 0 #3f8f24,0 12px 20px rgba(0,0,0,.28);padding:16px 70px;cursor:pointer;animation:playpulse 1.4s ease-in-out infinite;}
+  @keyframes playpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .play-btn:active{transform:translateY(4px);box-shadow:0 3px 0 #3f8f24;}
+  .play-mini{position:absolute;left:18px;bottom:6%;width:54px;height:54px;border-radius:16px;border:none;background:rgba(255,255,255,.85);box-shadow:var(--shadow);cursor:pointer;padding:11px;z-index:3;}
+  .play-mini svg{width:100%;height:100%;display:block;}
   #device.screenshake{animation:screenshake .5s;}
   @keyframes screenshake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(7px,-3px)}60%{transform:translate(-5px,-2px)}80%{transform:translate(5px,2px)}}
   .hatchflash{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(circle at 50% 45%,#fff,rgba(255,255,255,0) 62%);opacity:0;}
@@ -283,7 +305,22 @@
 <div id="rotate">📱 Putar ke posisi tegak ya!</div>
 <div id="device">
   <!-- S0/S1 ONBOARDING -->
-  <section id="onboard" class="screen active">
+  <!-- S0 TITLE — branded animated landing -->
+  <section id="title" class="screen active">
+    <div class="ob-sky"></div>
+    <div class="title-clouds"><i style="top:11%;left:-10%;animation-duration:26s"></i><i style="top:23%;left:-30%;width:58px;height:22px;animation-duration:34s;animation-delay:-8s"></i><i style="top:7%;left:-50%;width:92px;height:30px;animation-duration:30s;animation-delay:-16s"></i></div>
+    <div class="ob-floaters" id="titleFloaters"></div>
+    <div class="title-content">
+      <div class="title-logo">
+        <img class="title-egg" src="assets/eggs/egg_king.png" alt="" />
+        <div class="biglogo">Egg&nbsp;Tap<small id="title_tag">Hatch · Learn · Collect</small></div>
+      </div>
+      <button class="play-btn" id="playBtn" onclick="startPlay()">▶ Play</button>
+    </div>
+    <button class="play-mini" id="titleParent" title="Parent" onclick="openGate()"></button>
+  </section>
+
+  <section id="onboard" class="screen">
     <div class="ob-sky"></div>
     <div class="ob-floaters" id="obFloaters"></div>
     <div class="ob-content">
@@ -1172,8 +1209,8 @@ function newEgg(){
   let egg=pickEgg();
   if(Math.random()<0.05){ egg={id:"egg_king",king:true,crackStates:10,dropTableId:"drop_legend_default",base:"#FFE9A8",accent:"#F4A300",pattern:"crown"}; } // rare KING EGG -> 10 taps -> guaranteed Legend
   LOOP={crack:0,egg,creature:null,challenge:null,wrongs:0,isNew:false};
-  $("#eggwrap").innerHTML=eggMarkup(LOOP.egg);
-  $("#eggwrap").classList.toggle("kingegg",!!egg.king);
+  $("#eggwrap").innerHTML='<div class="eggglow" id="eggGlow"></div>'+eggMarkup(LOOP.egg)+CRACKFX;
+  $("#eggwrap").classList.remove("jolt"); $("#eggwrap").classList.toggle("kingegg",!!egg.king);
   setCue(egg.king?(S.locale==='id'?'👑 TELUR RAJA! Ketuk 10×!':'👑 KING EGG! Tap 10×!'):t("tap_cue")); updateDots(); syncWallet();
   if(egg.king) toast(S.locale==='id'?'👑 Telur Raja! Ada Legenda di dalam!':'👑 King Egg! A Legend awaits!');
   { const th=$("#tapHint"); if(th){ th.textContent=S.locale==='id'?'👆 Ketuk!':'👆 Tap!'; th.style.display=S.tutDone?"none":"block"; } }
@@ -1188,8 +1225,14 @@ function tapEgg(){
   if(LOOP.creature) return;
   clearTimeout(window._idle); haptic(15);
   if(!S.tutDone){ S.tutDone=true; save(); const th=$("#tapHint"); if(th) th.style.display="none"; }
-  LOOP.crack++; SFX.crack(LOOP.crack); bounceEgg(); burst(6,$("#eggwrap"));
+  LOOP.crack++; SFX.crack(LOOP.crack); bounceEgg();
   if(!EGGIMG[LOOP.egg.id]) $("#eggwrap").innerHTML=eggSVG(LOOP.egg,LOOP.crack);
+  // crack drama: jolt + intensifying glow + spreading crack lines + escalating sparks
+  const wrap=$("#eggwrap"); wrap.classList.remove("jolt"); void wrap.offsetWidth; wrap.classList.add("jolt");
+  const ratio=Math.min(1,LOOP.crack/LOOP.egg.crackStates);
+  burst(7+Math.round(ratio*9),wrap);
+  const gl=$("#eggGlow"); if(gl) gl.style.opacity=(ratio*0.95).toFixed(2);
+  const cf=$("#crackFx"); if(cf){ cf.style.opacity=Math.min(1,ratio*1.35).toFixed(2); cf.style.transform=`translate(-50%,-50%) scale(${(0.9+ratio*0.2).toFixed(2)})`; }
   updateDots(); updateBonusBtn();
   if(LOOP.crack>=LOOP.egg.crackStates) hatch();
   else if(LOOP.crack>=LOOP.egg.crackStates-1){ const st=$("#hatch .stage"); if(st) st.classList.add("prehatch"); }
@@ -1215,7 +1258,8 @@ function hatch(){
   setCue(""); $("#tapdots").innerHTML=""; updateBonusBtn();
   const st=$("#hatch .stage"); if(st){ st.classList.remove("prehatch"); st.classList.add("hatching"); }
   // STAGE 2 — cracking moment
-  SFX.crackBig(); shakeScreen(); haptic([0,40,50,90]); burst(30,$("#eggwrap"),true);
+  SFX.crackBig(); shakeScreen(); haptic([0,40,50,90]); burst(46,$("#eggwrap"),true);
+  { const gl=$("#eggGlow"); if(gl) gl.style.opacity="1"; const cf=$("#crackFx"); if(cf) cf.style.opacity="1"; }
   const egg=$(".egg"); if(egg) egg.classList.add("crackburst");
   // STAGE 3 — epic reveal (pause scales with rarity)
   const pause = c.rarity==="legend"?1000 : (c.rarity==="magic"||c.rarity==="epic")?900 : 600;
@@ -1589,6 +1633,13 @@ function burst(n,parent,big){ const colors=["#ff8a3d","#7BC950","#C77DFF","#48CA
 }
 
 /* ===================== BOOT ===================== */
+const CRACKFX='<svg class="crackfx" id="crackFx" viewBox="0 0 188 236" width="188" height="236" aria-hidden="true"><path d="M94 26 L84 68 L102 96 L82 132 L100 168 L86 210"/><path d="M84 68 L56 84"/><path d="M102 96 L132 108"/><path d="M82 132 L54 152"/><path d="M100 168 L130 184"/></svg>';
+function populateTitle(){ const f=$("#titleFloaters");
+  if(f){ const pics=[["bram",6,15],["lala",78,19],["dewy",9,39],["gilly",82,45],["nutty",15,64],["hopsy",80,68]];
+    f.innerHTML=pics.map((p,i)=>`<img src="assets/creatures/${p[0]}.png" alt="" style="left:${p[1]}%;top:${p[2]}%;animation-delay:${(i*0.4).toFixed(2)}s">`).join(""); }
+  const tt=$("#title_tag"); if(tt) tt.textContent=S.locale==='id'?'Tetas · Belajar · Koleksi':'Hatch · Learn · Collect';
+  const pb=$("#titleParent"); if(pb) pb.innerHTML=ICON.lock; }
+function startPlay(){ try{SFX.tap();}catch(e){} if(S.onboarded){ show("hatch"); maybeDaily(); newEgg(); } else { show("onboard"); } }
 function boot(){
   load(); applyStaticI18n();
   setInterval(()=>{ S.stats.playSeconds++; if(S.stats.playSeconds%20===0) save(); },1000);
@@ -1599,7 +1650,7 @@ function boot(){
   $("#hatch .stage").addEventListener("click",()=>{
     if(LOOP.answered && !$("#challengeOverlay").classList.contains("active") && !$("#rewardOverlay").classList.contains("active")) finishChallenge();
   });
-  if(S.onboarded){ show("hatch"); maybeDaily(); newEgg(); } else { show("onboard"); }
+  populateTitle(); show("title");
 }
 boot();
 </script>

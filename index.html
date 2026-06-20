@@ -27,14 +27,14 @@
     font-family:'Baloo 2','Nunito',system-ui,'Segoe UI',sans-serif;
     background:radial-gradient(120% 120% at 50% 0%,var(--bg1),var(--bg2));
     color:var(--ink); overflow:hidden; user-select:none;
-    display:flex; align-items:center; justify-content:center;
+    display:flex; align-items:flex-start; justify-content:center;
   }
   #device{
-    position:relative; width:min(440px,100vw); height:min(900px,100dvh);
+    position:relative; width:100vw; height:100dvh;   /* full-bleed on phones -> bottom nav spans edge-to-edge */
     background:linear-gradient(180deg,#fff9f0,#ffeccb);
     overflow:hidden; box-shadow:var(--shadow);
   }
-  @media(min-width:460px){ #device{ border-radius:36px; height:min(880px,96vh);} }
+  @media(min-width:600px){ body{align-items:center;} #device{ width:440px; border-radius:36px; height:min(880px,96vh);} } /* phone frame only on desktop/tablet */
 
   .screen{position:absolute;inset:0;display:none;flex-direction:column;}
   .screen.active{display:flex;}
@@ -97,12 +97,19 @@
 
   .reward{text-align:center;}
   .card3d{width:210px;height:240px;margin:8px auto;border-radius:24px;background:linear-gradient(160deg,#fff,#fff2dd);box-shadow:var(--shadow);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;animation:flip .7s cubic-bezier(.2,1,.3,1);border:5px solid #ffd591;}
+    display:flex;flex-direction:column;align-items:center;justify-content:center;animation:flip .7s cubic-bezier(.2,1,.3,1);border:5px solid #ffd591;position:relative;overflow:hidden;}
   @keyframes flip{0%{transform:rotateY(90deg) scale(.8);opacity:0}100%{transform:rotateY(0) scale(1);opacity:1}}
+  /* premium reward card aura per rarity */
+  .card3d.rar-rare{border-color:#7fc0ff;background:linear-gradient(160deg,#fff,#e8f4ff);box-shadow:0 0 22px rgba(77,155,224,.45),var(--shadow);}
+  .card3d.rar-epic,.card3d.rar-magic{border-color:#c79bff;background:linear-gradient(160deg,#fff,#f3e9ff);box-shadow:0 0 28px rgba(155,89,240,.5),var(--shadow);}
+  .card3d.rar-legend{border-color:#ffcf5c;background:linear-gradient(160deg,#fffaf0,#fff0cf);box-shadow:0 0 36px rgba(244,163,0,.6),var(--shadow);}
+  .card3d.rar-legend::after{content:"";position:absolute;top:0;left:-70%;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.65),transparent);transform:skewX(-18deg);animation:cardshine 2.4s ease-in-out infinite;pointer-events:none;}
+  #rw_gain.pop{animation:gainpop .5s cubic-bezier(.2,1.4,.4,1);}
+  @keyframes gainpop{0%{transform:scale(.6) translateY(8px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}
   .newbadge{background:var(--pop);color:#fff;font-weight:800;border-radius:999px;padding:3px 12px;font-size:13px;display:inline-block;margin-top:8px;}
   .rwbtns{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
 
-  .nav{display:flex;border-top:3px solid #ffe1b8;background:#fff;}
+  .nav{display:flex;border-top:3px solid #ffe1b8;background:#fff;width:100%;align-self:stretch;margin-top:auto;} /* full-width, pinned bottom on every screen */
   .nav button{flex:1;border:none;background:none;padding:10px 4px 14px;font-family:inherit;font-weight:800;color:var(--soft);font-size:12px;cursor:pointer;min-height:var(--tap-min);display:flex;flex-direction:column;align-items:center;gap:3px;}
   .nav button .ic{font-size:28px;line-height:1;}
   .nav button.sel{color:var(--btn);}
@@ -127,6 +134,7 @@
   .placed:active{transform:scale(1.06);}
   .tray{display:flex;gap:10px;overflow-x:auto;padding:12px;background:#fff;align-items:stretch;}
   .trayitem{flex:0 0 auto;width:82px;border-radius:18px;background:#fff7ee;box-shadow:var(--shadow);padding:8px 6px;text-align:center;font-size:11px;font-weight:800;cursor:pointer;border:3px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+  .trayitem.in-home{border-color:var(--good);background:#eaffe0;}
   .trayitem img{display:block;}
   .trayitem:active{transform:scale(.93);}
   .trayitem.cantafford{opacity:.45;}
@@ -150,7 +158,7 @@
 
   .gateNums{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
   .gateNums button{min-height:60px;border-radius:18px;border:none;background:#fff7ee;font-family:inherit;font-weight:800;font-size:26px;box-shadow:var(--shadow);cursor:pointer;}
-  .corner{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:10px;width:46px;height:46px;border-radius:14px;border:none;background:rgba(255,255,255,.7);font-size:22px;cursor:pointer;z-index:30;box-shadow:var(--shadow);}
+  .corner{position:absolute;top:calc(env(safe-area-inset-top,0px) + 16px);right:10px;width:46px;height:46px;border-radius:14px;border:none;background:rgba(255,255,255,.8);font-size:22px;cursor:pointer;z-index:30;box-shadow:var(--shadow);}
   .skillrow{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #f0e6d6;}
   .skillrow .lab{flex:1;font-weight:700;}
   .tiertag{font-weight:800;border-radius:999px;padding:3px 10px;color:#fff;font-size:12px;background:var(--sky);}
@@ -199,12 +207,10 @@
   /* ===== Medium improvements ===== */
   /* ===== Mobile safe-area header (V3.2) ===== */
   .topbar{padding-top:calc(env(safe-area-inset-top,0px) + 12px);}
-  #hatch .topbar{padding-left:56px;padding-right:56px;} /* reserve room for music(left)+lock(right) corner buttons */
+  #hatch .topbar{padding-left:62px;padding-right:62px;} /* reserve room for music(left)+lock(right) corner buttons */
   .topbar .title{min-width:0;flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .wallet{flex:0 0 auto;}
   @media(max-width:459px){
-    body{align-items:flex-start;}                 /* anchor to top so header is never pushed above the viewport */
-    #device{height:100dvh;}
     .coin{padding:4px 9px;font-size:14px;gap:4px;} /* compact currency so the world name has room */
     .coin svg{width:15px;height:15px;}
     .topbar .title{font-size:18px;}
@@ -1327,13 +1333,17 @@ function reward(){
     S.currencies[dt.dupCurrency]=(S.currencies[dt.dupCurrency]||0)+dt.dupAmount;
     gain=`+${stars}⭐  +${dt.dupAmount}${dt.dupCurrency==="coins"?"🪙":"✨"}`; }
   setTimeout(()=>{try{SFX.coin();}catch(e){}},200);
+  $("#rw_card").className="card3d rar-"+(c.rarity||"common");
   $("#rw_card").innerHTML=`${creatureMarkup(c,150)}<div style="font-weight:800;margin-top:2px">${nm(c.name)}</div>
     <div class="rar" style="position:static;background:${RARCOLOR[c.rarity]};margin-top:4px">${rarLabel(c.rarity)}</div>`;
   $("#rw_name").textContent="";
-  $("#rw_new").innerHTML=LOOP.isNew?`<span class="newbadge">${t("newbadge")}</span>`:`<span class="newbadge" style="background:var(--sky)">${S.locale==='id'?'Sudah punya!':'Already owned!'} 🎉 x${count}</span>`;
-  $("#rw_gain").textContent=gain;
+  const en=S.locale!=='id';
+  $("#rw_new").innerHTML=LOOP.isNew?`<span class="newbadge">${t("newbadge")}</span>`:`<span class="newbadge" style="background:var(--good)">${en?'🎉 Bonus Reward!':'🎉 Bonus!'} ×${count}</span>`;
+  const g=$("#rw_gain"); g.textContent=gain; g.classList.remove("pop"); void g.offsetWidth; g.classList.add("pop");
   $("#rw_share").style.display=(["rare","magic","legend"].includes(c.rarity))?"inline-block":"none";
   $("#rewardOverlay").classList.add("active");
+  const fxN=c.rarity==='legend'?44:(c.rarity==='epic'||c.rarity==='magic')?28:c.rarity==='rare'?18:10; // celebration particles
+  try{ burst(fxN,$("#rw_card"),true); }catch(e){}
   syncWallet(); checkUnlocks(); checkSets(); save();
 }
 function nextEgg(){ SFX.tap(); $("#rewardOverlay").classList.remove("active");
@@ -1439,31 +1449,48 @@ function albumTap(id,owned){ if(!owned) return; SFX.signature(id); speak(nm(crea
 const HOME_LEVELS={1:{id:"Kamar",en:"Cozy Room"},2:{id:"Taman",en:"Garden"},3:{id:"Taman Main",en:"Playground"},4:{id:"Rumah Pohon",en:"Treehouse"},5:{id:"Istana",en:"Castle"}};
 function renderHome(){
   $("#hm_coins").textContent=S.currencies.coins;
+  // 1 instance per species: drop duplicate creatures (decorations may repeat)
+  const seen=new Set(); S.home=S.home.filter(it=>{ if(it.creatureId){ if(seen.has(it.creatureId)) return false; seen.add(it.creatureId); } return true; });
   const lvl=Math.min(5,1+Math.floor(S.home.length/3)); $("#t_home").textContent=`${t("home")} · Lv${lvl} ${nm(HOME_LEVELS[lvl])}`;
   const w=world(S.currentWorld); const room=$("#room");
   room.style.background = `url('${HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`; // room art changes per Home level
-  const toNext=lvl<5?(3-(S.home.length%3)):0;
-  const hint=lvl<5?`${t("placed_hint")} · ${toNext} → Lv${lvl+1} ${nm(HOME_LEVELS[lvl+1])}`:t("placed_hint");
+  const hint = S.home.length ? (S.locale==='id'?'Ketuk teman untuk menyapa! 👋':'Tap a friend to say hi! 👋')
+                             : (S.locale==='id'?'Tambahkan teman dari bawah ⬇️':'Add friends from below ⬇️');
   room.innerHTML=`<div class="ground"></div><div class="floatlabel">${hint}</div>`;
-  S.home.forEach((it,idx)=>{ const el=document.createElement("div"); el.className="placed"; el.style.left=it.x+"px"; el.style.top=it.y+"px"; el.style.zIndex=Math.round(it.y); // z-order by Y = depth
-    if(it.decoId){ const d=DATA.decorations.find(x=>x.id===it.decoId); el.innerHTML=d?decoMarkup(d,72):'❓'; }
-    else { el.innerHTML=creatureMarkup(creature(it.creatureId),86); el.classList.add("floaty"); }
-    makeDraggable(el,idx); room.appendChild(el); });
-  const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);
+  // auto-arrange in a tidy grid — no overlap, no spam
+  const items=S.home, n=items.length;
+  if(n){ const rw=room.clientWidth||340, rh=room.clientHeight||440;
+    const cols=Math.max(2,Math.min(4,Math.ceil(Math.sqrt(n)))), rows=Math.ceil(n/cols);
+    const padX=rw*0.05, padTop=rh*0.12, padBot=rh*0.08;
+    const cellW=(rw-2*padX)/cols, cellH=(rh-padTop-padBot)/rows;
+    const size=Math.max(46,Math.min(88,Math.min(cellW,cellH)*0.84));
+    items.forEach((it,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols);
+      const cx=padX+cellW*cc+cellW/2, cy=padTop+cellH*rr+cellH/2;
+      const el=document.createElement("div"); el.className="placed"; el.style.left=(cx-size/2)+"px"; el.style.top=(cy-size/2)+"px"; el.style.zIndex=Math.round(cy);
+      if(it.decoId){ const d=DATA.decorations.find(x=>x.id===it.decoId); el.innerHTML=d?decoMarkup(d,size):''; }
+      else { el.innerHTML=creatureMarkup(creature(it.creatureId),size); el.classList.add("floaty"); el.onclick=()=>{ SFX.signature(it.creatureId); haptic(12); }; }
+      room.appendChild(el); });
+  }
   const owned=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);
-  let html=`<div class="traytag">🎨<div>${S.locale==='id'?'Hias':'Decor'}</div></div>`;
+  let html=`<div class="traytag">🐾<div>${S.locale==='id'?'Teman':'Pets'}</div></div>`;
+  html+= owned.length? owned.map(c=>{ const inHome=S.home.some(h=>h.creatureId===c.id);
+      return `<div class="trayitem ${inHome?'in-home':''}" onclick="placeCreature('${c.id}')">${creatureMarkup(c,52)}${nm(c.name)}${inHome?'<div class="muted" style="color:var(--good)">✓</div>':''}</div>`; }).join("")
+    : `<div class="trayitem cantafford" style="cursor:default">${S.locale==='id'?'Tetaskan dulu':'Hatch first'} 🥚</div>`;
+  const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);
+  html+=`<div class="traytag">🎨<div>${S.locale==='id'?'Hias':'Decor'}</div></div>`;
   html+=decos.map(d=>{ const af=S.currencies.coins>=d.cost;
     return `<div class="trayitem ${af?'':'cantafford'}" onclick="buyPlaceDeco('${d.id}')">${decoMarkup(d,40)}${nm(d.label)}<div class="muted">🪙${d.cost}</div></div>`; }).join("");
-  html+=`<div class="traytag">🐾<div>${S.locale==='id'?'Teman':'Pets'}</div></div>`;
-  html+= owned.length? owned.map(c=>`<div class="trayitem" onclick="placeCreature('${c.id}')">${creatureMarkup(c,52)}${nm(c.name)}</div>`).join("")
-    : `<div class="trayitem cantafford" style="cursor:default">${S.locale==='id'?'Tetaskan dulu':'Hatch first'} 🥚</div>`;
   $("#tray").innerHTML=html;
 }
 function placeSpot(){ const r=$("#room"); const W=r.clientWidth||300, H=r.clientHeight||420; return {x:Math.round(24+Math.random()*(W-130)), y:Math.round(H*0.42+Math.random()*(H*0.34))}; }
 function buyPlaceDeco(id){ const d=DATA.decorations.find(x=>x.id===id);
   if(S.currencies.coins<d.cost){ SFX.oops(); toast(t("afford")); return; }
   S.currencies.coins-=d.cost; SFX.coin(); S.home.push({decoId:id, ...placeSpot()}); save(); renderHome(); }
-function placeCreature(id){ SFX.signature(id); S.home.push({creatureId:id, ...placeSpot()}); save(); renderHome(); }
+function placeCreature(id){ // toggle: one instance per species in Home
+  const i=S.home.findIndex(h=>h.creatureId===id);
+  if(i>=0){ S.home.splice(i,1); try{SFX.tap();}catch(e){} }
+  else { S.home.push({creatureId:id}); try{SFX.signature(id);}catch(e){} haptic(12); }
+  save(); renderHome(); }
 function makeDraggable(el,idx){ let sx,sy,ox,oy,drag=false;
   el.addEventListener("pointerdown",e=>{ drag=true; sx=e.clientX; sy=e.clientY; ox=parseFloat(el.style.left); oy=parseFloat(el.style.top); el.setPointerCapture(e.pointerId); });
   el.addEventListener("pointermove",e=>{ if(!drag)return; el.style.left=(ox+e.clientX-sx)+"px"; el.style.top=(oy+e.clientY-sy)+"px"; });

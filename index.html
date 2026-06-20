@@ -334,6 +334,14 @@
   @keyframes taphint{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-16px)}}
   /* Home: ground band so placed items sit on a floor (depth) */
   #home .room .ground{position:absolute;left:0;right:0;bottom:0;height:32%;background:linear-gradient(180deg,transparent,rgba(90,60,25,.16));pointer-events:none;z-index:1;}
+  /* living habitat: care bar + floating emotes */
+  .carebar{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:7px;z-index:6;background:rgba(255,255,255,.85);border-radius:999px;padding:5px 8px;box-shadow:var(--shadow);}
+  .carebar button{width:44px;height:44px;border-radius:50%;border:2px solid #ffd591;background:#fff;font-size:21px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;transition:transform .1s;padding:0;}
+  .carebar button.sel{background:#a8e46c;border-color:#4f8f24;transform:scale(1.13);}
+  .floatemote{position:absolute;font-size:24px;pointer-events:none;z-index:20;animation:floatemote 1s ease-out forwards;}
+  @keyframes floatemote{0%{opacity:0;transform:translateY(0) scale(.5)}25%{opacity:1;transform:translateY(-16px) scale(1.15)}100%{opacity:0;transform:translateY(-50px) scale(1)}}
+  .moodbubble{position:absolute;font-size:18px;pointer-events:none;z-index:19;animation:moodbubble 2.2s ease-in-out;}
+  @keyframes moodbubble{0%{opacity:0;transform:translateY(4px) scale(.6)}20%{opacity:1;transform:translateY(-6px) scale(1)}80%{opacity:1;transform:translateY(-12px)}100%{opacity:0;transform:translateY(-20px)}}
 </style>
 </head>
 <body>
@@ -1133,7 +1141,8 @@ function show(id){
   $$(".screen").forEach(s=>s.classList.toggle("active", s.id===id));
   $$(".nav").forEach(n=>renderNav(n));
   if(id==="album") renderAlbum();
-  if(id==="home")  renderHome();
+  clearInterval(window._homeIdle);
+  if(id==="home"){ renderHome(); window._homeIdle=setInterval(homeIdle,2600); }
   if(id==="world") renderWorld();
   if(id==="parent")renderParent();
   if(id==="hatch"){ syncWallet(); resumeHatch(); }
@@ -1546,6 +1555,25 @@ function albumTap(id,owned){ if(!owned) return; SFX.signature(id); speak(nm(crea
 const HOME_LEVELS={1:{id:"Kamar",en:"Cozy Room"},2:{id:"Taman",en:"Garden"},3:{id:"Taman Main",en:"Playground"},4:{id:"Rumah Pohon",en:"Treehouse"},5:{id:"Istana",en:"Castle"}};
 const HOME_THRESHOLDS=[0,4,9,15,22]; // distinct creatures needed for Lv1..5 (slower, more rewarding climb)
 function homeLevel(n){ let l=1; for(let i=0;i<HOME_THRESHOLDS.length;i++) if(n>=HOME_THRESHOLDS[i]) l=i+1; return Math.min(5,l); }
+/* ---- Living habitat: pet-care interactions ---- */
+let HOMETOOL='pat';
+const HOME_TOOLS=[['pat','💗'],['feed','🍓'],['wash','🫧'],['play','🎵'],['sleep','😴']];
+const CARE={pat:{emo:'💗'},feed:{emo:'🍓',extra:'😋'},wash:{emo:'🫧',extra:'✨'},play:{emo:'🎵',extra:'🎉'},sleep:{emo:'😴',extra:'💤'}};
+function setHomeTool(tool){ HOMETOOL=tool; document.querySelectorAll('.carebar button').forEach(b=>b.classList.toggle('sel',b.dataset.tool===tool)); try{SFX.tap&&SFX.tap();}catch(e){} }
+function floatEmote(el,ch,dx){ const room=$("#room"); if(!room||!el)return; const s=document.createElement('span'); s.className='floatemote'; s.textContent=ch;
+  const x=(parseFloat(el.style.left)||0)+(el.offsetWidth/2||30)+(dx||0); const y=(parseFloat(el.style.top)||0)-4;
+  s.style.left=(x-12)+'px'; s.style.top=y+'px'; room.appendChild(s); setTimeout(()=>s.remove(),1000); }
+function petHome(el,id){ const cw=el.querySelector('.cwrap'); if(cw){ cw.classList.remove('react'); void cw.offsetWidth; cw.classList.add('react'); }
+  const care=CARE[HOMETOOL]||CARE.pat; haptic(12);
+  try{ if(HOMETOOL==='pat'){ SFX.signature&&SFX.signature(id); } else if(HOMETOOL==='play'){ SFX.correct&&SFX.correct(); } else { SFX.tap&&SFX.tap(); } }catch(e){}
+  floatEmote(el,care.emo,-6); if(care.extra) setTimeout(()=>floatEmote(el,care.extra,10),170);
+  S.homeHappy=(S.homeHappy||0)+1;
+  if(S.homeHappy%10===0){ S.currencies.coins+=1; try{SFX.coin&&SFX.coin();}catch(e){} toast((S.locale==='id'?'💗 Temanmu bahagia!':'💗 Your friends are happy!')+' +1 🪙'); if(typeof syncWallet==='function') syncWallet(); const hc=$("#hm_coins"); if(hc) hc.textContent=S.currencies.coins; }
+  save(); }
+function homeIdle(){ const home=document.getElementById('home'); const room=$("#room"); if(!room||!home||!home.classList.contains('active')) return;
+  const els=[...room.querySelectorAll('.placed.floaty')]; if(!els.length) return;
+  const el=els[Math.floor(Math.random()*els.length)]; const b=document.createElement('span'); b.className='moodbubble'; b.textContent=['💗','🎵','✨','😴','💤'][Math.floor(Math.random()*5)];
+  b.style.left=((parseFloat(el.style.left)||0)+(el.offsetWidth/2||28))+'px'; b.style.top=((parseFloat(el.style.top)||0)-8)+'px'; room.appendChild(b); setTimeout(()=>b.remove(),2200); }
 function renderHome(){
   $("#hm_coins").textContent=S.currencies.coins;
   // 1 instance per species: drop duplicate creatures (decorations may repeat)
@@ -1555,7 +1583,9 @@ function renderHome(){
   room.style.background = `url('${HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`; // room art changes per Home level
   const hint = S.home.length ? (S.locale==='id'?'Ketuk teman untuk menyapa! 👋':'Tap a friend to say hi! 👋')
                              : (S.locale==='id'?'Tambahkan teman dari bawah ⬇️':'Add friends from below ⬇️');
-  room.innerHTML=`<div class="ground"></div><div class="floatlabel">${hint}</div>`;
+  const careBar = S.home.some(it=>it.creatureId)
+    ? `<div class="carebar">`+HOME_TOOLS.map(([k,e])=>`<button data-tool="${k}" class="${HOMETOOL===k?'sel':''}" onclick="setHomeTool('${k}')">${e}</button>`).join('')+`</div>` : '';
+  room.innerHTML=`<div class="ground"></div><div class="floatlabel">${hint}</div>${careBar}`;
   // auto-arrange in a tidy grid — no overlap, no spam
   const items=S.home, n=items.length;
   if(n){ const rw=room.clientWidth||340, rh=room.clientHeight||440;
@@ -1567,7 +1597,7 @@ function renderHome(){
       const cx=padX+cellW*cc+cellW/2, cy=padTop+cellH*rr+cellH/2;
       const el=document.createElement("div"); el.className="placed"; el.style.left=(cx-size/2)+"px"; el.style.top=(cy-size/2)+"px"; el.style.zIndex=Math.round(cy);
       if(it.decoId){ const d=DATA.decorations.find(x=>x.id===it.decoId); el.innerHTML=d?decoMarkup(d,size):''; }
-      else { el.innerHTML=`<div class="cwrap">${creatureMarkup(creature(it.creatureId),size)}</div>`; el.classList.add("floaty"); el.onclick=()=>{ try{SFX.signature(it.creatureId);}catch(e){} haptic(12); const cw=el.querySelector('.cwrap'); if(cw){ cw.classList.remove('react'); void cw.offsetWidth; cw.classList.add('react'); } }; }
+      else { el.innerHTML=`<div class="cwrap">${creatureMarkup(creature(it.creatureId),size)}</div>`; el.classList.add("floaty"); el.onclick=()=>petHome(el,it.creatureId); }
       room.appendChild(el); });
   }
   const owned=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);

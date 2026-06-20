@@ -356,6 +356,10 @@
   .zoomclose{position:absolute;top:-16px;right:-12px;z-index:6;width:38px;height:38px;border-radius:50%;border:none;background:#fff;font-weight:800;font-size:17px;color:#7a572b;box-shadow:var(--shadow);cursor:pointer;}
   .cardlet .newcard{position:absolute;top:6px;left:6px;z-index:4;background:linear-gradient(180deg,#ff7eb0,#ff4f87);color:#fff;font-weight:800;font-size:9px;letter-spacing:.5px;padding:2px 7px;border-radius:9px;box-shadow:0 2px 5px rgba(255,79,135,.5);animation:newpulse 1.1s ease-in-out infinite;}
   @keyframes newpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+  .albumfilters{display:flex;gap:7px;padding:4px 16px 6px;flex-wrap:wrap;}
+  .albumfilters .afilt{border:2px solid #ffd591;background:#fff;color:#7a5a2e;font-weight:800;font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;transition:transform .1s;}
+  .albumfilters .afilt.on{background:linear-gradient(180deg,#a8e46c,#79c742);border-color:#4f8f24;color:#fff;}
+  .albumfilters .afilt:active{transform:scale(.95);}
   @keyframes cardshine{0%{left:-70%}55%,100%{left:140%}}
   /* first-run tutorial pointer */
   #tapHint{position:absolute;left:50%;top:60%;transform:translateX(-50%);font-weight:800;font-size:22px;color:var(--btn);pointer-events:none;z-index:4;text-shadow:0 1px 2px #fff,0 0 8px #fff;animation:taphint 1.1s ease-in-out infinite;}
@@ -1699,16 +1703,22 @@ function downloadCard(){
 }
 
 /* ===================== ALBUM ===================== */
+let ALBUMFILTER='all';
+function setAlbumFilter(f){ ALBUMFILTER=f; try{SFX.tap&&SFX.tap();}catch(e){} renderAlbum(); }
 function renderAlbum(){
-  const scroll=$("#albumScroll"); let total=0,have=0,html="";
+  const scroll=$("#albumScroll"); let total=0,have=0,html="",anyShown=false; const en=S.locale!=='id';
+  const pass=c=> ALBUMFILTER==='all' || (ALBUMFILTER==='owned'&&S.owned[c.id]) || (ALBUMFILTER==='missing'&&!S.owned[c.id]) || (ALBUMFILTER==='rare'&&S.owned[c.id]&&c.rarity!=='common');
   // badges strip
   html+=`<div class="setbar"><span>🏅 ${t("badges")}</span><span>${S.badges.length}/${DATA.badges.length}</span></div>`;
   html+=`<div class="badgestrip">`+DATA.badges.map(b=>{ const got=S.badges.includes(b.id);
     return `<div class="badge ${got?'':'locked'}"><div class="bc">${b.emoji}</div>${nm(b.label)}</div>`; }).join("")+`</div>`;
+  // collection filters
+  html+=`<div class="albumfilters">`+[['all',en?'All':'Semua'],['owned',en?'Owned':'Punya'],['missing',en?'Missing':'Belum'],['rare',en?'⭐ Rare+':'⭐ Langka+']].map(([k,lab])=>`<button class="afilt ${ALBUMFILTER===k?'on':''}" onclick="setAlbumFilter('${k}')">${lab}</button>`).join('')+`</div>`;
   DATA.worlds.forEach(w=>{
     const cs=creaturesOf(w.sets); if(!cs.length) return;
     const base=cs.filter(c=>!c.legend); const setHave=base.filter(c=>S.owned[c.id]).length;
     total+=cs.length; have+=cs.filter(c=>S.owned[c.id]).length;
+    const vis=cs.filter(pass); if(!vis.length) return; anyShown=true;
     html+=`<div class="setbar"><span>${w.emoji} ${nm(w.name)}</span><span>${setHave}/${base.length}${setHave===base.length?" "+t("set_done"):""}</span></div>`;
     const card=c=>{ const owned=!!S.owned[c.id]; const bg=owned&&ALBUMBG[c.world]?` style="background-image:url('${ALBUMBG[c.world]}')"`:'';
       return `<div class="cardlet ${owned?'rar-'+c.rarity:'locked'}"${bg} onclick="albumTap('${c.id}',${owned})">
@@ -1719,15 +1729,16 @@ function renderAlbum(){
         <div class="sil">${creatureMarkup(c,82)}</div>
         <div class="nm">${owned?nm(c.name):'???'}</div>
         ${owned&&S.owned[c.id]>1?`<div class="dupe">×${S.owned[c.id]}</div>`:''}</div>`; };
-    if(cs.some(c=>c.base)){
-      const groups={}; cs.forEach(c=>{ (groups[c.base]=groups[c.base]||[]).push(c); });
+    if(vis.some(c=>c.base)){
+      const groups={}; vis.forEach(c=>{ (groups[c.base]=groups[c.base]||[]).push(c); });
       Object.keys(groups).forEach(bk=>{ const g=groups[bk], gh=g.filter(c=>S.owned[c.id]).length;
         html+=`<div class="setbar" style="padding:4px 16px 0;font-size:13px"><span>🐾 ${bk}</span><span>${gh}/${g.length}${gh===g.length?' 🌈':''}</span></div>`;
         html+=`<div class="grid">`+g.map(card).join("")+`</div>`; });
     } else {
-      html+=`<div class="grid">`+cs.map(card).join("")+`</div>`;
+      html+=`<div class="grid">`+vis.map(card).join("")+`</div>`;
     }
   });
+  if(!anyShown) html+=`<div class="muted" style="text-align:center;padding:28px 16px">${en?'Nothing here yet — keep hatching! 🥚':'Belum ada — terus tetaskan! 🥚'}</div>`;
   scroll.innerHTML=html; $("#ab_count").textContent=have; $("#ab_total").textContent=total;
   const legs=DATA.creatures.filter(c=>c.legend&&S.owned[c.id]).length; const le=$("#ab_legend"); if(le) le.textContent=legs?(' · '+legs+'👑'):'';
 }

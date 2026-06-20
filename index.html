@@ -1696,6 +1696,12 @@ function startPlay(){ try{SFX.tap();}catch(e){} if(S.onboarded){ show("hatch"); 
   DATA.creatures=C;
   Object.keys(IMG).forEach(k=>delete IMG[k]); Object.assign(IMG,IM);
   DATA.worlds.forEach(w=>{ if(SET[w.id]){ w.sets=[SET[w.id]]; w.unlock=UNLOCK[w.id]; } });
+  // BUBU eggs per world (transparent 'utuh' art); engine crack-fx overlays the cracking
+  const EGGB={green_forest:'leaf',sunny_beach:'shell',candy_land:'candy',dino_valley:'dino',ocean_kingdom:'bubble',rainbow_meadow:'flower'};
+  Object.keys(EGGB).forEach(world=>{ const id='begg_'+EGGB[world];
+    if(!DATA.eggs.find(x=>x.id===id)) DATA.eggs.push({id,crackStates:3,dropTableId:'drop_common_default',base:'#fff',accent:'#ddd',pattern:'dots'});
+    EGGIMG[id]='assets/bubu/eggs/ingame_'+EGGB[world]+'.png';
+    const w=DATA.worlds.find(x=>x.id===world); if(w) w.eggIds=[id]; });
 })();
 function boot(){
   load(); applyStaticI18n();

@@ -212,6 +212,27 @@
   @media (orientation:landscape) and (max-height:500px){
     #rotate{display:flex;position:fixed;inset:0;z-index:999;background:var(--bg2);align-items:center;justify-content:center;text-align:center;font-weight:800;font-size:20px;color:var(--ink);padding:24px;}
   }
+
+  /* ===== Hatching drama (V3) ===== */
+  .stage.prehatch .eggwrap{animation:prehatchzoom .6s ease-in-out infinite;}
+  @keyframes prehatchzoom{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
+  .stage.hatching::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 45%, rgba(0,0,0,0), rgba(0,0,0,.28));z-index:0;animation:dimin .3s forwards;}
+  @keyframes dimin{from{opacity:0}to{opacity:1}}
+  .egg.crackburst{animation:crackburst .5s ease-out;}
+  @keyframes crackburst{0%{transform:scale(1)}30%{transform:scale(1.2) rotate(-4deg)}60%{transform:scale(.88) rotate(4deg)}100%{transform:scale(1.06)}}
+  #device.screenshake{animation:screenshake .5s;}
+  @keyframes screenshake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(7px,-3px)}60%{transform:translate(-5px,-2px)}80%{transform:translate(5px,2px)}}
+  .hatchflash{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(circle at 50% 45%,#fff,rgba(255,255,255,0) 62%);opacity:0;}
+  .hatchflash.go{animation:flashgo .6s ease-out;}
+  @keyframes flashgo{0%{opacity:0;transform:scale(.5)}25%{opacity:1}100%{opacity:0;transform:scale(1.7)}}
+  .reveal{animation:revealpop .7s cubic-bezier(.2,1.6,.4,1);}
+  @keyframes revealpop{0%{transform:scale(0) rotate(-25deg);opacity:0}50%{transform:scale(1.28) rotate(12deg);opacity:1}72%{transform:scale(.9) rotate(-5deg)}100%{transform:scale(1) rotate(0)}}
+  .revealbanner{position:absolute;top:28%;left:50%;transform:translate(-50%,-50%) scale(0);z-index:6;font-weight:800;font-size:26px;color:#fff;text-shadow:0 2px 0 #d96a20,0 0 14px rgba(255,200,80,.95);white-space:nowrap;pointer-events:none;text-align:center;}
+  .revealbanner.go{animation:bannerpop 1.9s ease-out forwards;}
+  @keyframes bannerpop{0%{transform:translate(-50%,-50%) scale(0)}18%{transform:translate(-50%,-50%) scale(1.18)}30%{transform:translate(-50%,-50%) scale(1)}82%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-86%) scale(.9);opacity:0}}
+  .legendcel{position:absolute;inset:-20%;z-index:4;pointer-events:none;background:conic-gradient(from 0deg,#ff8a3d,#ffd166,#7BC950,#48CAE4,#C77DFF,#ff6b9d,#ff8a3d);opacity:0;mix-blend-mode:screen;}
+  .legendcel.go{animation:legendspin 2.2s ease-out forwards;}
+  @keyframes legendspin{0%{opacity:0;transform:scale(.6) rotate(0)}25%{opacity:.5}100%{opacity:0;transform:scale(1.9) rotate(130deg)}}
 </style>
 </head>
 <body>
@@ -252,8 +273,11 @@
     </div>
     <div class="stage">
       <div class="goalchip" id="goalChip"></div>
+      <div class="legendcel" id="legendCel"></div>
       <div class="fx" id="fx"></div>
       <div class="eggwrap" id="eggwrap"></div>
+      <div class="hatchflash" id="hatchFlash"></div>
+      <div class="revealbanner" id="revealBanner"></div>
       <div class="cue" id="cue"></div>
       <div class="tapdots" id="tapdots"></div>
       <button class="bonusbtn" id="bonusEgg" style="display:none" onclick="buyBonusEgg()"></button>
@@ -601,7 +625,7 @@ const I18N = {
 /* ===================== STATE / SAVE ===================== */
 const SAVE_KEY="eggtap_save_v2"; let S=null;
 function defaultSave(){ return {
-  onboarded:false, ageBand:4, locale:"id", owned:{}, currencies:{stars:0,coins:0,stardust:0,tickets:0},
+  onboarded:false, ageBand:4, locale:"en", owned:{}, currencies:{stars:0,coins:0,stardust:0,tickets:0},
   skillProgress:{}, worldsUnlocked:["green_forest"], currentWorld:"green_forest", home:[],
   daily:{lastClaim:null,streak:0}, pity:{}, badges:[], setsAwarded:[],
   stats:{hatches:0,challengesPassed:0,correct:0,playSeconds:0,weekSkills:[]}, entitlements:{plus:false} }; }
@@ -627,6 +651,7 @@ const SFX={
   coin(){tone(880,0.06,"square",0.12);tone(1320,0.08,"square",0.1,0.05);},
   star(){tone(1047,0.07,"triangle",0.12);},
   legend(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,0.22,"triangle",0.2,i*0.1));},
+  crackBig(){ tone(140,0.18,"sawtooth",0.26); tone(90,0.26,"square",0.2,0.02); [660,880,1100].forEach((f,i)=>tone(f,0.12,"triangle",0.14,0.12+i*0.04)); },
   signature(id){let h=0;for(const ch of id)h=(h*31+ch.charCodeAt(0))&0xffff;const base=330+(h%420);
     [0,0.09,0.18].forEach((w,i)=>tone(base*(1+i*0.25),0.16,["sine","triangle","sine"][i],0.18,w));},
 };
@@ -686,8 +711,9 @@ const PROMPTVO={ c_red1:"find_red", c_red2:"find_red", c_blue1:"blue", c_blue2:"
   c_match1:"match", c_match2:"match", c_seq1:"seq", c_seq2:"seq", c_big1:"big", c_letterA:"letter" };
 const _voCache={};
 function playSrc(p){ try{ const a=_voCache[p]||(_voCache[p]=new Audio(p)); a.currentTime=0; a.play().catch(()=>{}); return true; }catch(e){ return false; } }
-function vo(key){ const p=VOICE[key]; return p?playSrc(p):false; }
-function voPraise(){ return playSrc(PRAISE_VO[Math.floor(Math.random()*PRAISE_VO.length)]); }
+// VO mp3 are Indonesian (Maya). For non-id locales, fall back to Web Speech in that language.
+function vo(key){ if(S.locale!=="id") return false; const p=VOICE[key]; return p?playSrc(p):false; }
+function voPraise(){ if(S.locale!=="id") return false; return playSrc(PRAISE_VO[Math.floor(Math.random()*PRAISE_VO.length)]); }
 function creatureMarkup(c,size){ const p=c&&IMG[c.id];
   return p?`<img src="${p}" alt="" width="${size}" height="${size}" loading="lazy" decoding="async" style="object-fit:contain;display:block" draggable="false">`:creatureSVG(c,size); }
 function eggMarkup(egg){ const p=EGGIMG[egg.id];
@@ -830,8 +856,15 @@ function show(id){
   if(id==="home")  renderHome();
   if(id==="world") renderWorld();
   if(id==="parent")renderParent();
-  if(id==="hatch") syncWallet();
+  if(id==="hatch"){ syncWallet(); resumeHatch(); }
   $$(".nav button").forEach(b=>b.classList.toggle("sel", b.dataset.scr===id));
+}
+// Anti-softlock: returning to Hatch must always leave a tappable egg unless mid-challenge/reward.
+function resumeHatch(){
+  const chOpen=$("#challengeOverlay").classList.contains("active");
+  const rwOpen=$("#rewardOverlay").classList.contains("active");
+  if(chOpen||rwOpen) return;
+  if(!LOOP.egg || LOOP.creature) newEgg();
 }
 function renderNav(nav){
   const items=[["hatch","🥚","nav_hatch"],["album","📚","nav_album"],["home","🏡","nav_home"],["world","🗺️","nav_world"]];
@@ -909,6 +942,9 @@ function syncWallet(){
 function pickEgg(){ const w=world(S.currentWorld); const ids=w.eggIds.filter(id=>DATA.eggs.find(e=>e.id===id));
   return DATA.eggs.find(e=>e.id===(Math.random()<0.8?ids[0]:(ids[1]||ids[0]))); }
 function newEgg(){
+  clearTimeout(window._challengeTimer); clearTimeout(window._revealTimer);
+  const st0=$("#hatch .stage"); if(st0) st0.classList.remove("hatching","prehatch");
+  $("#revealBanner").classList.remove("go");
   LOOP={crack:0,egg:pickEgg(),creature:null,challenge:null,wrongs:0,isNew:false};
   $("#eggwrap").innerHTML=eggMarkup(LOOP.egg);
   setCue(t("tap_cue")); updateDots(); syncWallet();
@@ -926,6 +962,7 @@ function tapEgg(){
   if(!EGGIMG[LOOP.egg.id]) $("#eggwrap").innerHTML=eggSVG(LOOP.egg,LOOP.crack);
   updateDots(); updateBonusBtn();
   if(LOOP.crack>=LOOP.egg.crackStates) hatch();
+  else if(LOOP.crack>=LOOP.egg.crackStates-1){ const st=$("#hatch .stage"); if(st) st.classList.add("prehatch"); }
 }
 function rollCreature(egg){
   const dt=DATA.dropTables[egg.dropTableId]; const w=world(S.currentWorld);
@@ -942,16 +979,39 @@ function rollCreature(egg){
 }
 function hatch(){
   const c=rollCreature(LOOP.egg); LOOP.creature=c; LOOP.isNew=!S.owned[c.id];
-  SFX.hatch(); burst(40,$("#fx"),true);
   S.owned[c.id]=(S.owned[c.id]||0)+1; S.stats.hatches++;
-  SESSION_HATCH++; missionProgress('hatch'); if(LOOP.isNew) missionProgress('new');
-  awardBadges();
-  $("#eggwrap").innerHTML=`<div class="hatched floaty">${creatureMarkup(c,210)}</div>`;
-  setCue(""); $("#tapdots").innerHTML="";
-  setTimeout(()=>{ SFX.signature(c.id); speak(`${nm(c.name)}! ${t("greet")}`); },350);
-  setTimeout(()=>startChallenge(c), 1500);
+  SESSION_HATCH++; missionProgress('hatch'); if(LOOP.isNew) missionProgress('new'); awardBadges();
+  setCue(""); $("#tapdots").innerHTML=""; updateBonusBtn();
+  const st=$("#hatch .stage"); if(st){ st.classList.remove("prehatch"); st.classList.add("hatching"); }
+  // STAGE 2 — cracking moment
+  SFX.crackBig(); shakeScreen(); burst(30,$("#eggwrap"),true);
+  const egg=$(".egg"); if(egg) egg.classList.add("crackburst");
+  // STAGE 3 — epic reveal (pause scales with rarity)
+  const pause = c.rarity==="legend"?1000 : c.rarity==="magic"?800 : 600;
+  window._revealTimer=setTimeout(()=>revealCreature(c), pause);
   save();
 }
+function revealCreature(c){
+  flash();
+  const n = c.rarity==="legend"?80 : c.rarity==="magic"?52 : c.rarity==="rare"?36 : 24;
+  burst(n,$("#fx"),true);
+  if(c.rarity==="legend"){ SFX.legend(); legendaryCelebration(); } else SFX.hatch();
+  setTimeout(()=>SFX.signature(c.id),250);
+  $("#eggwrap").innerHTML=`<div class="reveal" id="revealCr">${creatureMarkup(c,210)}</div>`;
+  setTimeout(()=>{ const r=$("#revealCr"); if(r){ r.classList.remove("reveal"); r.classList.add("floaty"); } },720);
+  const en=S.locale!=="id";
+  const txt = c.rarity==="legend" ? (en?"⭐ LEGENDARY! ⭐":"⭐ LEGENDA! ⭐")
+            : LOOP.isNew ? (en?"✨ NEW FRIEND! ✨":"✨ TEMAN BARU! ✨")
+            : (en?"🎉 YAY! 🎉":"🎉 HORE! 🎉");
+  showBanner(txt);
+  speak(LOOP.isNew ? (en?"New friend! "+nm(c.name):"Teman baru! "+nm(c.name)) : nm(c.name));
+  const st=$("#hatch .stage"); if(st) st.classList.remove("hatching");
+  window._challengeTimer=setTimeout(()=>startChallenge(c), c.rarity==="legend"?2200:1700);
+}
+function flash(){ const f=$("#hatchFlash"); if(!f)return; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
+function shakeScreen(){ const d=$("#device"); d.classList.remove("screenshake"); void d.offsetWidth; d.classList.add("screenshake"); setTimeout(()=>d.classList.remove("screenshake"),520); }
+function showBanner(txt){ const b=$("#revealBanner"); if(!b)return; b.textContent=txt; b.classList.remove("go"); void b.offsetWidth; b.classList.add("go"); }
+function legendaryCelebration(){ const c=$("#legendCel"); if(!c)return; c.classList.remove("go"); void c.offsetWidth; c.classList.add("go"); }
 
 /* ---- adaptive difficulty ---- */
 function tierFor(s){ return (S.skillProgress[s]?.tier)||1; }

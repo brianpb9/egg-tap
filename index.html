@@ -80,6 +80,7 @@
   .prompt{font-weight:800;font-size:21px;line-height:1.15;}
   .sample{display:flex;align-items:center;justify-content:center;gap:10px;margin:6px 0;min-height:0;}
   .samplebox{width:84px;height:84px;border-radius:20px;background:#fff7ee;border:4px dashed #ffce9e;display:flex;align-items:center;justify-content:center;font-size:46px;}
+  .samplebox.seq{width:auto;min-width:84px;max-width:92%;padding:0 14px;font-size:30px;letter-spacing:3px;}
   .options{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:14px;}
   .opt{width:104px;height:104px;border-radius:24px;border:4px solid #f0e6d6;background:#fff7ee;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow);transition:transform .1s;overflow:hidden;}
   .opt .em{font-size:54px;line-height:1;transition:transform .15s;}
@@ -591,6 +592,99 @@ const DATA = {
           en:"Professor Hatch found magical eggs! Help every creature hatch!" },
 };
 
+/* ===== V3 Batch A — difficulty tiers + 5x challenge variety ===== */
+const TIER_NAMES={1:{id:"Pemula",en:"Beginner"},2:{id:"Menengah",en:"Intermediate"},3:{id:"Mahir",en:"Advanced"},4:{id:"Ahli",en:"Expert"}};
+[
+  {id:"colors.green", pillar:"colors", label:{id:"Mengenal hijau",en:"Recognizing green"}},
+  {id:"colors.yellow",pillar:"colors", label:{id:"Mengenal kuning",en:"Recognizing yellow"}},
+  {id:"shapes.square",pillar:"shapes", label:{id:"Mengenal kotak",en:"Recognizing squares"}},
+  {id:"shapes.triangle",pillar:"shapes", label:{id:"Mengenal segitiga",en:"Recognizing triangles"}},
+  {id:"numbers.count5",pillar:"numbers",label:{id:"Berhitung lebih",en:"Counting more"}},
+  {id:"numbers.recognize",pillar:"numbers",label:{id:"Mengenal angka",en:"Recognizing numbers"}},
+  {id:"letters.find",pillar:"letters",label:{id:"Mengenal huruf",en:"Recognizing letters"}},
+  {id:"logic.pattern",pillar:"logic",label:{id:"Pola",en:"Patterns"}},
+  {id:"observation.odd",pillar:"observation",label:{id:"Mencari yang beda",en:"Spot the difference"}},
+].forEach(s=>{ if(!DATA.skills.find(x=>x.id===s.id)) DATA.skills.push(s); });
+
+const P_FIND={id:"Cari yang ",en:"Find "}, P_WHICH={id:"Mana yang ",en:"Which one is "};
+const P_NEXT={id:"Lanjutkan polanya!",en:"What comes next?"};
+const P_ODD={id:"Mana yang BEDA?",en:"Which one is different?"};
+const P_REMEMBER={id:"Yang mana tadi?",en:"Which one did you see?"};
+DATA.challenges.push(
+  // COLORS (tier 1-4)
+  {id:"x_green1",archetype:"FIND_ATTRIBUTE",skill:"colors.green",tier:1,prompt:{id:"Cari yang hijau!",en:"Find green!"},options:[{v:"🟢",correct:true},{v:"🔴",correct:false},{v:"🟡",correct:false}]},
+  {id:"x_green2",archetype:"FIND_ATTRIBUTE",skill:"colors.green",tier:2,prompt:{id:"Mana yang hijau?",en:"Which is green?"},options:[{v:"🥦",correct:true},{v:"🍓",correct:false},{v:"🍌",correct:false},{v:"🫐",correct:false}]},
+  {id:"x_green3",archetype:"FIND_ATTRIBUTE",skill:"colors.green",tier:3,prompt:{id:"Cari yang hijau!",en:"Find green!"},options:[{v:"🥝",correct:true},{v:"🍊",correct:false},{v:"🍇",correct:false},{v:"🍓",correct:false},{v:"🍋",correct:false}]},
+  {id:"x_yellow1",archetype:"FIND_ATTRIBUTE",skill:"colors.yellow",tier:1,prompt:{id:"Cari yang kuning!",en:"Find yellow!"},options:[{v:"🟡",correct:true},{v:"🔵",correct:false},{v:"🔴",correct:false}]},
+  {id:"x_yellow2",archetype:"FIND_ATTRIBUTE",skill:"colors.yellow",tier:2,prompt:{id:"Mana yang kuning?",en:"Which is yellow?"},options:[{v:"🍌",correct:true},{v:"🍎",correct:false},{v:"🫐",correct:false},{v:"🍇",correct:false}]},
+  {id:"x_red3",archetype:"FIND_ATTRIBUTE",skill:"colors.red",tier:3,prompt:{id:"Cari yang merah!",en:"Find red!"},options:[{v:"🍓",correct:true},{v:"🍊",correct:false},{v:"🍇",correct:false},{v:"🫐",correct:false},{v:"🥝",correct:false}]},
+  {id:"x_blue3",archetype:"FIND_ATTRIBUTE",skill:"colors.blue",tier:3,prompt:{id:"Cari yang biru!",en:"Find blue!"},options:[{v:"🧊",correct:true},{v:"🍊",correct:false},{v:"🍋",correct:false},{v:"🍓",correct:false},{v:"🥝",correct:false}]},
+  {id:"x_orange2",archetype:"FIND_ATTRIBUTE",skill:"colors.yellow",tier:2,prompt:{id:"Cari yang oranye!",en:"Find orange!"},options:[{v:"🍊",correct:true},{v:"🫐",correct:false},{v:"🍏",correct:false},{v:"🍇",correct:false}]},
+  // SHAPES
+  {id:"x_square1",archetype:"FIND_ATTRIBUTE",skill:"shapes.square",tier:1,prompt:{id:"Cari kotak!",en:"Find the square!"},options:[{v:"🟥",correct:true},{v:"⚫",correct:false},{v:"🔺",correct:false}]},
+  {id:"x_square2",archetype:"FIND_ATTRIBUTE",skill:"shapes.square",tier:2,prompt:{id:"Mana yang kotak?",en:"Which is a square?"},options:[{v:"🟦",correct:true},{v:"🔵",correct:false},{v:"🔺",correct:false},{v:"⭐",correct:false}]},
+  {id:"x_tri1",archetype:"FIND_ATTRIBUTE",skill:"shapes.triangle",tier:1,prompt:{id:"Cari segitiga!",en:"Find the triangle!"},options:[{v:"🔺",correct:true},{v:"⚫",correct:false},{v:"🟥",correct:false}]},
+  {id:"x_tri2",archetype:"FIND_ATTRIBUTE",skill:"shapes.triangle",tier:2,prompt:{id:"Mana segitiga?",en:"Which is a triangle?"},options:[{v:"🔻",correct:true},{v:"🟦",correct:false},{v:"🔵",correct:false},{v:"⬛",correct:false}]},
+  {id:"x_star2",archetype:"FIND_ATTRIBUTE",skill:"shapes.square",tier:2,prompt:{id:"Cari bintang!",en:"Find the star!"},options:[{v:"⭐",correct:true},{v:"❤️",correct:false},{v:"🔵",correct:false}]},
+  {id:"x_heart2",archetype:"FIND_ATTRIBUTE",skill:"shapes.square",tier:2,prompt:{id:"Cari hati!",en:"Find the heart!"},options:[{v:"❤️",correct:true},{v:"⭐",correct:false},{v:"🔺",correct:false}]},
+  // ANIMALS
+  {id:"x_cow1",archetype:"FIND_OBJECT",skill:"animals.cat",tier:1,prompt:{id:"Cari sapi!",en:"Find the cow!"},options:[{v:"🐮",correct:true},{v:"🐷",correct:false},{v:"🐔",correct:false}]},
+  {id:"x_pig2",archetype:"FIND_OBJECT",skill:"animals.cat",tier:2,prompt:{id:"Mana babinya?",en:"Which is the pig?"},options:[{v:"🐷",correct:true},{v:"🐰",correct:false},{v:"🐸",correct:false},{v:"🐵",correct:false}]},
+  {id:"x_lion3",archetype:"FIND_OBJECT",skill:"animals.cat",tier:3,prompt:{id:"Cari singa!",en:"Find the lion!"},options:[{v:"🦁",correct:true},{v:"🐯",correct:false},{v:"🐱",correct:false},{v:"🐶",correct:false},{v:"🐻",correct:false}]},
+  {id:"x_fox3",archetype:"FIND_OBJECT",skill:"animals.cat",tier:3,prompt:{id:"Cari rubah!",en:"Find the fox!"},options:[{v:"🦊",correct:true},{v:"🐶",correct:false},{v:"🐱",correct:false},{v:"🐻",correct:false},{v:"🐰",correct:false}]},
+  // COUNTING (<=6 so items stay visible)
+  {id:"x_count2",archetype:"COUNT",skill:"numbers.count3",tier:1,prompt:{id:"Mana yang ada DUA?",en:"Which has TWO?"},options:[{v:"⭐",correct:false},{v:"⭐⭐",correct:true},{v:"⭐⭐⭐⭐",correct:false}]},
+  {id:"x_count4",archetype:"COUNT",skill:"numbers.count5",tier:2,prompt:{id:"Mana yang ada EMPAT?",en:"Which has FOUR?"},options:[{v:"🍪🍪🍪",correct:false},{v:"🍪🍪🍪🍪",correct:true},{v:"🍪🍪",correct:false}]},
+  {id:"x_count6",archetype:"COUNT",skill:"numbers.count5",tier:3,prompt:{id:"Mana yang ada ENAM?",en:"Which has SIX?"},options:[{v:"🐟🐟🐟🐟",correct:false},{v:"🐟🐟🐟🐟🐟🐟",correct:true},{v:"🐟🐟🐟🐟🐟",correct:false}]},
+  // NUMBER RECOGNITION (text digits)
+  {id:"x_num5",archetype:"FIND_OBJECT",skill:"numbers.recognize",tier:2,prompt:{id:"Cari angka 5!",en:"Find the number 5!"},options:[{v:"5",correct:true},{v:"2",correct:false},{v:"8",correct:false}]},
+  {id:"x_num7",archetype:"FIND_OBJECT",skill:"numbers.recognize",tier:3,prompt:{id:"Cari angka 7!",en:"Find the number 7!"},options:[{v:"7",correct:true},{v:"1",correct:false},{v:"4",correct:false},{v:"9",correct:false}]},
+  {id:"x_num3",archetype:"FIND_OBJECT",skill:"numbers.recognize",tier:2,prompt:{id:"Cari angka 3!",en:"Find the number 3!"},options:[{v:"3",correct:true},{v:"6",correct:false},{v:"0",correct:false}]},
+  // LETTER RECOGNITION (text)
+  {id:"x_letB",archetype:"FIND_OBJECT",skill:"letters.find",tier:2,prompt:{id:"Cari huruf B!",en:"Find the letter B!"},options:[{v:"B",correct:true},{v:"D",correct:false},{v:"P",correct:false}]},
+  {id:"x_letC",archetype:"FIND_OBJECT",skill:"letters.find",tier:2,prompt:{id:"Cari huruf C!",en:"Find the letter C!"},options:[{v:"C",correct:true},{v:"O",correct:false},{v:"G",correct:false}]},
+  {id:"x_letM",archetype:"FIND_OBJECT",skill:"letters.find",tier:3,prompt:{id:"Cari huruf M!",en:"Find the letter M!"},options:[{v:"M",correct:true},{v:"N",correct:false},{v:"W",correct:false},{v:"H",correct:false}]},
+  {id:"x_letS",archetype:"FIND_OBJECT",skill:"letters.find",tier:3,prompt:{id:"Cari huruf S!",en:"Find the letter S!"},options:[{v:"S",correct:true},{v:"Z",correct:false},{v:"E",correct:false},{v:"C",correct:false}]},
+  // EMOTIONS
+  {id:"x_angry2",archetype:"EMOTION",skill:"emotions.happy",tier:2,prompt:{id:"Siapa yang marah?",en:"Who is angry?"},options:[{v:"😡",correct:true},{v:"😄",correct:false},{v:"😢",correct:false}]},
+  {id:"x_scared3",archetype:"EMOTION",skill:"emotions.happy",tier:3,prompt:{id:"Siapa yang takut?",en:"Who is scared?"},options:[{v:"😱",correct:true},{v:"😄",correct:false},{v:"😡",correct:false},{v:"😴",correct:false}]},
+  {id:"x_sleepy2",archetype:"EMOTION",skill:"emotions.happy",tier:2,prompt:{id:"Siapa yang mengantuk?",en:"Who is sleepy?"},options:[{v:"😴",correct:true},{v:"😄",correct:false},{v:"😢",correct:false}]},
+  {id:"x_love2",archetype:"EMOTION",skill:"emotions.happy",tier:2,prompt:{id:"Siapa yang sayang?",en:"Who feels love?"},options:[{v:"🥰",correct:true},{v:"😡",correct:false},{v:"😱",correct:false}]},
+  // MATCH (sample)
+  {id:"x_msq2",archetype:"MATCH",skill:"memory.match",tier:2,sample:"🔺",prompt:{id:"Cari yang SAMA!",en:"Find the SAME!"},options:[{v:"🔺",correct:true},{v:"🔵",correct:false},{v:"⬛",correct:false},{v:"⭐",correct:false}]},
+  {id:"x_mfox3",archetype:"MATCH",skill:"memory.match",tier:3,sample:"🦊",prompt:{id:"Pasangkan yang sama!",en:"Match the same!"},options:[{v:"🦊",correct:true},{v:"🐶",correct:false},{v:"🐱",correct:false},{v:"🐻",correct:false},{v:"🐰",correct:false}]},
+  {id:"x_mstar2",archetype:"MATCH",skill:"memory.match",tier:2,sample:"⭐",prompt:{id:"Cari yang SAMA!",en:"Find the SAME!"},options:[{v:"⭐",correct:true},{v:"❤️",correct:false},{v:"🌙",correct:false}]},
+  // MEMORY (flash then hide) — longer/harder
+  {id:"x_memck2",archetype:"MEMORY",skill:"memory.match",tier:2,sample:"🍪",prompt:P_REMEMBER,options:[{v:"🍪",correct:true},{v:"🍩",correct:false},{v:"🧁",correct:false}]},
+  {id:"x_memmoon3",archetype:"MEMORY",skill:"memory.match",tier:3,sample:"🌙",prompt:P_REMEMBER,options:[{v:"🌙",correct:true},{v:"⭐",correct:false},{v:"☀️",correct:false},{v:"❤️",correct:false}]},
+  {id:"x_memtwo3",archetype:"MEMORY",skill:"memory.match",tier:3,sample:"🐱🐶",prompt:{id:"Mana yang TADI ada?",en:"Which one did you see?"},options:[{v:"🐱",correct:true},{v:"🐰",correct:false},{v:"🐸",correct:false},{v:"🐵",correct:false}]},
+  // SEQUENCE (sort small->big)
+  {id:"x_seq5",archetype:"SEQUENCE",skill:"logic.bigsmall",tier:3,prompt:{id:"Urutkan kecil ke besar!",en:"Order small to big!"},options:[{v:"🌟",order:3,scale:1.2},{v:"🌟",order:1,scale:0.5},{v:"🌟",order:5,scale:1.9},{v:"🌟",order:2,scale:0.8},{v:"🌟",order:4,scale:1.5}]},
+  // PATTERN (what comes next)
+  {id:"x_pat_rb2",archetype:"PATTERN",skill:"logic.pattern",tier:2,sample:"🔴🔵🔴🔵",prompt:P_NEXT,options:[{v:"🔴",correct:true},{v:"🔵",correct:false},{v:"🟢",correct:false}]},
+  {id:"x_pat_an2",archetype:"PATTERN",skill:"logic.pattern",tier:2,sample:"🐱🐶🐱🐶",prompt:P_NEXT,options:[{v:"🐱",correct:true},{v:"🐶",correct:false},{v:"🐭",correct:false}]},
+  {id:"x_pat_tri3",archetype:"PATTERN",skill:"logic.pattern",tier:3,sample:"🔺🔺🔵🔺🔺🔵",prompt:P_NEXT,options:[{v:"🔺",correct:true},{v:"🔵",correct:false},{v:"⭐",correct:false},{v:"🟥",correct:false}]},
+  {id:"x_pat_star3",archetype:"PATTERN",skill:"logic.pattern",tier:3,sample:"⭐🌙⭐🌙",prompt:P_NEXT,options:[{v:"⭐",correct:true},{v:"🌙",correct:false},{v:"☀️",correct:false}]},
+  // ODD ONE OUT (spot the different)
+  {id:"x_odd_ap2",archetype:"FIND_OBJECT",skill:"observation.odd",tier:2,prompt:P_ODD,options:[{v:"🍎",correct:false},{v:"🍎",correct:false},{v:"🍌",correct:true}]},
+  {id:"x_odd_dog2",archetype:"FIND_OBJECT",skill:"observation.odd",tier:2,prompt:P_ODD,options:[{v:"🐶",correct:false},{v:"🐱",correct:true},{v:"🐶",correct:false},{v:"🐶",correct:false}]},
+  {id:"x_odd_col3",archetype:"FIND_OBJECT",skill:"observation.odd",tier:3,prompt:P_ODD,options:[{v:"🔵",correct:false},{v:"🔵",correct:false},{v:"🟢",correct:true},{v:"🔵",correct:false},{v:"🔵",correct:false}]},
+  {id:"x_odd_sh3",archetype:"FIND_OBJECT",skill:"observation.odd",tier:3,prompt:P_ODD,options:[{v:"⭐",correct:false},{v:"⭐",correct:false},{v:"⭐",correct:false},{v:"❤️",correct:true},{v:"⭐",correct:false}]},
+  // SPEED-flavored (no punishing timer — just energetic framing) for advanced
+  {id:"x_quick_red3",archetype:"FIND_ATTRIBUTE",skill:"colors.red",tier:3,prompt:{id:"Cepat! Cari merah!",en:"Quick! Find red!"},options:[{v:"🍓",correct:true},{v:"🫐",correct:false},{v:"🍋",correct:false},{v:"🍇",correct:false}]},
+  {id:"x_quick_cat3",archetype:"FIND_OBJECT",skill:"animals.cat",tier:3,prompt:{id:"Cepat! Cari kucing!",en:"Quick! Find the cat!"},options:[{v:"🐱",correct:true},{v:"🐶",correct:false},{v:"🦊",correct:false},{v:"🐰",correct:false}]}
+);
+// Generated variety: number recognition 1-9 + counting 1-6 (huge variation, tiny code)
+(function(){
+  for(let n=1;n<=9;n++){ const wrong=new Set(); while(wrong.size<2){ const w=1+Math.floor(Math.random()*9); if(w!==n) wrong.add(w); }
+    const opts=[{v:String(n),correct:true},...[...wrong].map(w=>({v:String(w),correct:false}))].sort(()=>Math.random()-0.5);
+    DATA.challenges.push({id:"gen_num"+n,archetype:"FIND_OBJECT",skill:"numbers.recognize",tier:n<=3?2:n<=6?3:4,prompt:{id:"Cari angka "+n+"!",en:"Find the number "+n+"!"},options:opts}); }
+  for(let n=1;n<=6;n++){ const set=v=>Array.from({length:v},()=>"🍎").join("");
+    const wrong=new Set(); while(wrong.size<2){ const w=1+Math.floor(Math.random()*6); if(w!==n) wrong.add(w); }
+    const opts=[{v:set(n),correct:true},...[...wrong].map(w=>({v:set(w),correct:false}))].sort(()=>Math.random()-0.5);
+    DATA.challenges.push({id:"gen_count"+n,archetype:"COUNT",skill:n<=3?"numbers.count3":"numbers.count5",tier:n<=2?1:n<=4?2:3,prompt:{id:"Mana yang ada "+n+"?",en:"Which has "+n+"?"},options:opts}); }
+})();
+
 const I18N = {
   id:{ tagline:"Tetaskan · Belajar · Koleksi", sell:"✨ Tetaskan 50+ makhluk lucu & belajar sambil bermain!", trust:"🛡️ Tanpa iklan · Aman untuk anak · 🇮🇩 Bahasa", age_q:"Berapa usia si kecil?",
     age_note:"Untuk orang tua: ini menyesuaikan tingkat kesulitan. Bisa diubah nanti.",
@@ -896,7 +990,7 @@ function applyStaticI18n(){
   document.documentElement.lang=S.locale;
 }
 function setAge(a){ SFX.tap(); S.ageBand=a; S.onboarded=true;
-  const startTier=a<=3?1:2;
+  const startTier = a<=3?1 : a===4?2 : 3;
   DATA.skills.forEach(sk=>{ S.skillProgress[sk.id]={tier:startTier,last5:[]}; });
   save(); show("hatch"); maybeDaily(); newEgg();
 }
@@ -1018,7 +1112,7 @@ function tierFor(s){ return (S.skillProgress[s]?.tier)||1; }
 function recordAttempt(s,ok){
   const sp=S.skillProgress[s]||(S.skillProgress[s]={tier:1,last5:[]});
   sp.last5.push(ok?1:0); if(sp.last5.length>5) sp.last5.shift();
-  if(sp.last5.length>=5){ const r=sp.last5.reduce((a,b)=>a+b,0)/5; if(r>=0.8&&sp.tier<3)sp.tier++; else if(r<=0.4&&sp.tier>1)sp.tier--; }
+  if(sp.last5.length>=5){ const r=sp.last5.reduce((a,b)=>a+b,0)/5; if(r>=0.8&&sp.tier<4)sp.tier++; else if(r<=0.4&&sp.tier>1)sp.tier--; }
   if(ok){ S.stats.correct++; missionProgress('correct'); if(!S.stats.weekSkills.includes(s)) S.stats.weekSkills.push(s); }
 }
 function pickChallenge(){
@@ -1042,12 +1136,14 @@ function startChallenge(asker){
   setTimeout(()=>{ if(!(PROMPTVO[ch.id]&&vo(PROMPTVO[ch.id]))) speak(nm(ch.prompt)); },250);
 
   if(ch.archetype==="MEMORY"){
-    $("#ch_sample").innerHTML=`<div class="samplebox">${ch.sample}</div>`;
+    const long=[...(ch.sample||"")].length>2;
+    $("#ch_sample").innerHTML=`<div class="samplebox${long?' seq':''}">${ch.sample}</div>`;
     if(!vo("remember")) speak(t("remember")); setCueSample(t("remember"));
     setTimeout(()=>{ $("#ch_sample").innerHTML=`<div class="muted">${t("remember")} ✔</div>`; renderOptions(ch); },2600);
     return;
   }
-  if(ch.archetype==="MATCH"){ $("#ch_sample").innerHTML=`<div class="samplebox">${ch.sample}</div>`; }
+  if(ch.sample){ const long=ch.archetype==="PATTERN"||[...ch.sample].length>2;
+    $("#ch_sample").innerHTML=`<div class="samplebox${long?' seq':''}">${ch.sample}</div>`; }
   if(ch.archetype==="SEQUENCE"){ SEQ={expect:1,total:ch.options.length}; }
   renderOptions(ch);
 }
@@ -1276,7 +1372,7 @@ function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newS
     : `Your child hatched <b>${S.stats.hatches}</b> eggs, collected <b>${owned}</b> creatures, completed <b>${S.stats.challengesPassed}</b> challenges (<b>${S.stats.correct}</b> correct). New skills: <b>${newSkills}</b>. Streak: <b>${S.daily.streak}</b> days. Badges: <b>${S.badges.length}</b>.`;
   $("#skillList").innerHTML=DATA.skills.map(sk=>{ const sp=S.skillProgress[sk.id]||{tier:1,last5:[]};
     const dots=Array.from({length:5},(_,i)=>{ const v=sp.last5[i]; return `<i class="${v===1?'ok':v===0?'no':''}"></i>`; }).join("");
-    return `<div class="skillrow"><div class="lab">${nm(sk.label)}</div><div class="dots5">${dots}</div><div class="tiertag">T${sp.tier}</div></div>`; }).join("");
+    return `<div class="skillrow"><div class="lab">${nm(sk.label)}</div><div class="dots5">${dots}</div><div class="tiertag">${nm(TIER_NAMES[sp.tier]||{id:'T'+sp.tier,en:'T'+sp.tier})}</div></div>`; }).join("");
   $("#lang_id").classList.toggle("on",S.locale==="id"); $("#lang_en").classList.toggle("on",S.locale==="en");
 }
 function setLang(l){ S.locale=l; save(); applyStaticI18n(); renderParent(); }

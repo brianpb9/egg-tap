@@ -23,9 +23,11 @@ Prinsip utama: **"game adalah data, bukan kode."** Engine kecil menjalankan kont
   - Blok tambahan via IIFE: skill+challenge ekstra (Batch A), generator angka/hitung, **50 varian warna + Rainbow Meadow** (Batch B).
 - `I18N` (`id`/`en`), `t(key)` UI, `nm(obj)` objek `{id,en}`. Default locale **`en`**.
 - State/Save: `S`, `load()/save()`, `defaultSave()` (termasuk `settings.music`).
-- **Audio**: `SFX.*` + `SFX.fanfare(rarity)` (WebAudio); **BGM** loop WebAudio (`startBGM/toggleMusic`, toggle 🔊); `speak()` Web Speech; `vo(key)/voPraise()` → mp3 VO (`VOICE` id, `VOICE_EN` en; locale lain pakai Web Speech).
+- **Audio**: `SFX.*` + `SFX.fanfare(rarity)` (WebAudio); **BGM** loop WebAudio (`startBGM/toggleMusic`); `speak()` Web Speech; `vo(key)/voPraise()` → mp3 VO (`VOICE` id, `VOICE_EN` en; locale lain pakai Web Speech). `haptic(p)` → `navigator.vibrate` (tap/crack/correct).
+- **UI kit (SVG, bukan emoji)**: `ICON` = ikon nav (egg/album/home/world), currency (star/coin/dust), lock, music/muted, dipakai di nav + wallet + tombol pojok + goal chip. Album: **frame kartu per-rarity** (`.cardlet.rar-*`, Legendary bersinar). **Tutorial first-run**: pointer `#tapHint` di telur pertama (`S.tutDone`).
 - **Render**: `creatureSVG()` (fallback prosedural per `kind`), `eggSVG()`. `creatureMarkup()` pilih gambar AI (`IMG`) bila ada — **ukuran ≤120 pakai thumbnail** `assets/thumbs/`. `eggMarkup()` (`EGGIMG`), `decoMarkup()` (`DECOIMG`). `BG` = background dunia.
-- **Loop**: `newEgg → tapEgg → hatch → revealCreature (3-stage: shake→crack→reveal, fanfare per-rarity) → startChallenge → answer/answerSeq → reward → nextEgg`. `resumeHatch()` cegah soft-lock saat kembali ke layar Hatch.
+- **Loop**: `newEgg → tapEgg → hatch → revealCreature (3-stage: shake→crack→reveal, fanfare per-rarity) → startChallenge → answer/answerSeq → reward → nextEgg`. **Anti-softlock**: `resumeHatch()` (telur selalu tappable saat balik ke Hatch), `finishChallenge()` (jalur jawaban tahan-error, reward selalu tampil), flag `LOOP.resolved` (abaikan tap setelah benar) + `LOOP.answered` (tap layar untuk pulih bila reward gagal muncul).
+- **Home** (`renderHome`): item dapat di-geser dengan **grid-snap 24px + clamp**, **z-order by Y** (depth), **ground band** (lantai), hint progres ke level berikut. Background room masih pakai `BG[world]` — *art room khusus per-level (`HOMEBG`) belum dibuat (butuh Higgsfield)*.
 - **Adaptif 4-tier**: `tierFor()/recordAttempt()` (cap tier 4), `TIER_NAMES` (Beginner..Expert), usia 3/4/5 → T1/T2/T3.
 - **Soft-stop** tiap 8 telur, **misi harian** (`MISSIONS`), **telur bonus** stardust, **Home progresif** (`HOME_LEVELS` Lv1–5).
 - Arketipe challenge: FIND_ATTRIBUTE, FIND_OBJECT, COUNT, EMOTION, MATCH, MEMORY, SEQUENCE, PATTERN (+observation/odd-one-out via FIND_OBJECT).
@@ -41,7 +43,9 @@ Prinsip utama: **"game adalah data, bukan kode."** Engine kecil menjalankan kont
 - **Batch B** ✅ 50 varian + rarity Epic + Rainbow Meadow + album chase; **88/88 creature ber-art AI**.
 - **Batch C** ✅ BGM WebAudio + fanfare per-rarity + Home progresif + English VO + dekorasi AI.
 - **Batch D** ✅ thumbnail perf + app icon + trailer (`assets/store/`) + `STORE.md`.
-- Audit terakhir ~**7.7–8.0/10**. Menuju 10/10: (1) Home ber-art per-level + grid; (2) UI kit ber-art (ganti emoji currency/nav); (3) parallax/ambient background; (4) tutorial first-run + audio-everywhere + haptic; (5) regresi test + migrasi save + device matrix.
+- **V3.1 polish** ✅ UI kit SVG (ganti emoji nav/currency/lock/music/goalchip), frame kartu per-rarity, haptic, tutorial first-run, Home grid/z-order/ground, + perbaikan bug (no-Next soft-lock & "tap setelah benar terhitung salah").
+- Bug status: **data & flow integrity = 0 bug** (cek via JS), 1 bug tap-after-correct sudah fix.
+- Audit ~**8.2–8.5/10**. Sisa ke 10/10: (1) **Home ber-art per-level** (`HOMEBG`, butuh Higgsfield — PENDING); (2) parallax/ambient background; (3) regresi test + migrasi save + device matrix.
 
 ## Konvensi
 - UI utama **English** (lewat `t()`/`nm()`). Toddler-UX: 1 aksi/layar, tap ≥64px, no-fail, audio+ikon, tanpa timer/iklan.

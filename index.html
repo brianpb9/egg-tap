@@ -835,6 +835,36 @@ DATA.challenges.push(
     DATA.challenges.push({id:`gen_sub_${a}_${b}`,archetype:"FIND_OBJECT",skill:"numbers.add",tier:4,prompt:{id:`${a} − ${b} = ?`,en:`${a} − ${b} = ?`},options:numOpts(a-b)}); }
 })();
 
+/* ===== Advanced variety (age 5+): patterns, odd-one-out, compare, letters, sequences ===== */
+(function(){
+  const add=c=>DATA.challenges.push(c);
+  DATA.skills.push({id:"logic.pattern",pillar:"logic",label:{id:"Pola",en:"Patterns"}});
+  DATA.skills.push({id:"logic.compare",pillar:"logic",label:{id:"Membandingkan",en:"Comparing"}});
+  DATA.skills.push({id:"letters.find",pillar:"letters",label:{id:"Mengenal huruf",en:"Letters"}});
+  // PATTERNS — what comes next
+  const pats=[
+    {s:"🔴🔵🔴🔵",a:"🔴",w:["🔵","🟡"]},{s:"⭐🌙⭐🌙",a:"⭐",w:["🌙","☀️"]},
+    {s:"🟢🟢🟡🟢🟢🟡",a:"🟢",w:["🟡","🔴"]},{s:"🔺🔵🔺🔵",a:"🔺",w:["🔵","🟣"]},
+    {s:"🍎🍌🍎🍌",a:"🍎",w:["🍌","🍇"]},{s:"😀😴😀😴",a:"😀",w:["😴","🥚"]}
+  ];
+  pats.forEach((p,i)=>add({id:"pat"+i,archetype:"PATTERN",skill:"logic.pattern",tier:i<2?2:i<4?3:4,prompt:{id:"Lanjutkan polanya!",en:"What comes next?"},sample:p.s,options:[{v:p.a,correct:true},...p.w.map(w=>({v:w,correct:false}))]}));
+  // ODD ONE OUT
+  const odd=[
+    {set:["🍎","🍎","🍎","🚗"],a:"🚗"},{set:["🐶","🐱","🐰","🍪"],a:"🍪"},
+    {set:["🔵","🔵","🔴","🔵"],a:"🔴"},{set:["⭐","⭐","🌙","⭐"],a:"🌙"},{set:["🌸","🌸","🐝","🌸"],a:"🐝"}
+  ];
+  odd.forEach((o,i)=>add({id:"odd"+i,archetype:"FIND_OBJECT",skill:"logic.pattern",tier:i<2?2:3,prompt:{id:"Mana yang BEDA?",en:"Which one is different?"},options:o.set.map(v=>({v,correct:v===o.a}))}));
+  // COMPARE — bigger / smaller
+  add({id:"cmp_big1",archetype:"FIND_OBJECT",skill:"logic.compare",tier:3,prompt:{id:"Mana yang lebih BESAR?",en:"Which is BIGGER?"},options:[{v:"🐘",correct:true,scale:1.5},{v:"🐭",correct:false,scale:0.7}]});
+  add({id:"cmp_big2",archetype:"FIND_OBJECT",skill:"logic.compare",tier:3,prompt:{id:"Mana yang lebih BESAR?",en:"Which is BIGGER?"},options:[{v:"⭐",correct:true,scale:1.6},{v:"⭐",correct:false,scale:0.6}]});
+  add({id:"cmp_small1",archetype:"FIND_OBJECT",skill:"logic.compare",tier:4,prompt:{id:"Mana yang lebih KECIL?",en:"Which is SMALLER?"},options:[{v:"🍓",correct:true,scale:0.6},{v:"🍉",correct:false,scale:1.6}]});
+  // LETTERS — find the letter
+  [["A"],["B"],["C"],["D"],["F"],["S"],["M"],["P"]].forEach(([L])=>{ const o=L.charCodeAt(0)-65;
+    add({id:"let_find"+L,archetype:"FIND_OBJECT",skill:"letters.find",tier:3,prompt:{id:"Cari huruf "+L+"!",en:"Find the letter "+L+"!"},options:[{v:L,correct:true},{v:String.fromCharCode(65+((o+5)%26)),correct:false},{v:String.fromCharCode(65+((o+12)%26)),correct:false}]}); });
+  // SEQUENCE — put numbers in order
+  add({id:"seq_123",archetype:"SEQUENCE",skill:"numbers.recognize",tier:3,prompt:{id:"Susun: 1, 2, 3",en:"Put in order: 1, 2, 3"},options:[{v:"1",order:1},{v:"2",order:2},{v:"3",order:3}]});
+  add({id:"seq_1234",archetype:"SEQUENCE",skill:"numbers.recognize",tier:4,prompt:{id:"Susun 1 sampai 4",en:"Put in order: 1 to 4"},options:[{v:"1",order:1},{v:"2",order:2},{v:"3",order:3},{v:"4",order:4}]});
+})();
 /* ===== V3 Batch B — 50 color variants + rarity + Rainbow Meadow ===== */
 (function(){
   const animals=[["cat","Cat","cat"],["bunny","Bunny","bunny"],["bear","Bear","bear"],["fox","Fox","fox"],["dog","Dog","bear"],["chick","Chick","bird"],["frog","Frog","frog"],["deer","Deer","deer"],["dragon","Dragon","dino"],["squirrel","Squirrel","squirrel"]];

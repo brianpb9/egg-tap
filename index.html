@@ -253,18 +253,26 @@
   @keyframes eggjolt{0%{transform:scale(1)}40%{transform:scale(1.13) rotate(-3deg)}72%{transform:scale(.95) rotate(3deg)}100%{transform:scale(1)}}
   /* ===== Title / landing (Candy-Crush-style) ===== */
   #title{overflow:hidden;}
-  .title-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
-  .title-content{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;padding:0 24px 15%;gap:26px;}
-  .title-logo{display:flex;flex-direction:column;align-items:center;margin-top:auto;}
-  .title-egg{width:128px;height:128px;object-fit:contain;filter:drop-shadow(0 12px 16px rgba(120,70,20,.32));animation:titlebob 3s ease-in-out infinite;}
-  @keyframes titlebob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-15px) rotate(3deg)}}
-  .biglogo{font-size:54px;font-weight:800;letter-spacing:-1px;color:#fff;text-align:center;line-height:.96;text-shadow:0 3px 0 #e0962b,0 7px 12px rgba(0,0,0,.22);-webkit-text-stroke:2.5px #cf8a2c;paint-order:stroke fill;}
-  .biglogo small{display:block;font-size:14px;font-weight:800;color:#fff;-webkit-text-stroke:0;letter-spacing:1px;margin-top:9px;text-shadow:0 2px 4px rgba(0,0,0,.3);}
-  .play-btn{border:none;border-radius:999px;font-family:inherit;font-weight:800;font-size:30px;color:#fff;background:linear-gradient(180deg,#8be36b,#5fb83e);box-shadow:0 7px 0 #3f8f24,0 12px 20px rgba(0,0,0,.28);padding:16px 70px;cursor:pointer;animation:playpulse 1.4s ease-in-out infinite;}
-  @keyframes playpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-  .play-btn:active{transform:translateY(4px);box-shadow:0 3px 0 #3f8f24;}
-  .play-mini{position:absolute;left:18px;bottom:6%;width:54px;height:54px;border-radius:16px;border:none;background:rgba(255,255,255,.85);box-shadow:var(--shadow);cursor:pointer;padding:11px;z-index:3;}
+  .title-scene{position:absolute;inset:0;background:url('assets/bg/title_bg.png') center/cover no-repeat;background-color:#bfe6ff;z-index:0;}
+  .title-fx{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden;}
+  .tleaf{position:absolute;top:-10%;font-size:20px;opacity:.85;animation:leaffall linear infinite;}
+  @keyframes leaffall{0%{transform:translateY(-12vh) rotate(0);opacity:0}12%{opacity:.85}100%{transform:translateY(116vh) rotate(380deg);opacity:0}}
+  .tspark{position:absolute;color:#fff;font-size:13px;opacity:0;animation:tsparktw 2.6s ease-in-out infinite;text-shadow:0 0 6px #fff;}
+  @keyframes tsparktw{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:.95;transform:scale(1.1)}}
+  .title-logo{position:absolute;top:12%;left:0;right:0;z-index:3;text-align:center;animation:titlein .7s cubic-bezier(.2,1.5,.4,1) both;}
+  .title-logo .inner{display:inline-block;animation:titlefloat 4s ease-in-out 1s infinite;}
+  @keyframes titlein{0%{transform:scale(.5) translateY(24px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}
+  @keyframes titlefloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+  .biglogo{font-size:62px;font-weight:800;letter-spacing:-1px;text-align:center;line-height:.96;-webkit-text-stroke:4px #fff;paint-order:stroke fill;text-shadow:0 5px 0 rgba(120,90,40,.18),0 9px 14px rgba(0,0,0,.18);}
+  .biglogo .lg-egg{color:#f2c64a;} .biglogo .lg-tap{color:#7cc35f;}
+  .biglogo small{display:block;font-size:16px;font-weight:800;color:#5a8f3a;-webkit-text-stroke:0;letter-spacing:.3px;margin-top:14px;text-shadow:0 1px 2px rgba(255,255,255,.8);}
+  .play-btn{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);border:none;border-radius:999px;font-family:inherit;font-weight:800;font-size:30px;color:#fff;background:linear-gradient(180deg,#8be36b,#5fb83e);box-shadow:0 7px 0 #3f8f24,0 12px 20px rgba(0,0,0,.28);padding:16px 76px;cursor:pointer;z-index:3;animation:playpulse 1.4s ease-in-out infinite;}
+  @keyframes playpulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
+  .play-btn:active{transform:translateX(-50%) translateY(4px);box-shadow:0 3px 0 #3f8f24;}
+  .play-mini{position:absolute;left:18px;bottom:5.5%;width:56px;height:56px;border-radius:18px;border:none;background:rgba(255,255,255,.9);box-shadow:var(--shadow);cursor:pointer;padding:11px;z-index:3;}
+  .play-mini.right{left:auto;right:18px;padding:6px;}
   .play-mini svg{width:100%;height:100%;display:block;}
+  .play-mini img{width:100%;height:100%;object-fit:contain;}
   /* ===== World journey map ===== */
   .worldmap{position:relative;padding:26px 14px 36px;display:flex;flex-direction:column;gap:26px;}
   .worldmap::before{content:"";position:absolute;top:18px;bottom:18px;left:50%;width:6px;transform:translateX(-50%);background:repeating-linear-gradient(#ffd591 0 13px,transparent 13px 26px);border-radius:4px;z-index:0;}
@@ -318,17 +326,12 @@
   <!-- S0/S1 ONBOARDING -->
   <!-- S0 TITLE — branded animated landing -->
   <section id="title" class="screen active">
-    <div class="ob-sky"></div>
-    <video class="title-video" id="titleVideo" src="assets/video/title.mp4" autoplay loop muted playsinline preload="auto"></video>
-    <div class="ob-floaters" id="titleFloaters"></div>
-    <div class="title-content">
-      <div class="title-logo">
-        <img class="title-egg" src="assets/eggs/egg_king.png" alt="" />
-        <div class="biglogo">Egg&nbsp;Tap<small id="title_tag">Hatch · Learn · Collect</small></div>
-      </div>
-      <button class="play-btn" id="playBtn" onclick="startPlay()">▶ Play</button>
-    </div>
+    <div class="title-scene"></div>
+    <div class="title-fx" id="titleFx"></div>
+    <div class="title-logo"><div class="inner"><div class="biglogo"><span class="lg-egg">Egg</span> <span class="lg-tap">Tap</span><small id="title_tag">Your friends are waiting! 💛</small></div></div></div>
+    <button class="play-btn" id="playBtn" onclick="startPlay()">▶ Play</button>
     <button class="play-mini" id="titleParent" title="Parent" onclick="openGate()"></button>
+    <button class="play-mini right" id="titleAlbum" title="Friends" onclick="show('album')"></button>
   </section>
 
   <section id="onboard" class="screen">
@@ -1653,19 +1656,17 @@ function burst(n,parent,big){ const colors=["#ff8a3d","#7BC950","#C77DFF","#48CA
 
 /* ===================== BOOT ===================== */
 const CRACKFX='<svg class="crackfx" id="crackFx" viewBox="0 0 188 236" width="188" height="236" aria-hidden="true"><path d="M94 26 L84 68 L102 96 L82 132 L100 168 L86 210"/><path d="M84 68 L56 84"/><path d="M102 96 L132 108"/><path d="M82 132 L54 152"/><path d="M100 168 L130 184"/></svg>';
-function populateTitle(){ const f=$("#titleFloaters");
-  const pos=[[6,15],[78,19],[9,39],[82,45],[15,64],[80,68]];
-  const owned=Object.keys(S.owned||{}).map(id=>IMG[id]).filter(Boolean); // the child's own friends
-  if(f){
-    if(owned.length>=3){ const pick=owned.slice(-6);
-      f.innerHTML=pick.map((src,i)=>`<img src="${src}" alt="" style="left:${pos[i%6][0]}%;top:${pos[i%6][1]}%;animation-delay:${(i*0.4).toFixed(2)}s">`).join("");
-    } else { const def=[["bram",6,15],["lala",78,19],["dewy",9,39],["gilly",82,45],["nutty",15,64],["hopsy",80,68]];
-      f.innerHTML=def.map((p,i)=>`<img src="assets/creatures/${p[0]}.png" alt="" style="left:${p[1]}%;top:${p[2]}%;animation-delay:${(i*0.4).toFixed(2)}s">`).join(""); }
-  }
-  const tt=$("#title_tag"); if(tt) tt.textContent = owned.length
+function populateTitle(){
+  const owned=Object.keys(S.owned||{}).length;
+  const tt=$("#title_tag"); if(tt) tt.textContent = owned
     ? (S.locale==='id'?'Teman-temanmu menunggu! 💛':'Your friends are waiting! 💛')
     : (S.locale==='id'?'Tetas · Belajar · Koleksi':'Hatch · Learn · Collect');
-  const pb=$("#titleParent"); if(pb) pb.innerHTML=ICON.lock; }
+  const pb=$("#titleParent"); if(pb) pb.innerHTML=ICON.lock;
+  const ab=$("#titleAlbum"); if(ab) ab.innerHTML='<img src="assets/creatures/dewy.png" alt="">';
+  const fx=$("#titleFx"); if(fx){ let h='';
+    for(let i=0;i<6;i++) h+=`<span class="tleaf" style="left:${6+i*15}%;animation-delay:${(i*1.3).toFixed(1)}s;animation-duration:${7+i}s">🍃</span>`;
+    for(let i=0;i<6;i++) h+=`<span class="tspark" style="left:${14+i*14}%;top:${18+(i%3)*10}%;animation-delay:${(i*0.5).toFixed(1)}s">✦</span>`;
+    fx.innerHTML=h; } }
 function startPlay(){ try{SFX.tap();}catch(e){} if(S.onboarded){ show("hatch"); maybeDaily(); newEgg(); } else { show("onboard"); } }
 function boot(){
   load(); applyStaticI18n();

@@ -1654,9 +1654,17 @@ function burst(n,parent,big){ const colors=["#ff8a3d","#7BC950","#C77DFF","#48CA
 /* ===================== BOOT ===================== */
 const CRACKFX='<svg class="crackfx" id="crackFx" viewBox="0 0 188 236" width="188" height="236" aria-hidden="true"><path d="M94 26 L84 68 L102 96 L82 132 L100 168 L86 210"/><path d="M84 68 L56 84"/><path d="M102 96 L132 108"/><path d="M82 132 L54 152"/><path d="M100 168 L130 184"/></svg>';
 function populateTitle(){ const f=$("#titleFloaters");
-  if(f){ const pics=[["bram",6,15],["lala",78,19],["dewy",9,39],["gilly",82,45],["nutty",15,64],["hopsy",80,68]];
-    f.innerHTML=pics.map((p,i)=>`<img src="assets/creatures/${p[0]}.png" alt="" style="left:${p[1]}%;top:${p[2]}%;animation-delay:${(i*0.4).toFixed(2)}s">`).join(""); }
-  const tt=$("#title_tag"); if(tt) tt.textContent=S.locale==='id'?'Tetas · Belajar · Koleksi':'Hatch · Learn · Collect';
+  const pos=[[6,15],[78,19],[9,39],[82,45],[15,64],[80,68]];
+  const owned=Object.keys(S.owned||{}).map(id=>IMG[id]).filter(Boolean); // the child's own friends
+  if(f){
+    if(owned.length>=3){ const pick=owned.slice(-6);
+      f.innerHTML=pick.map((src,i)=>`<img src="${src}" alt="" style="left:${pos[i%6][0]}%;top:${pos[i%6][1]}%;animation-delay:${(i*0.4).toFixed(2)}s">`).join("");
+    } else { const def=[["bram",6,15],["lala",78,19],["dewy",9,39],["gilly",82,45],["nutty",15,64],["hopsy",80,68]];
+      f.innerHTML=def.map((p,i)=>`<img src="assets/creatures/${p[0]}.png" alt="" style="left:${p[1]}%;top:${p[2]}%;animation-delay:${(i*0.4).toFixed(2)}s">`).join(""); }
+  }
+  const tt=$("#title_tag"); if(tt) tt.textContent = owned.length
+    ? (S.locale==='id'?'Teman-temanmu menunggu! 💛':'Your friends are waiting! 💛')
+    : (S.locale==='id'?'Tetas · Belajar · Koleksi':'Hatch · Learn · Collect');
   const pb=$("#titleParent"); if(pb) pb.innerHTML=ICON.lock; }
 function startPlay(){ try{SFX.tap();}catch(e){} if(S.onboarded){ show("hatch"); maybeDaily(); newEgg(); } else { show("onboard"); } }
 function boot(){

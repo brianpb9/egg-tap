@@ -868,6 +868,7 @@ const IMG={
 };
 const BG={ green_forest:"assets/bg/green_forest.png", sunny_beach:"assets/bg/sunny_beach.png",
   candy_land:"assets/bg/candy_land.png", dino_valley:"assets/bg/dino_valley.png", ocean_kingdom:"assets/bg/ocean_kingdom.png", rainbow_meadow:"assets/bg/rainbow_meadow.png" };
+const HOMEBG={1:"assets/home/lv1.png",2:"assets/home/lv2.png",3:"assets/home/lv3.png",4:"assets/home/lv4.png",5:"assets/home/lv5.png"};
 const DECOIMG={ deco_forest_treehouse:"assets/deco/treehouse.png", deco_forest_pond:"assets/deco/pond.png", deco_forest_swing:"assets/deco/swing.png", deco_forest_flower:"assets/deco/flower.png", deco_forest_tree:"assets/deco/tree.png", deco_forest_mushroom:"assets/deco/mushroom.png", deco_beach_umbrella:"assets/deco/umbrella.png", deco_beach_castle:"assets/deco/castle.png" };
 function decoMarkup(d,size){ const p=DECOIMG[d.id]; return p?`<img src="${p}" width="${size}" height="${size}" loading="lazy" style="object-fit:contain;display:block" draggable="false">`:`<div style="font-size:${Math.round(size*0.8)}px">${d.emoji}</div>`; }
 const EGGIMG={
@@ -1429,7 +1430,7 @@ function renderHome(){
   $("#hm_coins").textContent=S.currencies.coins;
   const lvl=Math.min(5,1+Math.floor(S.home.length/3)); $("#t_home").textContent=`${t("home")} · Lv${lvl} ${nm(HOME_LEVELS[lvl])}`;
   const w=world(S.currentWorld); const room=$("#room");
-  room.style.background = BG[w.id] ? `url('${BG[w.id]}') center/cover no-repeat` : `linear-gradient(180deg,${w.bg[0]},${w.bg[1]} 55%,${w.bg[2]})`;
+  room.style.background = `url('${HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`; // room art changes per Home level
   const toNext=lvl<5?(3-(S.home.length%3)):0;
   const hint=lvl<5?`${t("placed_hint")} · ${toNext} → Lv${lvl+1} ${nm(HOME_LEVELS[lvl+1])}`:t("placed_hint");
   room.innerHTML=`<div class="ground"></div><div class="floatlabel">${hint}</div>`;

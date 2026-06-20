@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BUBU FRIENDS — Egg Collection</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#5a4636; }
+  *{font-family:'Baloo 2','Fredoka',system-ui,sans-serif;}
+  body{background:
+      radial-gradient(120% 70% at 50% -10%, #fff7ef 0%, #fffdf9 45%, #fffdf9 100%);
+      color:var(--ink);}
+  .stage-egg{transition:transform .18s cubic-bezier(.2,1.4,.4,1);cursor:pointer;}
+  .stage-egg:hover{transform:translateY(-6px) scale(1.06) rotate(-2deg);}
+  .stage-egg:active{transform:translateY(-2px) scale(.98);}
+  .eggcard{transition:transform .2s ease, box-shadow .2s ease;}
+  .eggcard:hover{transform:translateY(-3px);}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .floaty{animation:floaty 3s ease-in-out infinite;}
+  @keyframes spark{0%{opacity:0;transform:scale(.3)}40%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.5)}}
+  .stage-egg:hover .spk{animation:spark .9s ease-in-out infinite;}
+  .spk{opacity:0;}
+  ::-webkit-scrollbar{height:8px;width:8px} ::-webkit-scrollbar-thumb{background:#ffd591;border-radius:8px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/plain" id="appsrc">
+const {useState} = React;
+
+/* ============================ DATA ============================ */
+const WORLDS = [
+  {id:1,title:"Green Forest",desc:"Hutan yang damai dan penuh keajaiban",color:"#5fae3a",soft:"#eaf7e0",icon:"🌿",
+   eggs:[
+     {name:"Leaf Egg",rarity:"Basic",pal:{base:"#d3efb6",mid:"#8fd06a",dark:"#4f8f30",acc:"#3a7d1e"},pattern:"leaf"},
+     {name:"Mystic Wood Egg",rarity:"Epic",pal:{base:"#dcc6a0",mid:"#9b7d4e",dark:"#6e5121",acc:"#6fae3a"},pattern:"leaf"},
+     {name:"Elder Tree Egg",rarity:"Legendary",pal:{base:"#c6e8a8",mid:"#7fbf5a",dark:"#3f7d2a",acc:"#f4c430"},pattern:"vine"},
+   ]},
+  {id:2,title:"Sunny Beach",desc:"Pantai ceria yang penuh sinar matahari",color:"#f4a300",soft:"#fff3da",icon:"⛱️",
+   eggs:[
+     {name:"Shell Egg",rarity:"Basic",pal:{base:"#d2f0fc",mid:"#7ec8e3",dark:"#2c8aa8",acc:"#ff9eb0"},pattern:"cloud"},
+     {name:"Coral Pearl Egg",rarity:"Epic",pal:{base:"#ffd9ee",mid:"#e79cc8",dark:"#b85a92",acc:"#ffffff"},pattern:"wave"},
+     {name:"Sunbeam Egg",rarity:"Legendary",pal:{base:"#ffe6a8",mid:"#ffc24d",dark:"#e08a1e",acc:"#f4c430"},pattern:"sun"},
+   ]},
+  {id:3,title:"Candy Land",desc:"Dunia manis penuh gula dan warna",color:"#ff5ba0",soft:"#ffe6f1",icon:"🍭",
+   eggs:[
+     {name:"Candy Egg",rarity:"Basic",pal:{base:"#fff0e6",mid:"#ffc6e0",dark:"#e98ab5",acc:"#ff7aa8"},pattern:"swirl"},
+     {name:"Sweet Dream Egg",rarity:"Epic",pal:{base:"#efe0ff",mid:"#c89cf0",dark:"#9a5fd0",acc:"#ff9ed0"},pattern:"drip"},
+     {name:"Sugar Queen Egg",rarity:"Legendary",pal:{base:"#ffd6df",mid:"#ff8aa6",dark:"#d04a6a",acc:"#f4c430"},pattern:"heart"},
+   ]},
+  {id:4,title:"Dino Valley",desc:"Lembah prasejarah yang seru",color:"#5fae3a",soft:"#eaf7d8",icon:"🦕",
+   eggs:[
+     {name:"Dino Egg",rarity:"Basic",pal:{base:"#d8f0b6",mid:"#8fc25a",dark:"#5e8f2e",acc:"#3f7d2a"},pattern:"spots"},
+     {name:"Crystal Dino Egg",rarity:"Epic",pal:{base:"#d6deff",mid:"#9b8ef0",dark:"#6a4ec0",acc:"#bfe0ff"},pattern:"crystal"},
+     {name:"Dino King Egg",rarity:"Legendary",pal:{base:"#ffc69a",mid:"#f07a4a",dark:"#c2402a",acc:"#f4c430"},pattern:"scale"},
+   ]},
+  {id:5,title:"Ocean Kingdom",desc:"Kerajaan laut yang ajaib",color:"#1f8ac0",soft:"#e2f4ff",icon:"🐚",
+   eggs:[
+     {name:"Bubble Egg",rarity:"Basic",pal:{base:"#d2f0fc",mid:"#7ec8e3",dark:"#1f8ac0",acc:"#ffffff"},pattern:"bubble"},
+     {name:"Pearl Castle Egg",rarity:"Epic",pal:{base:"#dfe2ff",mid:"#9fb0e8",dark:"#5f6fc0",acc:"#fff0fa"},pattern:"shell"},
+     {name:"Ocean Queen Egg",rarity:"Legendary",pal:{base:"#bfe6f5",mid:"#5fb0d8",dark:"#1f5c99",acc:"#f4c430"},pattern:"wave"},
+   ]},
+  {id:6,title:"Rainbow Meadow",desc:"Padang bunga penuh warna",color:"#a35fd0",soft:"#f3e8ff",icon:"🌈",
+   eggs:[
+     {name:"Flower Egg",rarity:"Basic",pal:{base:"#fff6e0",mid:"#ffe0a8",dark:"#e0a84d",acc:"#ff9eb8"},pattern:"flower"},
+     {name:"Dream Cloud Egg",rarity:"Epic",pal:{base:"#ece0ff",mid:"#c4b0f0",dark:"#8a6fd0",acc:"#bfd9ff"},pattern:"star"},
+     {name:"Rainbow Guardian Egg",rarity:"Legendary",pal:{base:"#ffffff",mid:"#ffe0f0",dark:"#c89cf0",acc:"#f4c430"},pattern:"star"},
+   ]},
+];
+
+const RARITY = {
+  Basic:{label:"BASIC",color:"#5fae3a",bg:"#eaf7e0",icon:"⭐"},
+  Epic:{label:"EPIC",color:"#9a5fd0",bg:"#f1e8ff",icon:"⬡"},
+  Legendary:{label:"LEGENDARY",color:"#e0961f",bg:"#fff3d6",icon:"👑"},
+};
+
+/* ============================ EGG SVG ============================ */
+const EGG = "M60 12 C86 12 103 46 103 80 C103 113 85 132 60 132 C35 132 17 113 17 80 C17 46 34 12 60 12 Z";
+const CUP = "M17 84 C17 113 35 132 60 132 C85 132 103 113 103 84 L96 77 L88 86 L80 78 L72 86 L64 78 L56 86 L48 78 L40 86 L32 78 L24 85 Z";
+const CAP = "M60 14 C82 14 99 44 99 70 L92 63 L84 72 L76 63 L68 72 L60 63 L52 72 L44 63 L36 70 C36 44 38 14 60 14 Z";
+
+function Sparkle({x,y,s,c}){
+  const p=`M${x} ${y-s} C ${x+s*.25} ${y-s*.25} ${x+s*.25} ${y-s*.25} ${x+s} ${y} C ${x+s*.25} ${y+s*.25} ${x+s*.25} ${y+s*.25} ${x} ${y+s} C ${x-s*.25} ${y+s*.25} ${x-s*.25} ${y+s*.25} ${x-s} ${y} C ${x-s*.25} ${y-s*.25} ${x-s*.25} ${y-s*.25} ${x} ${y-s} Z`;
+  return <path className="spk" d={p} fill={c||"#fff4b0"} stroke="#ffd24d" strokeWidth="1"/>;
+}
+
+function Pattern({type,pal}){
+  const d=pal.dark, a=pal.acc;
+  switch(type){
+    case "leaf": return <g fill={d} opacity=".55">
+      <ellipse cx="45" cy="55" rx="9" ry="5" transform="rotate(-30 45 55)"/>
+      <ellipse cx="72" cy="72" rx="8" ry="4.5" transform="rotate(25 72 72)"/>
+      <ellipse cx="52" cy="92" rx="7" ry="4" transform="rotate(-15 52 92)"/>
+      <circle cx="68" cy="48" r="3"/><circle cx="40" cy="80" r="2.6"/></g>;
+    case "vine": return <g fill="none" stroke={d} strokeWidth="2.4" opacity=".6" strokeLinecap="round">
+      <path d="M40 40 q10 18 -2 34 q-10 16 6 30"/><path d="M78 44 q-8 18 4 32"/>
+      <circle cx="60" cy="78" r="6" fill={a} stroke="none"/><circle cx="60" cy="78" r="2.6" fill="#fff" stroke="none"/></g>;
+    case "cloud": return <g fill="#ffffff" opacity=".8">
+      <ellipse cx="46" cy="56" rx="13" ry="7"/><ellipse cx="72" cy="78" rx="11" ry="6"/>
+      <circle cx="58" cy="98" r="2.4" fill={a}/><circle cx="44" cy="86" r="2" fill={a}/></g>;
+    case "wave": return <g fill="none" stroke="#ffffff" strokeWidth="2.6" opacity=".75" strokeLinecap="round">
+      <path d="M30 58 q8 -7 16 0 t16 0 t16 0"/><path d="M30 78 q8 -7 16 0 t16 0 t16 0"/>
+      <path d="M34 98 q8 -7 16 0 t16 0" stroke={a}/></g>;
+    case "sun": return <g>
+      <circle cx="60" cy="66" r="13" fill="#fff4c0" stroke={d} strokeWidth="2"/>
+      <g stroke={d} strokeWidth="2.4" strokeLinecap="round">
+        <path d="M60 44v-8"/><path d="M60 96v-8"/><path d="M38 66h-8"/><path d="M90 66h-8"/>
+        <path d="M45 51l-6-6"/><path d="M75 51l6-6"/><path d="M45 81l-6 6"/><path d="M75 81l6 6"/></g>
+      <circle cx="55" cy="64" r="2" fill={d}/><circle cx="65" cy="64" r="2" fill={d}/></g>;
+    case "swirl": return <g fill="none" stroke={pal.acc} strokeWidth="3" opacity=".8" strokeLinecap="round">
+      <path d="M60 58 m0 0 a10 10 0 1 1 -7 17 a6 6 0 1 0 4 -10"/>
+      <circle cx="42" cy="84" r="3" fill={d} stroke="none"/><circle cx="80" cy="60" r="3" fill={d} stroke="none"/>
+      <circle cx="76" cy="92" r="2.6" fill={d} stroke="none"/></g>;
+    case "drip": return <g fill="#ffffff" opacity=".85">
+      <path d="M30 56 q8 0 8 12 q0 8 6 8 q6 0 6 -10 q0 -10 8 -10 q8 0 8 12 q0 8 6 8 q6 0 6 -10 q0 -8 6 -8 l0 -8 q-30 -4 -54 0 Z"/>
+      <circle cx="46" cy="92" r="3" fill={d}/><circle cx="68" cy="98" r="2.6" fill={pal.acc}/><circle cx="58" cy="104" r="2.2" fill={d}/></g>;
+    case "heart": return <g fill={pal.acc} opacity=".85">
+      <path d="M60 70 c-4 -7 -14 -5 -14 3 c0 6 9 11 14 16 c5 -5 14 -10 14 -16 c0 -8 -10 -10 -14 -3 Z"/>
+      <circle cx="44" cy="58" r="2.6" fill="#fff"/><circle cx="78" cy="64" r="2.4" fill="#fff"/><circle cx="50" cy="96" r="2.2" fill="#fff"/></g>;
+    case "spots": return <g fill={d} opacity=".5">
+      <ellipse cx="44" cy="54" rx="6" ry="5"/><ellipse cx="74" cy="66" rx="7" ry="5.5"/>
+      <ellipse cx="52" cy="86" rx="6.5" ry="5"/><ellipse cx="78" cy="92" rx="5" ry="4"/><ellipse cx="38" cy="74" rx="4.5" ry="3.5"/></g>;
+    case "crystal": return <g>
+      <path d="M52 52 l8 -10 l8 10 l-8 14 Z" fill={pal.acc} stroke={d} strokeWidth="1.5"/>
+      <path d="M40 78 l6 -8 l6 8 l-6 11 Z" fill="#ffffff" opacity=".8" stroke={d} strokeWidth="1.2"/>
+      <path d="M74 80 l6 -8 l6 8 l-6 11 Z" fill={pal.acc} stroke={d} strokeWidth="1.2"/></g>;
+    case "scale": return <g fill="none" stroke={d} strokeWidth="2.2" opacity=".55">
+      <path d="M38 56 q10 8 20 0 M58 56 q10 8 20 0"/><path d="M44 74 q9 8 18 0 M62 74 q9 8 18 0"/><path d="M40 92 q10 8 20 0"/></g>;
+    case "bubble": return <g>
+      <circle cx="46" cy="56" r="8" fill="#fff" opacity=".55"/><circle cx="72" cy="74" r="6" fill="#fff" opacity=".5"/>
+      <circle cx="54" cy="92" r="5" fill="#fff" opacity=".5"/><circle cx="78" cy="54" r="3.5" fill="#fff" opacity=".6"/>
+      <circle cx="43" cy="53" r="2.4" fill="#fff"/></g>;
+    case "shell": return <g fill="none" stroke={d} strokeWidth="2" opacity=".55">
+      <path d="M60 96 L46 60 M60 96 L52 58 M60 96 L60 56 M60 96 L68 58 M60 96 L74 60"/>
+      <circle cx="60" cy="56" r="4" fill={pal.acc} stroke="none"/></g>;
+    case "flower": return <g>
+      <g fill={pal.acc}><circle cx="44" cy="56" r="3.4"/><circle cx="50" cy="52" r="3.4"/><circle cx="50" cy="60" r="3.4"/><circle cx="56" cy="56" r="3.4"/></g><circle cx="50" cy="56" r="2.4" fill="#fff4b0"/>
+      <g fill={d} opacity=".7"><circle cx="74" cy="80" r="2.8"/><circle cx="79" cy="77" r="2.8"/><circle cx="79" cy="83" r="2.8"/><circle cx="84" cy="80" r="2.8"/></g><circle cx="79" cy="80" r="2" fill="#fff"/>
+      <circle cx="58" cy="98" r="2.2" fill={pal.acc}/></g>;
+    case "star": return <g fill={pal.acc}>
+      <path d="M48 52 l2.4 5 5.4 .6 -4 3.7 1.1 5.3 -4.9 -2.7 -4.9 2.7 1.1 -5.3 -4 -3.7 5.4 -.6 Z"/>
+      <path d="M76 78 l1.8 3.8 4.1 .5 -3 2.8 .8 4 -3.7 -2 -3.7 2 .8 -4 -3 -2.8 4.1 -.5 Z" opacity=".85"/>
+      <circle cx="58" cy="98" r="2.2"/><circle cx="44" cy="84" r="1.8"/></g>;
+    default: return <g fill={d} opacity=".45"><circle cx="46" cy="58" r="4"/><circle cx="72" cy="70" r="4"/><circle cx="54" cy="90" r="3.5"/></g>;
+  }
+}
+
+function Egg({stage, egg, k, size=132}){
+  const {pal,rarity,pattern}=egg;
+  const gid="g"+k, cid="c"+k, fid="f"+k;
+  const isLeg=rarity==="Legendary", isEpic=rarity==="Epic";
+  return (
+    <svg viewBox="0 0 120 150" width={size} height={size*1.25} className="overflow-visible">
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={pal.base}/>
+          <stop offset="100%" stopColor={pal.mid}/>
+        </linearGradient>
+        <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffe79a"/><stop offset="100%" stopColor="#e0961f"/>
+        </linearGradient>
+        <clipPath id={cid}><path d={EGG}/></clipPath>
+        <filter id={fid} x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="0" stdDeviation={isLeg?"4":"3"} floodColor={isLeg?"#ffcf5c":pal.dark} floodOpacity={isLeg?"0.9":"0.6"}/>
+        </filter>
+      </defs>
+
+      {/* legendary aura */}
+      {isLeg && <circle cx="60" cy="80" r="58" fill="#fff3c4" opacity=".5"/>}
+
+      {stage<2 && (
+        <g filter={(isLeg||isEpic)?`url(#${fid})`:undefined}>
+          <path d={EGG} fill={`url(#${gid})`} stroke={pal.dark} strokeWidth="3"/>
+          <g clipPath={`url(#${cid})`}>
+            <ellipse cx="44" cy="40" rx="20" ry="13" fill="#ffffff" opacity=".35"/>
+            <Pattern type={pattern} pal={pal}/>
+          </g>
+          {/* legendary mid gold trim */}
+          {isLeg && <g clipPath={`url(#${cid})`}>
+            <path d="M16 72 q44 14 88 0 l0 9 q-44 14 -88 0 Z" fill="url(#gold)" stroke="#c87f12" strokeWidth="1"/>
+            <circle cx="60" cy="77" r="6" fill="#ff7a9c" stroke="#fff" strokeWidth="1.6"/>
+          </g>}
+          {/* epic gem */}
+          {isEpic && <g><path d="M60 70 l8 7 -8 11 -8 -11 Z" fill={pal.acc} stroke={pal.dark} strokeWidth="1.6"/><path d="M60 70 l8 7 -8 4 -8 -4 Z" fill="#fff" opacity=".6"/></g>}
+        </g>
+      )}
+
+      {stage===1 && (
+        <g>
+          <path d="M44 26 L52 40 L42 48 L54 60 L46 74" fill="none" stroke={pal.dark} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M52 40 L60 36" fill="none" stroke={pal.dark} strokeWidth="2.2" strokeLinecap="round"/>
+        </g>
+      )}
+
+      {stage===2 && (
+        <g>
+          {/* mystery friend silhouette */}
+          <ellipse cx="60" cy="78" rx="20" ry="22" fill="#6b5a7d" opacity=".55"/>
+          <ellipse cx="52" cy="70" rx="4" ry="5" fill="#fff" opacity=".75"/>
+          <ellipse cx="68" cy="70" rx="4" ry="5" fill="#fff" opacity=".75"/>
+          {/* tilted top shell shard */}
+          <g transform="translate(40 -16) rotate(-18 60 40) scale(.5)" filter={(isLeg||isEpic)?`url(#${fid})`:undefined}>
+            <path d={CAP} fill={`url(#${gid})`} stroke={pal.dark} strokeWidth="5"/>
+          </g>
+          {/* bottom shell cup */}
+          <g filter={(isLeg||isEpic)?`url(#${fid})`:undefined}>
+            <path d={CUP} fill={`url(#${gid})`} stroke={pal.dark} strokeWidth="3"/>
+            <g clipPath={`url(#${cid})`}><ellipse cx="44" cy="100" rx="16" ry="9" fill="#fff" opacity=".25"/></g>
+          </g>
+          {isLeg && <g transform="translate(0 -6)"><path d="M48 36 l5 8 7 -9 7 9 5 -8 -3 16 -18 0 Z" fill="url(#gold)" stroke="#c87f12" strokeWidth="1.4"/></g>}
+          <Sparkle x="34" y="60" s="6" c="#fff4b0"/><Sparkle x="88" y="64" s="7" c={pal.acc}/><Sparkle x="60" y="36" s="5" c="#fff"/>
+        </g>
+      )}
+
+      {/* legendary crown on closed egg */}
+      {isLeg && stage<2 && <g transform="translate(0 -2)"><path d="M44 30 l5 9 6 -10 5 10 5 -9 -2 16 -22 0 Z" fill="url(#gold)" stroke="#c87f12" strokeWidth="1.6"/><circle cx="49" cy="30" r="2" fill="#ff7a9c"/><circle cx="60" cy="29" r="2.2" fill="#ff7a9c"/><circle cx="71" cy="30" r="2" fill="#ff7a9c"/></g>}
+
+      {/* idle sparkles */}
+      <Sparkle x="100" y="44" s="5" c="#fff4b0"/>
+      <Sparkle x="22" y="54" s="4" c={pal.acc}/>
+    </svg>
+  );
+}
+
+/* ============================ STAGE EGG (interactive) ============================ */
+const STAGES=["UTUH","RETAK","KEBELAH"];
+function StageEgg({egg,k,initial}){
+  const [stage,setStage]=useState(initial);
+  return (
+    <div className="flex flex-col items-center gap-1 select-none">
+      <div className="stage-egg" onClick={()=>setStage((stage+1)%3)} title="Klik untuk membuka">
+        <Egg stage={stage} egg={egg} k={k+"_"+stage} size={92}/>
+      </div>
+      <span className="text-[11px] font-extrabold tracking-wide px-2 py-[2px] rounded-full"
+        style={{color:egg.pal.dark, background:"#ffffffcc"}}>{STAGES[stage]}</span>
+    </div>
+  );
+}
+
+/* ============================ EGG CARD ============================ */
+function EggCard({egg,wid,ei}){
+  const r=RARITY[egg.rarity];
+  return (
+    <div className="eggcard rounded-3xl bg-white/80 px-2 py-3 flex flex-col items-center"
+         style={{border:`2px solid ${r.color}33`}}>
+      <div className="flex items-center gap-2 mb-1">
+        <span className="font-extrabold text-[15px]" style={{color:egg.pal.dark}}>{egg.name}</span>
+      </div>
+      <span className="text-[10px] font-extrabold tracking-widest px-2 py-[2px] rounded-full mb-1"
+            style={{color:r.color,background:r.bg}}>{r.icon} {r.label}</span>
+      <div className="grid grid-cols-3 gap-1 w-full place-items-center">
+        {[0,1,2].map(s=> <StageEgg key={s} egg={egg} k={`${wid}_${ei}_${s}`} initial={s}/>)}
+      </div>
+    </div>
+  );
+}
+
+/* ============================ WORLD SECTION ============================ */
+function WorldSection({w}){
+  return (
+    <section className="rounded-[28px] bg-white p-3 sm:p-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)]"
+             style={{border:`3px solid ${w.color}40`}}>
+      <div className="flex items-center gap-3 mb-1">
+        <div className="w-9 h-9 rounded-full grid place-items-center text-white font-extrabold text-lg shrink-0"
+             style={{background:w.color}}>{w.id}</div>
+        <div className="px-3 py-1 rounded-full font-extrabold text-white text-[15px]" style={{background:w.color}}>
+          {w.icon} {w.title}
+        </div>
+        <span className="text-[12px] font-semibold text-amber-900/60 hidden sm:block">{w.desc}</span>
+      </div>
+      <p className="text-[12px] font-semibold text-amber-900/60 sm:hidden mb-2 ml-1">{w.desc}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2" style={{background:w.soft,borderRadius:18,padding:8}}>
+        {w.eggs.map((e,ei)=> <EggCard key={ei} egg={e} wid={w.id} ei={ei}/>)}
+      </div>
+    </section>
+  );
+}
+
+/* ============================ HEADER ============================ */
+function BubuMascot(){
+  return (
+    <svg viewBox="0 0 120 130" width="92" height="100" className="floaty shrink-0">
+      <ellipse cx="38" cy="34" rx="11" ry="26" fill="#fff" stroke="#caa46a" strokeWidth="3"/>
+      <ellipse cx="82" cy="34" rx="11" ry="26" fill="#fff" stroke="#caa46a" strokeWidth="3"/>
+      <ellipse cx="38" cy="36" rx="5" ry="16" fill="#ffc7d2"/><ellipse cx="82" cy="36" rx="5" ry="16" fill="#ffc7d2"/>
+      <circle cx="60" cy="66" r="38" fill="#fff" stroke="#caa46a" strokeWidth="3"/>
+      <circle cx="47" cy="64" r="6.5" fill="#5a4636"/><circle cx="73" cy="64" r="6.5" fill="#5a4636"/>
+      <circle cx="45" cy="61" r="2.2" fill="#fff"/><circle cx="71" cy="61" r="2.2" fill="#fff"/>
+      <circle cx="38" cy="76" r="6" fill="#ffc7d2" opacity=".8"/><circle cx="82" cy="76" r="6" fill="#ffc7d2" opacity=".8"/>
+      <path d="M55 74 q5 5 10 0" fill="none" stroke="#5a4636" strokeWidth="2.4" strokeLinecap="round"/>
+      <path d="M60 30 q-3 -10 6 -12" fill="none" stroke="#7bc950" strokeWidth="3" strokeLinecap="round"/>
+      <ellipse cx="68" cy="17" rx="5" ry="3" fill="#8fd06a" transform="rotate(30 68 17)"/>
+      <rect x="40" y="98" width="40" height="22" rx="8" fill="#9fd98a"/>
+    </svg>
+  );
+}
+function Header(){
+  return (
+    <header className="text-center pt-6 pb-2 px-3">
+      <div className="flex items-center justify-center gap-3 flex-wrap">
+        <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight"
+            style={{color:"#ff8a3d", WebkitTextStroke:"2px #fff", paintOrder:"stroke fill", textShadow:"0 4px 0 #e0962b22"}}>
+          <span style={{color:"#7bc6e3"}}>BU</span><span style={{color:"#ffb84d"}}>BU</span> <span style={{color:"#a76b3a"}}>FRIENDS</span>
+        </h1>
+      </div>
+      <div className="inline-block mt-2 px-5 py-1 rounded-full font-extrabold text-white text-sm"
+           style={{background:"linear-gradient(180deg,#ff9ec0,#ff6fa3)"}}>18 UNIQUE EGGS • 6 MAGICAL WORLDS</div>
+      <div className="flex items-center justify-center gap-2 mt-3">
+        <BubuMascot/>
+        <div className="relative bg-white rounded-2xl px-4 py-2 text-sm font-bold text-amber-900 shadow max-w-[230px] border-2 border-amber-100">
+          “Setiap telur menyimpan kejutan sahabat BUBU!”
+          <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rotate-45 border-l-2 border-b-2 border-amber-100"></div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Legends(){
+  const stg=[["UTUH","Telur utuh tertutup"],["RETAK","Mulai retak"],["KEBELAH","Terbuka — ada sahabat!"]];
+  return (
+    <div className="flex flex-wrap justify-center gap-3 px-3 my-3">
+      <div className="rounded-2xl bg-white px-4 py-2 shadow-sm border border-amber-100">
+        <div className="text-[11px] font-extrabold text-amber-900/60 mb-1 text-center">EGG LEVEL</div>
+        <div className="flex gap-3">
+          {Object.values(RARITY).map(r=>(
+            <div key={r.label} className="flex flex-col items-center">
+              <span className="text-lg" style={{color:r.color}}>{r.icon}</span>
+              <span className="text-[10px] font-extrabold" style={{color:r.color}}>{r.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-2xl bg-white px-4 py-2 shadow-sm border border-amber-100">
+        <div className="text-[11px] font-extrabold text-amber-900/60 mb-1 text-center">3 TAHAP TELUR</div>
+        <div className="flex gap-3">
+          {stg.map(s=>(<div key={s[0]} className="flex flex-col items-center">
+            <span className="text-[10px] font-extrabold text-amber-700">{s[0]}</span>
+          </div>))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BottomLegend(){
+  const items=[
+    {...RARITY.Basic, t:"Telur persahabatan biasa. Penuh kejutan lucu!"},
+    {...RARITY.Epic, t:"Telur ajaib yang langka. Berisi teman spesial!"},
+    {...RARITY.Legendary, t:"Telur legenda penuh kekuatan. Sahabat paling istimewa!"},
+  ];
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 px-3 mt-4 mb-10 max-w-6xl mx-auto">
+      {items.map(i=>(
+        <div key={i.label} className="rounded-2xl bg-white p-3 flex items-center gap-3 shadow-sm" style={{border:`2px solid ${i.color}33`}}>
+          <span className="text-2xl" style={{color:i.color}}>{i.icon}</span>
+          <div>
+            <div className="font-extrabold text-sm" style={{color:i.color}}>{i.label} EGG</div>
+            <div className="text-[11px] font-semibold text-amber-900/60">{i.t}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function App(){
+  return (
+    <div className="max-w-6xl mx-auto pb-8">
+      <Header/>
+      <Legends/>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-3">
+        {WORLDS.map(w=> <WorldSection key={w.id} w={w}/>)}
+      </div>
+      <BottomLegend/>
+      <p className="text-center text-[11px] font-semibold text-amber-900/40 pb-6">✦ Klik telur untuk membukanya: Utuh → Retak → Kebelah ✦ BUBU FRIENDS</p>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+<script>
+(function(){
+  try{
+    var code=document.getElementById('appsrc').textContent;
+    var out=Babel.transform(code,{presets:[['react',{runtime:'classic'}]]}).code;
+    (0,eval)(out);
+  }catch(e){
+    console.error(e);
+    document.getElementById('root').innerHTML='<pre style="color:#c0392b;padding:24px;white-space:pre-wrap;font-family:monospace">BUILD ERROR:\n'+(e&&e.message||e)+'</pre>';
+  }
+})();
+</script>
+</body>
+</html>

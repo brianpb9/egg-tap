@@ -838,6 +838,8 @@ const IMG={
 };
 const BG={ green_forest:"assets/bg/green_forest.png", sunny_beach:"assets/bg/sunny_beach.png",
   candy_land:"assets/bg/candy_land.png", dino_valley:"assets/bg/dino_valley.png", ocean_kingdom:"assets/bg/ocean_kingdom.png" };
+const DECOIMG={ deco_forest_treehouse:"assets/deco/treehouse.png", deco_forest_pond:"assets/deco/pond.png", deco_forest_swing:"assets/deco/swing.png", deco_forest_flower:"assets/deco/flower.png", deco_forest_tree:"assets/deco/tree.png", deco_forest_mushroom:"assets/deco/mushroom.png", deco_beach_umbrella:"assets/deco/umbrella.png", deco_beach_castle:"assets/deco/castle.png" };
+function decoMarkup(d,size){ const p=DECOIMG[d.id]; return p?`<img src="${p}" width="${size}" height="${size}" loading="lazy" style="object-fit:contain;display:block" draggable="false">`:`<div style="font-size:${Math.round(size*0.8)}px">${d.emoji}</div>`; }
 const EGGIMG={
   egg_common:"assets/eggs/egg_common.png",
   egg_rare:"assets/eggs/egg_rare.png",
@@ -865,7 +867,9 @@ const PRAISE_VO_EN=["assets/audio/vo_en_praise1.mp3","assets/audio/vo_en_praise2
 function vo(key){ const set = S.locale==="id"?VOICE : S.locale==="en"?VOICE_EN : null; if(!set) return false; const p=set[key]; return p?playSrc(p):false; }
 function voPraise(){ const set = S.locale==="id"?PRAISE_VO : S.locale==="en"?PRAISE_VO_EN : null; if(!set) return false; return playSrc(set[Math.floor(Math.random()*set.length)]); }
 function creatureMarkup(c,size){ const p=c&&IMG[c.id];
-  return p?`<img src="${p}" alt="" width="${size}" height="${size}" loading="lazy" decoding="async" style="object-fit:contain;display:block" draggable="false">`:creatureSVG(c,size); }
+  if(!p) return creatureSVG(c,size);
+  const src = size<=120 ? p.replace("assets/","assets/thumbs/") : p; // small displays use 256px thumbs (perf)
+  return `<img src="${src}" alt="" width="${size}" height="${size}" loading="lazy" decoding="async" style="object-fit:contain;display:block" draggable="false">`; }
 function eggMarkup(egg){ const p=EGGIMG[egg.id];
   return p?`<img class="egg" src="${p}" alt="" onclick="tapEgg()" style="width:210px;height:210px;object-fit:contain" draggable="false">`:eggSVG(egg,0); }
 
@@ -1375,14 +1379,14 @@ function renderHome(){
   room.style.background = BG[w.id] ? `url('${BG[w.id]}') center/cover no-repeat` : `linear-gradient(180deg,${w.bg[0]},${w.bg[1]} 55%,${w.bg[2]})`;
   room.innerHTML=`<div class="floatlabel">${t("placed_hint")}</div>`;
   S.home.forEach((it,idx)=>{ const el=document.createElement("div"); el.className="placed"; el.style.left=it.x+"px"; el.style.top=it.y+"px";
-    if(it.decoId){ const d=DATA.decorations.find(x=>x.id===it.decoId); el.innerHTML=`<div style="font-size:54px">${d?d.emoji:'❓'}</div>`; }
+    if(it.decoId){ const d=DATA.decorations.find(x=>x.id===it.decoId); el.innerHTML=d?decoMarkup(d,72):'❓'; }
     else { el.innerHTML=creatureMarkup(creature(it.creatureId),86); el.classList.add("floaty"); }
     makeDraggable(el,idx); room.appendChild(el); });
   const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);
   const owned=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);
   let html=`<div class="traytag">🎨<div>${S.locale==='id'?'Hias':'Decor'}</div></div>`;
   html+=decos.map(d=>{ const af=S.currencies.coins>=d.cost;
-    return `<div class="trayitem ${af?'':'cantafford'}" onclick="buyPlaceDeco('${d.id}')"><div style="font-size:34px">${d.emoji}</div>${nm(d.label)}<div class="muted">🪙${d.cost}</div></div>`; }).join("");
+    return `<div class="trayitem ${af?'':'cantafford'}" onclick="buyPlaceDeco('${d.id}')">${decoMarkup(d,40)}${nm(d.label)}<div class="muted">🪙${d.cost}</div></div>`; }).join("");
   html+=`<div class="traytag">🐾<div>${S.locale==='id'?'Teman':'Pets'}</div></div>`;
   html+= owned.length? owned.map(c=>`<div class="trayitem" onclick="placeCreature('${c.id}')">${creatureMarkup(c,52)}${nm(c.name)}</div>`).join("")
     : `<div class="trayitem cantafford" style="cursor:default">${S.locale==='id'?'Tetaskan dulu':'Hatch first'} 🥚</div>`;

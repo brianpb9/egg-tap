@@ -1555,8 +1555,13 @@ function answerSeq(el){
       const p=DATA.praise[S.locale][0]; if(!voPraise()) speak(p); setCue(p); awardBadges(); LOOP.answered=true;
       setTimeout(finishChallenge,700); }
   } else { SFX.oops(); el.classList.add("wrong"); LOOP.wrongs++;
-    speak(DATA.oops[S.locale][0]);
-    // gentle hint: pulse the smallest remaining
+    if(!vo("oops")) speak(DATA.oops[S.locale][0]);
+    if(S.ageBand>=5){ // assessment: no win-assist — after 2 misses, skip (not recorded as a win)
+      if(LOOP.wrongs>=2){ LOOP.resolved=true; LOOP.answered=true; recordAttempt(ch.skill,false);
+        setCue(S.locale==='id'?'Belum tepat — lain kali ya! 💪':'Not quite — next time! 💪'); setTimeout(finishChallenge,1100); }
+      return;
+    }
+    // ages 3-4: gentle hint then solve so they never get stuck
     if(LOOP.wrongs>=2){ const next=[...$$("#ch_options .opt")].find(o=>parseInt(o.dataset.order,10)===SEQ.expect); if(next) next.classList.add("hint"); }
     if(LOOP.wrongs>=3){ LOOP.answered=true; LOOP.resolved=true; recordAttempt(ch.skill,true); S.stats.challengesPassed++; const p=DATA.praise[S.locale][0]; speak(p);
       setTimeout(finishChallenge,600); }

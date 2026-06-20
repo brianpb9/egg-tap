@@ -1261,6 +1261,7 @@ function newEgg(){
   $("#eggwrap").classList.remove("jolt"); $("#eggwrap").classList.toggle("kingegg",!!egg.king);
   setCue(egg.king?(S.locale==='id'?'👑 TELUR RAJA! Ketuk 10×!':'👑 KING EGG! Tap 10×!'):t("tap_cue")); updateDots(); syncWallet();
   if(egg.king) toast(S.locale==='id'?'👑 Telur Raja! Ada Legenda di dalam!':'👑 King Egg! A Legend awaits!');
+  else if(egg.epic) toast(S.locale==='id'?'✨ Telur Spesial! Peluang langka lebih besar':'✨ Special Egg! Better odds for rare friends');
   { const th=$("#tapHint"); if(th){ th.textContent=S.locale==='id'?'👆 Ketuk!':'👆 Tap!'; th.style.display=S.tutDone?"none":"block"; } }
   clearTimeout(window._idle);
   window._idle=setTimeout(()=>{ if(LOOP.crack===0){ if(AUDIO_READY){ if(!vo('tap')) speak(t("tap_cue")); } bounceEgg(); } },2500);
@@ -1780,10 +1781,13 @@ function startPlay(){ try{SFX.tap();}catch(e){} if(S.onboarded){ show("hatch"); 
   DATA.worlds.forEach(w=>{ if(SET[w.id]){ w.sets=[SET[w.id]]; w.unlock=UNLOCK[w.id]; } });
   // BUBU eggs per world (transparent 'utuh' art); engine crack-fx overlays the cracking
   const EGGB={green_forest:'leaf',sunny_beach:'shell',candy_land:'candy',dino_valley:'dino',ocean_kingdom:'bubble',rainbow_meadow:'flower'};
-  Object.keys(EGGB).forEach(world=>{ const id='begg_'+EGGB[world];
+  const EGGEPIC={green_forest:'forest',sunny_beach:'beach',candy_land:'candy',dino_valley:'dino',ocean_kingdom:'ocean',rainbow_meadow:'meadow'};
+  Object.keys(EGGB).forEach(world=>{ const id='begg_'+EGGB[world], eid='begg_epic_'+EGGEPIC[world];
     if(!DATA.eggs.find(x=>x.id===id)) DATA.eggs.push({id,crackStates:3,dropTableId:'drop_common_default',base:'#fff',accent:'#ddd',pattern:'dots'});
+    if(!DATA.eggs.find(x=>x.id===eid)) DATA.eggs.push({id:eid,crackStates:5,dropTableId:'drop_rare_default',epic:true,base:'#fff',accent:'#ddd',pattern:'dots'});
     EGGIMG[id]='assets/bubu/eggs/ingame_'+EGGB[world]+'.png';
-    const w=DATA.worlds.find(x=>x.id===world); if(w) w.eggIds=[id]; });
+    EGGIMG[eid]='assets/bubu/eggs/ingame_epic_'+EGGEPIC[world]+'.png';
+    const w=DATA.worlds.find(x=>x.id===world); if(w) w.eggIds=[id,eid]; });
   // curated decorations per world — all with real art (transparent PNGs)
   const MOREDECO=[
    {id:"deco_candy_cupcake",world:"candy_land",emoji:"🧁",cost:60,label:{id:"Kue Mangkok",en:"Cupcake"}},

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Egg Tap</title>
 <style>
   /* ============================================================
@@ -194,9 +194,28 @@
   .goalchip:empty{display:none;}
   .floatlabel{top:10px;bottom:auto;left:50%;right:auto;transform:translateX(-50%);width:auto;max-width:90%;background:rgba(255,255,255,.85);border-radius:999px;padding:6px 14px;font-size:12px;box-shadow:var(--shadow);pointer-events:none;animation:hintfade 6s forwards;}
   @keyframes hintfade{0%,70%{opacity:1}100%{opacity:0}}
+
+  /* ===== Medium improvements ===== */
+  .topbar{padding-top:max(12px,env(safe-area-inset-top));}
+  .nav{padding-bottom:max(14px,env(safe-area-inset-bottom));}
+  .bonusbtn{margin-top:12px;border:none;border-radius:999px;font-family:inherit;font-weight:800;font-size:15px;color:#fff;background:linear-gradient(180deg,#7ad7ff,#48cae4);box-shadow:0 4px 0 #2a9ec0,var(--shadow);padding:11px 20px;cursor:pointer;z-index:3;}
+  .bonusbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #2a9ec0;}
+  .mission{display:flex;align-items:center;gap:10px;background:#fff7ee;border-radius:14px;padding:9px 12px;margin:6px 0;text-align:left;}
+  .mission .mi{font-size:24px;}
+  .mission .ml{flex:1;font-weight:800;font-size:13px;}
+  .mission .mbar{height:8px;border-radius:999px;background:#eadfce;overflow:hidden;margin-top:4px;}
+  .mission .mbar>i{display:block;height:100%;background:var(--good);transition:width .3s;}
+  .mission .mr{font-weight:800;font-size:12px;color:var(--btn);white-space:nowrap;}
+  .mission.done{opacity:.6;}
+  .mission.done .mr{color:var(--good);}
+  #rotate{display:none;}
+  @media (orientation:landscape) and (max-height:500px){
+    #rotate{display:flex;position:fixed;inset:0;z-index:999;background:var(--bg2);align-items:center;justify-content:center;text-align:center;font-weight:800;font-size:20px;color:var(--ink);padding:24px;}
+  }
 </style>
 </head>
 <body>
+<div id="rotate">📱 Putar ke posisi tegak ya!</div>
 <div id="device">
   <!-- S0/S1 ONBOARDING -->
   <section id="onboard" class="screen active">
@@ -237,6 +256,7 @@
       <div class="eggwrap" id="eggwrap"></div>
       <div class="cue" id="cue"></div>
       <div class="tapdots" id="tapdots"></div>
+      <button class="bonusbtn" id="bonusEgg" style="display:none" onclick="buyBonusEgg()"></button>
     </div>
     <div class="overlay" id="challengeOverlay">
       <div class="sheet">
@@ -290,7 +310,8 @@
       <h2 id="d_title">Telur Harian!</h2>
       <p class="note" id="d_sub"></p>
       <div class="streakwrap" id="streakStrip"></div>
-      <button class="big" onclick="claimDaily()" id="d_claim">Ambil 🥚</button>
+      <div id="missionWrap" style="text-align:left"><div class="setbar" style="padding:6px 0"><span id="m_title">🎯 Misi Hari Ini</span></div><div id="missionList"></div></div>
+      <button class="big" onclick="claimDaily()" id="d_claim" style="margin-top:8px">Ambil 🥚</button>
     </div>
   </div>
 
@@ -302,6 +323,19 @@
       <div id="lg_card" style="margin:8px auto"></div>
       <p class="note" id="lg_sub"></p>
       <button class="big" onclick="closeModal('legendModal')" id="lg_ok">Hore! 🎉</button>
+    </div>
+  </div>
+
+  <!-- SOFT-STOP (wind-down after a session) -->
+  <div class="modal" id="softStop">
+    <div class="modalbox">
+      <div style="font-size:54px">🌟</div>
+      <h2 id="ss_title">Hebat hari ini!</h2>
+      <p class="note" id="ss_sub"></p>
+      <div class="rwbtns">
+        <button class="big mini" id="ss_again" onclick="closeModal('softStop'); newEgg();">Main lagi 🥚</button>
+        <button class="big mini ghost" id="ss_home" onclick="closeModal('softStop'); show('home');">Lihat Rumah 🏡</button>
+      </div>
     </div>
   </div>
 
@@ -820,6 +854,10 @@ function applyStaticI18n(){
   $("#g_cancel").textContent=t("gate_cancel"); $("#g_title").textContent=t("parentzone");
   $("#p_week").textContent=t("week"); $("#p_skillsh").textContent=t("skillsh"); $("#p_settings").textContent=t("settings");
   $("#p_lang_l").textContent=t("lang_l"); $("#p_reset").textContent=t("reset"); $("#p_compliance").textContent=t("compliance");
+  $("#m_title").textContent=S.locale==='id'?'🎯 Misi Hari Ini':"🎯 Today's Missions";
+  $("#ss_title").textContent=S.locale==='id'?'Hebat hari ini!':'Great job today!';
+  $("#ss_again").textContent=S.locale==='id'?'Main lagi 🥚':'Play again 🥚';
+  $("#ss_home").textContent=S.locale==='id'?'Lihat Rumah 🏡':'See Home 🏡';
   $("#prof_av").innerHTML=`<img src="assets/creatures/ghost.png" alt="" style="width:60px;height:60px;object-fit:contain">`;
   populateOnboard();
   document.documentElement.lang=S.locale;
@@ -832,6 +870,33 @@ function setAge(a){ SFX.tap(); S.ageBand=a; S.onboarded=true;
 
 /* ===================== CORE LOOP ===================== */
 let LOOP={crack:0,egg:null,creature:null,challenge:null,wrongs:0,isNew:false};
+let SESSION_HATCH=0; const SOFT_STOP_EVERY=8; const BONUS_COST=40;
+const MISSIONS=[
+  {id:"hatch", goal:5, reward:30, emoji:"🥚", label:{id:"Tetaskan 5 telur",en:"Hatch 5 eggs"}},
+  {id:"correct", goal:5, reward:30, emoji:"✅", label:{id:"Jawab 5 benar",en:"Answer 5 right"}},
+  {id:"new", goal:2, reward:40, emoji:"⭐", label:{id:"Temukan 2 makhluk baru",en:"Find 2 new creatures"}},
+];
+function ensureMissions(){ const d=todayStr(); if(!S.missions||S.missions.date!==d){ S.missions={date:d,prog:{},done:{}}; save(); } }
+function missionProgress(id,n){ ensureMissions(); const m=MISSIONS.find(x=>x.id===id); if(!m||S.missions.done[id]) return;
+  S.missions.prog[id]=(S.missions.prog[id]||0)+(n||1);
+  if(S.missions.prog[id]>=m.goal){ S.missions.done[id]=true; S.currencies.coins+=m.reward; SFX.coin(); toast(`🎯 ${nm(m.label)} ✓ +${m.reward}🪙`); syncWallet(); }
+  save(); }
+function renderMissions(){ ensureMissions(); const el=$("#missionList"); if(!el) return;
+  el.innerHTML=MISSIONS.map(m=>{ const p=Math.min(S.missions.prog[m.id]||0,m.goal); const done=!!S.missions.done[m.id];
+    return `<div class="mission ${done?'done':''}"><div class="mi">${m.emoji}</div>
+      <div class="ml">${nm(m.label)}<div class="mbar"><i style="width:${Math.round(p/m.goal*100)}%"></i></div></div>
+      <div class="mr">${done?'✓':p+'/'+m.goal} +${m.reward}🪙</div></div>`; }).join(""); }
+function showSoftStop(){ $("#ss_sub").innerHTML = S.locale==='id'
+    ? `Kamu menetaskan <b>${SESSION_HATCH}</b> telur & punya <b>${ownedCount()}</b> makhluk. Istirahat dulu yuk! 💛`
+    : `You hatched <b>${SESSION_HATCH}</b> eggs & have <b>${ownedCount()}</b> creatures. Time for a little break! 💛`;
+  openModal("softStop"); }
+function buyBonusEgg(){ if(S.currencies.stardust<BONUS_COST||LOOP.creature) return;
+  S.currencies.stardust-=BONUS_COST; SFX.coin(); LOOP.crack=0; LOOP.egg=DATA.eggs.find(e=>e.id==="egg_magic");
+  $("#eggwrap").innerHTML=eggMarkup(LOOP.egg); updateDots(); toast(S.locale==='id'?'✨ Telur Ajaib!':'✨ Magic Egg!'); syncWallet(); }
+function updateBonusBtn(){ const b=$("#bonusEgg"); if(!b) return;
+  const ok = S.currencies.stardust>=BONUS_COST && LOOP && !LOOP.creature && LOOP.crack===0 && LOOP.egg && LOOP.egg.id!=="egg_magic";
+  b.style.display=ok?"inline-block":"none";
+  b.textContent=(S.locale==='id'?'✨ Telur Ajaib':'✨ Magic Egg')+` (${BONUS_COST}✨)`; }
 function syncWallet(){
   $("#w_stars").textContent=S.currencies.stars; $("#w_coins").textContent=S.currencies.coins; $("#w_dust").textContent=S.currencies.stardust;
   $("#worldName").textContent=nm(world(S.currentWorld).name);
@@ -839,6 +904,7 @@ function syncWallet(){
   if(st) st.style.background = b? `linear-gradient(rgba(255,251,240,.60),rgba(255,251,240,.82)), url('${b}') center/cover no-repeat` : '';
   const gc=$("#goalChip"); if(gc){ const ow=ownedCount(); const nx=DATA.worlds.find(w=>!S.worldsUnlocked.includes(w.id));
     gc.textContent = nx ? `🥚 ${Math.max(0,nx.unlock-ow)} ${t('creatures')} → ${nm(nx.name)}` : ''; }
+  updateBonusBtn();
 }
 function pickEgg(){ const w=world(S.currentWorld); const ids=w.eggIds.filter(id=>DATA.eggs.find(e=>e.id===id));
   return DATA.eggs.find(e=>e.id===(Math.random()<0.8?ids[0]:(ids[1]||ids[0]))); }
@@ -858,7 +924,7 @@ function tapEgg(){
   clearTimeout(window._idle);
   LOOP.crack++; SFX.crack(LOOP.crack); bounceEgg(); burst(6,$("#eggwrap"));
   if(!EGGIMG[LOOP.egg.id]) $("#eggwrap").innerHTML=eggSVG(LOOP.egg,LOOP.crack);
-  updateDots();
+  updateDots(); updateBonusBtn();
   if(LOOP.crack>=LOOP.egg.crackStates) hatch();
 }
 function rollCreature(egg){
@@ -878,6 +944,7 @@ function hatch(){
   const c=rollCreature(LOOP.egg); LOOP.creature=c; LOOP.isNew=!S.owned[c.id];
   SFX.hatch(); burst(40,$("#fx"),true);
   S.owned[c.id]=(S.owned[c.id]||0)+1; S.stats.hatches++;
+  SESSION_HATCH++; missionProgress('hatch'); if(LOOP.isNew) missionProgress('new');
   awardBadges();
   $("#eggwrap").innerHTML=`<div class="hatched floaty">${creatureMarkup(c,210)}</div>`;
   setCue(""); $("#tapdots").innerHTML="";
@@ -892,7 +959,7 @@ function recordAttempt(s,ok){
   const sp=S.skillProgress[s]||(S.skillProgress[s]={tier:1,last5:[]});
   sp.last5.push(ok?1:0); if(sp.last5.length>5) sp.last5.shift();
   if(sp.last5.length>=5){ const r=sp.last5.reduce((a,b)=>a+b,0)/5; if(r>=0.8&&sp.tier<3)sp.tier++; else if(r<=0.4&&sp.tier>1)sp.tier--; }
-  if(ok){ S.stats.correct++; if(!S.stats.weekSkills.includes(s)) S.stats.weekSkills.push(s); }
+  if(ok){ S.stats.correct++; missionProgress('correct'); if(!S.stats.weekSkills.includes(s)) S.stats.weekSkills.push(s); }
 }
 function pickChallenge(){
   const skills=DATA.skills.map(s=>s.id);
@@ -917,7 +984,7 @@ function startChallenge(asker){
   if(ch.archetype==="MEMORY"){
     $("#ch_sample").innerHTML=`<div class="samplebox">${ch.sample}</div>`;
     if(!vo("remember")) speak(t("remember")); setCueSample(t("remember"));
-    setTimeout(()=>{ $("#ch_sample").innerHTML=`<div class="muted">${t("remember")} ✔</div>`; renderOptions(ch); },1600);
+    setTimeout(()=>{ $("#ch_sample").innerHTML=`<div class="muted">${t("remember")} ✔</div>`; renderOptions(ch); },2600);
     return;
   }
   if(ch.archetype==="MATCH"){ $("#ch_sample").innerHTML=`<div class="samplebox">${ch.sample}</div>`; }
@@ -951,7 +1018,7 @@ function answer(el){
 function answerSeq(el){
   const ord=parseInt(el.dataset.order,10); const ch=LOOP.challenge;
   if(el.classList.contains("picked")) return;
-  if(ord===SEQ.expect){ SFX.star(); el.classList.add("picked"); SEQ.expect++;
+  if(ord===SEQ.expect){ SFX.star(); el.classList.add("picked"); el.insertAdjacentHTML("beforeend",`<span class="seqnum">${ord}</span>`); SEQ.expect++;
     if(SEQ.expect>SEQ.total){ SFX.correct(); recordAttempt(ch.skill,true); S.stats.challengesPassed++; burst(24,$("#fx"),true);
       const p=DATA.praise[S.locale][0]; if(!voPraise()) speak(p); setCue(p); awardBadges();
       setTimeout(()=>{ $("#challengeOverlay").classList.remove("active"); reward(); },700); }
@@ -987,7 +1054,8 @@ function reward(){
   $("#rewardOverlay").classList.add("active");
   syncWallet(); checkUnlocks(); checkSets(); save();
 }
-function nextEgg(){ SFX.tap(); $("#rewardOverlay").classList.remove("active"); newEgg(); }
+function nextEgg(){ SFX.tap(); $("#rewardOverlay").classList.remove("active");
+  if(SESSION_HATCH>0 && SESSION_HATCH%SOFT_STOP_EVERY===0) showSoftStop(); else newEgg(); }
 
 function checkUnlocks(){
   const owned=ownedCount();
@@ -1125,7 +1193,7 @@ function pickWorld(id){ SFX.tap(); S.currentWorld=id; save(); show("hatch"); new
 
 /* ===================== DAILY ===================== */
 function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
-function maybeDaily(){ if(S.daily.lastClaim===todayStr()) return; renderStreak(); openModal("dailyModal"); }
+function maybeDaily(){ ensureMissions(); if(S.daily.lastClaim===todayStr()) return; renderStreak(); renderMissions(); openModal("dailyModal"); }
 function renderStreak(){ const cur=S.daily.streak%7; $("#streakStrip").innerHTML=[1,2,3,4,5,6,7].map(d=>{
   const done=d<=cur, today=d===cur+1, gift=d===3?'🥚':d===7?'✨':''; return `<div class="sd ${done?'done':''} ${today?'today':''}">${gift||d}</div>`; }).join(""); }
 function claimDaily(){ S.daily.lastClaim=todayStr(); S.daily.streak++; S.currencies.coins+=20; SFX.coin();

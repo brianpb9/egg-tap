@@ -1769,13 +1769,19 @@ function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newS
     : `Si kecil menetaskan <b>${S.stats.hatches}</b> telur, mengoleksi <b>${owned}</b> makhluk, dan menjawab benar <b>${S.stats.correct}/${att}</b> tantangan (akurasi <b>${acc}%</b>). Keterampilan baru minggu ini: <b>${newSkills}</b>. Streak: <b>${S.daily.streak}</b> hari · Lencana: <b>${S.badges.length}</b>.`;
   const pillLabels={colors:{id:'Warna',en:'Colors'},shapes:{id:'Bentuk',en:'Shapes'},animals:{id:'Hewan',en:'Animals'},numbers:{id:'Angka & hitung',en:'Numbers & math'},letters:{id:'Huruf',en:'Letters'},emotions:{id:'Emosi',en:'Emotions'},logic:{id:'Logika',en:'Logic'},memory:{id:'Memori',en:'Memory'}};
   const pillars={}; DATA.skills.forEach(sk=>{ const sp=S.skillProgress[sk.id]; (pillars[sk.pillar]=pillars[sk.pillar]||[]).push(sp?sp.tier:1); });
-  const pillHtml=Object.keys(pillars).map(p=>{ const avg=Math.round(pillars[p].reduce((a,b)=>a+b,0)/pillars[p].length);
-    return `<div class="skillrow"><div class="lab">${pillLabels[p]?nm(pillLabels[p]):p}</div><div class="tiertag">${nm(TIER_NAMES[avg]||{id:'T'+avg,en:'T'+avg})}</div></div>`; }).join("");
+  const pillHtml=Object.keys(pillars).map(p=>{ const avg=pillars[p].reduce((a,b)=>a+b,0)/pillars[p].length; const pct=Math.max(8,Math.round(avg/4*100));
+    const col=avg>=3.5?'#F4A300':avg>=2.5?'#9b59f0':avg>=1.5?'#4d9be0':'#7BC950';
+    return `<div style="margin:6px 2px"><div style="display:flex;justify-content:space-between;font-weight:800;font-size:13px;color:#5a4a2a"><span>${pillLabels[p]?nm(pillLabels[p]):p}</span><span style="color:${col}">${nm(TIER_NAMES[Math.round(avg)]||{id:'',en:''})}</span></div>`
+      +`<div style="height:13px;background:#ece2cf;border-radius:99px;overflow:hidden;margin-top:3px;box-shadow:inset 0 1px 2px rgba(0,0,0,.12)"><i style="display:block;height:100%;width:${pct}%;background:linear-gradient(90deg,${col}bb,${col});border-radius:99px"></i></div></div>`; }).join("");
+  // strongest / focus area callout
+  const pillAvg=Object.keys(pillars).map(p=>({p,a:pillars[p].reduce((x,y)=>x+y,0)/pillars[p].length})); pillAvg.sort((a,b)=>b.a-a.a);
+  const strong=pillAvg[0], weak=pillAvg[pillAvg.length-1]; const lab=p=>pillLabels[p]?nm(pillLabels[p]):p;
+  const callout=pillAvg.length>1?`<div class="note" style="margin:2px 2px 8px;color:#7a6a4a">${en?`💪 Strongest: <b>${lab(strong.p)}</b> · 🌱 Focus next: <b>${lab(weak.p)}</b>`:`💪 Terkuat: <b>${lab(strong.p)}</b> · 🌱 Perlu latihan: <b>${lab(weak.p)}</b>`}</div>`:'';
   const btn=a=>`<button onclick="setAgeBand(${a})" style="width:42px;height:42px;border-radius:50%;border:3px solid ${S.ageBand===a?'#4f8f24':'#ffd591'};background:${S.ageBand===a?'#a8e46c':'#fff'};font-weight:800;font-size:17px;cursor:pointer;color:#5a4a2a">${a}</button>`;
   const ageRow=`<div class="skillrow" style="gap:10px;align-items:center"><div class="lab">${en?'Child age':'Umur anak'}</div>${btn(3)}${btn(4)}${btn(5)}</div>`
     +`<div class="note" style="margin:2px 2px 6px;color:#7a6a4a">${S.ageBand>=5?(en?'⚡ Age 5: real challenges + extra math — wrong answers are NOT auto-solved.':'⚡ Umur 5: tantangan nyata + lebih banyak matematika — jawaban salah TIDAK dibantu.'):(en?'🌿 Ages 3–4: gentle no-fail mode (always succeeds).':'🌿 Umur 3–4: mode lembut tanpa gagal (selalu berhasil).')}</div>`;
   $("#skillList").innerHTML=ageRow
-    +`<div class="setbar"><span>${en?'Mastery by area':'Penguasaan per bidang'}</span></div>`+pillHtml
+    +`<div class="setbar"><span>${en?'Mastery by area':'Penguasaan per bidang'}</span></div>`+pillHtml+callout
     +`<div class="setbar"><span>${en?'Skill detail':'Detail keterampilan'}</span></div>`
     +DATA.skills.map(sk=>{ const sp=S.skillProgress[sk.id]||{tier:1,last5:[]};
       const dots=Array.from({length:5},(_,i)=>{ const v=sp.last5[i]; return `<i class="${v===1?'ok':v===0?'no':''}"></i>`; }).join("");

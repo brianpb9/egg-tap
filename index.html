@@ -1607,13 +1607,15 @@ function renderHome(){
   const rw=room.clientWidth||340, rh=room.clientHeight||440;
   const clampX=v=>Math.max(8,Math.min(rw-72,v)), clampY=v=>Math.max(rh*0.16,Math.min(rh-94,v));
   let assigned=0;
-  // decorations + friends gathering at them (decor feels "used")
-  decor.forEach(it=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); if(!d)return;
-    const x=(it.x!=null?it.x:rw*0.6), y=(it.y!=null?it.y:rh*0.5);
-    const de=document.createElement("div"); de.className="placed"; de.style.left=x+"px"; de.style.top=y+"px"; de.style.zIndex=Math.round(y); de.innerHTML=decoMarkup(d,80); room.appendChild(de);
+  // decorations laid out on a tidy grid (no overlap) + friends gathering at them
+  const dn=decor.length, dcols=Math.min(3,Math.max(1,dn));
+  decor.forEach((it,i)=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); if(!d)return;
+    const col=i%dcols, rowi=Math.floor(i/dcols);
+    const x=clampX(rw*(0.18+0.30*col)-32), y=clampY(rh*(0.30+0.15*rowi));
+    const de=document.createElement("div"); de.className="placed"; de.style.left=x+"px"; de.style.top=y+"px"; de.style.zIndex=Math.round(y); de.innerHTML=decoMarkup(d,76); room.appendChild(de);
     const host=Math.min(2,friends.length-assigned);
-    for(let k=0;k<host;k++){ const c=friends[assigned++]; const off=k===0?-30:36;
-      mkFriend(room,c,clampX(x+off),clampY(y+(k===0?22:6)),56,Math.round(y)+30,'atdecor'); }
+    for(let k=0;k<host;k++){ const c=friends[assigned++]; const off=k===0?-30:34;
+      mkFriend(room,c,clampX(x+off),clampY(y+(k===0?28:10)),54,Math.round(y)+30,'atdecor'); }
   });
   // remaining friends auto-arranged on the floor — tap any to pet
   const rest=friends.slice(assigned), n=rest.length;
@@ -1638,9 +1640,13 @@ function renderHome(){
   $("#tray").innerHTML=html;
 }
 function placeSpot(){ const r=$("#room"); const W=r.clientWidth||300, H=r.clientHeight||420; return {x:Math.round(24+Math.random()*(W-130)), y:Math.round(H*0.42+Math.random()*(H*0.34))}; }
-function buyPlaceDeco(id){ const d=DATA.decorations.find(x=>x.id===id);
+function buyPlaceDeco(id){ const d=DATA.decorations.find(x=>x.id===id); if(!d) return;
   if(S.currencies.coins<d.cost){ SFX.oops(); toast(t("afford")); return; }
-  S.currencies.coins-=d.cost; SFX.coin(); S.home.push({decoId:id, ...placeSpot()}); save(); renderHome(); }
+  const cnt=()=>Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld).length + S.home.filter(it=>it.decoId).length;
+  const before=homeLevel(cnt());
+  S.currencies.coins-=d.cost; SFX.coin(); S.home.push({decoId:id}); save(); renderHome();
+  const after=homeLevel(cnt());
+  if(after>before){ try{SFX.fanfare('rare');}catch(e){} toast((S.locale==='id'?'🏡 Rumah naik ke Lv':'🏡 Home reached Lv')+after+' '+nm(HOME_LEVELS[after])+'!'); } }
 function placeCreature(id){ // toggle: one instance per species in Home
   const before=homeLevel(S.home.length);
   const i=S.home.findIndex(h=>h.creatureId===id);
@@ -1772,6 +1778,25 @@ function startPlay(){ try{SFX.tap();}catch(e){} if(S.onboarded){ show("hatch"); 
     if(!DATA.eggs.find(x=>x.id===id)) DATA.eggs.push({id,crackStates:3,dropTableId:'drop_common_default',base:'#fff',accent:'#ddd',pattern:'dots'});
     EGGIMG[id]='assets/bubu/eggs/ingame_'+EGGB[world]+'.png';
     const w=DATA.worlds.find(x=>x.id===world); if(w) w.eggIds=[id]; });
+  // ensure every world has cozy decorations (emoji fallback render) — no dead-end Home
+  const MOREDECO=[
+   {id:"deco_beach_palm",world:"sunny_beach",emoji:"🌴",cost:45,label:{id:"Pohon Palem",en:"Palm Tree"}},
+   {id:"deco_beach_ball",world:"sunny_beach",emoji:"🏐",cost:30,label:{id:"Bola Pantai",en:"Beach Ball"}},
+   {id:"deco_candy_cupcake",world:"candy_land",emoji:"🧁",cost:60,label:{id:"Kue Mangkok",en:"Cupcake"}},
+   {id:"deco_candy_donut",world:"candy_land",emoji:"🍩",cost:40,label:{id:"Donat",en:"Donut"}},
+   {id:"deco_candy_icecream",world:"candy_land",emoji:"🍦",cost:35,label:{id:"Es Krim",en:"Ice Cream"}},
+   {id:"deco_dino_egg",world:"dino_valley",emoji:"🥚",cost:50,label:{id:"Telur Dino",en:"Dino Egg"}},
+   {id:"deco_dino_bone",world:"dino_valley",emoji:"🦴",cost:35,label:{id:"Tulang",en:"Bone"}},
+   {id:"deco_dino_fern",world:"dino_valley",emoji:"🌴",cost:40,label:{id:"Pakis",en:"Fern"}},
+   {id:"deco_ocean_shell",world:"ocean_kingdom",emoji:"🐚",cost:40,label:{id:"Kerang",en:"Shell"}},
+   {id:"deco_ocean_bubbles",world:"ocean_kingdom",emoji:"🫧",cost:30,label:{id:"Gelembung",en:"Bubbles"}},
+   {id:"deco_ocean_star",world:"ocean_kingdom",emoji:"⭐",cost:35,label:{id:"Bintang Laut",en:"Starfish"}},
+   {id:"deco_meadow_rainbow",world:"rainbow_meadow",emoji:"🌈",cost:70,label:{id:"Pelangi",en:"Rainbow"}},
+   {id:"deco_meadow_cloud",world:"rainbow_meadow",emoji:"☁️",cost:40,label:{id:"Awan",en:"Cloud"}},
+   {id:"deco_meadow_star",world:"rainbow_meadow",emoji:"🌟",cost:35,label:{id:"Bintang",en:"Star"}},
+   {id:"deco_meadow_flower",world:"rainbow_meadow",emoji:"🌸",cost:30,label:{id:"Bunga",en:"Blossom"}}
+  ];
+  MOREDECO.forEach(d=>{ if(!DATA.decorations.find(x=>x.id===d.id)) DATA.decorations.push(d); });
 })();
 function boot(){
   load(); applyStaticI18n();

@@ -234,6 +234,12 @@
   .legendcel{position:absolute;inset:-20%;z-index:4;pointer-events:none;background:conic-gradient(from 0deg,#ff8a3d,#ffd166,#7BC950,#48CAE4,#C77DFF,#ff6b9d,#ff8a3d);opacity:0;mix-blend-mode:screen;}
   .legendcel.go{animation:legendspin 2.2s ease-out forwards;}
   @keyframes legendspin{0%{opacity:0;transform:scale(.6) rotate(0)}25%{opacity:.5}100%{opacity:0;transform:scale(1.9) rotate(130deg)}}
+
+  /* ===== Icon polish (V3.1): SVG nav + currency, fix music-button overlap ===== */
+  .nav .ic{font-size:0;}
+  .nav .ic svg{width:27px;height:27px;display:block;}
+  .coin svg{width:17px;height:17px;flex:0 0 auto;}
+  #worldName{margin-left:46px;}
 </style>
 </head>
 <body>
@@ -268,9 +274,9 @@
     <div class="topbar">
       <div class="title" id="worldName">Hutan Hijau</div>
       <div class="wallet">
-        <div class="coin">⭐ <span id="w_stars">0</span></div>
-        <div class="coin">🪙 <span id="w_coins">0</span></div>
-        <div class="coin">✨ <span id="w_dust">0</span></div>
+        <div class="coin"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 6L12 16.9 6.6 19.2l1.3-6-4.5-4 6-.6z" fill="#FFC83D" stroke="#d99a12" stroke-width="1.2" stroke-linejoin="round"/></svg> <span id="w_stars">0</span></div>
+        <div class="coin"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4" fill="#F4C430" stroke="#b88a12" stroke-width="1.6"/><circle cx="12" cy="12" r="5" fill="none" stroke="#b88a12" stroke-width="1.3"/></svg> <span id="w_coins">0</span></div>
+        <div class="coin"><svg viewBox="0 0 24 24"><path d="M12 2.5l1.9 6.6 6.6 1.9-6.6 1.9L12 19.5l-1.9-6.6L3.5 11l6.6-1.9z" fill="#C77DFF" stroke="#8a3dd0" stroke-width="1"/></svg> <span id="w_dust">0</span></div>
       </div>
     </div>
     <div class="stage">
@@ -1029,9 +1035,18 @@ function resumeHatch(){
   if(chOpen||rwOpen) return;
   if(!LOOP.egg || LOOP.creature) newEgg();
 }
+const ICON={
+  hatch:`<svg viewBox="0 0 24 24"><path d="M12 2.5C8.4 2.5 6.3 9 6.3 13.6a5.7 5.7 0 0 0 11.4 0C17.7 9 15.6 2.5 12 2.5Z" fill="#f6b94a" stroke="#cf8a2c" stroke-width="1.6"/><ellipse cx="9.7" cy="9" rx="1.5" ry="2.3" fill="#fff" opacity=".55"/></svg>`,
+  album:`<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="12" height="15" rx="2.5" fill="#8fd96a" stroke="#4f8f30" stroke-width="1.6"/><rect x="8.5" y="4" width="12" height="15" rx="2.5" fill="#5fc6e6" stroke="#2c8aa8" stroke-width="1.6"/></svg>`,
+  home:`<svg viewBox="0 0 24 24"><path d="M5 10.6 12 5l7 5.6" fill="none" stroke="#cf8a2c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.6 9.9V19h10.8V9.9" fill="#ffd591" stroke="#cf8a2c" stroke-width="1.6" stroke-linejoin="round"/><rect x="10" y="13.6" width="4" height="5.4" rx="1" fill="#cf8a2c"/></svg>`,
+  world:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2" fill="#7ec8e3" stroke="#2c8aa8" stroke-width="1.6"/><path d="M3.8 12h16.4M12 3.8c2.8 2.6 2.8 13.8 0 16.4M12 3.8c-2.8 2.6-2.8 13.8 0 16.4" fill="none" stroke="#2c8aa8" stroke-width="1.2"/></svg>`,
+  star:`<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 6L12 16.9 6.6 19.2l1.3-6-4.5-4 6-.6z" fill="#FFC83D" stroke="#d99a12" stroke-width="1.2" stroke-linejoin="round"/></svg>`,
+  coin:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4" fill="#F4C430" stroke="#b88a12" stroke-width="1.6"/><circle cx="12" cy="12" r="5" fill="none" stroke="#b88a12" stroke-width="1.3"/></svg>`,
+  dust:`<svg viewBox="0 0 24 24"><path d="M12 2.5l1.9 6.6 6.6 1.9-6.6 1.9L12 19.5l-1.9-6.6L3.5 11l6.6-1.9z" fill="#C77DFF" stroke="#8a3dd0" stroke-width="1"/></svg>`,
+};
 function renderNav(nav){
-  const items=[["hatch","🥚","nav_hatch"],["album","📚","nav_album"],["home","🏡","nav_home"],["world","🗺️","nav_world"]];
-  nav.innerHTML=items.map(([scr,ic,lab])=>`<button data-scr="${scr}" onclick="show('${scr}')"><span class="ic">${ic}</span>${t(lab)}</button>`).join("");
+  const items=[["hatch","nav_hatch"],["album","nav_album"],["home","nav_home"],["world","nav_world"]];
+  nav.innerHTML=items.map(([scr,lab])=>`<button data-scr="${scr}" onclick="show('${scr}')"><span class="ic">${ICON[scr]}</span>${t(lab)}</button>`).join("");
 }
 
 /* ===================== ONBOARDING ===================== */
@@ -1236,8 +1251,8 @@ function answer(el){
   const correct=el.dataset.correct==="true"; const ch=LOOP.challenge;
   if(correct){ SFX.correct(); el.classList.add("right"); recordAttempt(ch.skill,true); S.stats.challengesPassed++;
     burst(24,$("#fx"),true); const p=DATA.praise[S.locale][Math.floor(Math.random()*DATA.praise[S.locale].length)];
-    if(!voPraise()) speak(p); setCue(p); awardBadges();
-    setTimeout(()=>{ $("#challengeOverlay").classList.remove("active"); reward(); },700);
+    if(!voPraise()) speak(p); setCue(p); awardBadges(); LOOP.answered=true;
+    setTimeout(finishChallenge,700);
   } else { SFX.oops(); el.classList.add("wrong","dim"); LOOP.wrongs++; recordAttempt(ch.skill,false);
     if(!vo("oops")) speak(DATA.oops[S.locale][Math.floor(Math.random()*DATA.oops[S.locale].length)]); escalateHint(); }
 }
@@ -1246,31 +1261,39 @@ function answerSeq(el){
   if(el.classList.contains("picked")) return;
   if(ord===SEQ.expect){ SFX.star(); el.classList.add("picked"); el.insertAdjacentHTML("beforeend",`<span class="seqnum">${ord}</span>`); SEQ.expect++;
     if(SEQ.expect>SEQ.total){ SFX.correct(); recordAttempt(ch.skill,true); S.stats.challengesPassed++; burst(24,$("#fx"),true);
-      const p=DATA.praise[S.locale][0]; if(!voPraise()) speak(p); setCue(p); awardBadges();
-      setTimeout(()=>{ $("#challengeOverlay").classList.remove("active"); reward(); },700); }
+      const p=DATA.praise[S.locale][0]; if(!voPraise()) speak(p); setCue(p); awardBadges(); LOOP.answered=true;
+      setTimeout(finishChallenge,700); }
   } else { SFX.oops(); el.classList.add("wrong"); LOOP.wrongs++;
     speak(DATA.oops[S.locale][0]);
     // gentle hint: pulse the smallest remaining
     if(LOOP.wrongs>=2){ const next=[...$$("#ch_options .opt")].find(o=>parseInt(o.dataset.order,10)===SEQ.expect); if(next) next.classList.add("hint"); }
-    if(LOOP.wrongs>=3){ recordAttempt(ch.skill,true); S.stats.challengesPassed++; const p=DATA.praise[S.locale][0]; speak(p);
-      setTimeout(()=>{ $("#challengeOverlay").classList.remove("active"); reward(); },600); }
+    if(LOOP.wrongs>=3){ LOOP.answered=true; recordAttempt(ch.skill,true); S.stats.challengesPassed++; const p=DATA.praise[S.locale][0]; speak(p);
+      setTimeout(finishChallenge,600); }
   }
 }
 function escalateHint(){
   const opts=$$("#ch_options .opt"); const right=opts.find(o=>o.dataset.correct==="true");
   if(LOOP.wrongs===1){ right.classList.add("hint"); }
   else if(LOOP.wrongs===2){ opts.forEach(o=>{ if(o.dataset.correct!=="true"&&!o.classList.contains("dim")) o.classList.add("dim"); }); right.classList.add("hint"); }
-  else if(LOOP.wrongs>=3){ right.classList.add("hint");
+  else if(LOOP.wrongs>=3){ LOOP.answered=true; right.classList.add("hint");
     setTimeout(()=>{ right.classList.add("right"); SFX.correct(); recordAttempt(LOOP.challenge.skill,true); S.stats.challengesPassed++;
-      if(!voPraise()) speak(DATA.praise[S.locale][0]); setTimeout(()=>{ $("#challengeOverlay").classList.remove("active"); reward(); },700); },900); }
+      if(!voPraise()) speak(DATA.praise[S.locale][0]); setTimeout(finishChallenge,700); },900); }
+}
+function finishChallenge(){
+  $("#challengeOverlay").classList.remove("active");
+  try{ reward(); }catch(e){ console.warn("reward error", e); }
+  if(!$("#rewardOverlay").classList.contains("active")) $("#rewardOverlay").classList.add("active"); // failsafe: never soft-lock
 }
 function reward(){
-  const c=LOOP.creature; const count=S.owned[c.id]; const stars=3; S.currencies.stars+=stars; SFX.star();
+  const c=LOOP.creature; if(!c){ $("#rewardOverlay").classList.remove("active"); newEgg(); return; }
+  LOOP.answered=false;
+  const count=S.owned[c.id]||1; const stars=3; S.currencies.stars+=stars; try{SFX.star();}catch(e){}
   let gain="";
   if(LOOP.isNew){ const coins=15; S.currencies.coins+=coins; gain=`+${stars}⭐  +${coins}🪙`; }
-  else { const dt=DATA.dropTables[LOOP.egg.dropTableId]; S.currencies[dt.dupCurrency]+=dt.dupAmount;
+  else { const dt=DATA.dropTables[(LOOP.egg&&LOOP.egg.dropTableId)||"drop_common_default"]||DATA.dropTables.drop_common_default;
+    S.currencies[dt.dupCurrency]=(S.currencies[dt.dupCurrency]||0)+dt.dupAmount;
     gain=`+${stars}⭐  +${dt.dupAmount}${dt.dupCurrency==="coins"?"🪙":"✨"}`; }
-  setTimeout(()=>SFX.coin(),200);
+  setTimeout(()=>{try{SFX.coin();}catch(e){}},200);
   $("#rw_card").innerHTML=`${creatureMarkup(c,150)}<div style="font-weight:800;margin-top:2px">${nm(c.name)}</div>
     <div class="rar" style="position:static;background:${RARCOLOR[c.rarity]};margin-top:4px">${rarLabel(c.rarity)}</div>`;
   $("#rw_name").textContent="";
@@ -1480,6 +1503,10 @@ function boot(){
   setInterval(()=>{ S.stats.playSeconds++; if(S.stats.playSeconds%20===0) save(); },1000);
   window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; startBGM(); const b=$("#musicBtn"); if(b) b.textContent=(S.settings&&S.settings.music===false)?"🔇":"🔊"; },{once:true});
   renderNav($("#nav"));
+  // anti-softlock safety: if a challenge was answered but the reward didn't appear, a tap on the stage recovers it
+  $("#hatch .stage").addEventListener("click",()=>{
+    if(LOOP.answered && !$("#challengeOverlay").classList.contains("active") && !$("#rewardOverlay").classList.contains("active")) finishChallenge();
+  });
   if(S.onboarded){ show("hatch"); maybeDaily(); newEgg(); } else { show("onboard"); }
 }
 boot();

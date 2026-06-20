@@ -685,6 +685,27 @@ DATA.challenges.push(
     DATA.challenges.push({id:"gen_count"+n,archetype:"COUNT",skill:n<=3?"numbers.count3":"numbers.count5",tier:n<=2?1:n<=4?2:3,prompt:{id:"Mana yang ada "+n+"?",en:"Which has "+n+"?"},options:opts}); }
 })();
 
+/* ===== V3 Batch B — 50 color variants + rarity + Rainbow Meadow ===== */
+(function(){
+  const animals=[["cat","Cat","cat"],["bunny","Bunny","bunny"],["bear","Bear","bear"],["fox","Fox","fox"],["dog","Dog","bear"],["chick","Chick","bird"],["frog","Frog","frog"],["deer","Deer","deer"],["dragon","Dragon","dino"],["squirrel","Squirrel","squirrel"]];
+  const colors=[
+    {k:"pink",  nm:{id:"Pink",en:"Pink"},     rar:"common",color:"#FF9EC2",pal:["#FFE3F0","#C04E86"],pat:"belly"},
+    {k:"blue",  nm:{id:"Biru",en:"Blue"},     rar:"common",color:"#6CB7F0",pal:["#E3F1FF","#1F6FB0"],pat:"belly"},
+    {k:"purple",nm:{id:"Ungu",en:"Purple"},   rar:"rare",  color:"#B57EE8",pal:["#F0E3FF","#6A2CA0"],pat:"belly"},
+    {k:"golden",nm:{id:"Emas",en:"Golden"},   rar:"epic",  color:"#F4C430",pal:["#FFF3C8","#A9820E"],pat:"star"},
+    {k:"rainbow",nm:{id:"Pelangi",en:"Rainbow"},rar:"legend",color:"#C77DFF",pal:["#FFFFFF","#7B2CBF"],pat:"star"},
+  ];
+  animals.forEach(([aid,aName,kind])=>colors.forEach(c=>{
+    DATA.creatures.push({ id:"crt_var_"+aid+"_"+c.k, base:aName,
+      name:{id:c.nm.id+" "+aName, en:c.nm.en+" "+aName},
+      set:"rainbow_friends", world:"rainbow_meadow", rarity:c.rar,
+      color:c.color, pal:c.pal, kind:kind, eyes:"sparkle", pattern:c.pat });
+  }));
+  DATA.worlds.push({id:"rainbow_meadow",order:6,name:{id:"Padang Pelangi",en:"Rainbow Meadow"},emoji:"🌈",unlock:18,sets:["rainbow_friends"],eggIds:["egg_rainbow"],bg:["#ffd6ef","#e9d5ff","#d6f0ff"]});
+  DATA.eggs.push({id:"egg_rainbow",tier:"rainbow",crackStates:3,dropTableId:"drop_rainbow",base:"#FFE0F5",accent:"#C77DFF",pattern:"sparkle"});
+  DATA.dropTables["drop_rainbow"]={pity:4,dupCurrency:"stardust",dupAmount:20,entries:[{rarity:"common",weight:55},{rarity:"rare",weight:28},{rarity:"epic",weight:14},{rarity:"legend",weight:3}]};
+})();
+
 const I18N = {
   id:{ tagline:"Tetaskan · Belajar · Koleksi", sell:"✨ Tetaskan 50+ makhluk lucu & belajar sambil bermain!", trust:"🛡️ Tanpa iklan · Aman untuk anak · 🇮🇩 Bahasa", age_q:"Berapa usia si kecil?",
     age_note:"Untuk orang tua: ini menyesuaikan tingkat kesulitan. Bisa diubah nanti.",
@@ -754,8 +775,8 @@ function speak(text){ try{ if(!window.speechSynthesis)return; const u=new Speech
 
 /* ===================== HELPERS ===================== */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const RARCOLOR={common:"#9aa7b0", rare:"#C77DFF", magic:"#48CAE4", legend:"#F4A300"};
-const RARLABEL={common:{id:"Umum",en:"Common"}, rare:{id:"Langka",en:"Rare"}, magic:{id:"Ajaib",en:"Magic"}, legend:{id:"Legenda",en:"Legend"}};
+const RARCOLOR={common:"#9aa7b0", rare:"#4d9be0", epic:"#9b59f0", magic:"#9b59f0", legend:"#F4A300"};
+const RARLABEL={common:{id:"Umum",en:"Common"}, rare:{id:"Langka",en:"Rare"}, epic:{id:"Epik",en:"Epic"}, magic:{id:"Epik",en:"Epic"}, legend:{id:"Legenda",en:"Legend"}};
 function rarLabel(r){ return nm(RARLABEL[r]||{id:r,en:r}); }
 function world(id){ return DATA.worlds.find(w=>w.id===id); }
 function creature(id){ return DATA.creatures.find(c=>c.id===id); }
@@ -783,6 +804,9 @@ const IMG={
   crt_ocean_finn:"assets/creatures/fish.png", crt_ocean_bubbles:"assets/creatures/bubbles.png",
   crt_ocean_inky:"assets/creatures/octopus.png", crt_ocean_marina:"assets/creatures/marina.png",
   crt_ocean_splash:"assets/creatures/splash.png", crt_ocean_kraki:"assets/creatures/kraki.png",
+  crt_var_cat_pink:"assets/variants/cat_pink.png", crt_var_cat_golden:"assets/variants/cat_golden.png", crt_var_cat_rainbow:"assets/variants/cat_rainbow.png",
+  crt_var_bunny_blue:"assets/variants/bunny_blue.png", crt_var_bunny_purple:"assets/variants/bunny_purple.png", crt_var_bunny_golden:"assets/variants/bunny_golden.png", crt_var_bunny_rainbow:"assets/variants/bunny_rainbow.png",
+  crt_var_bear_pink:"assets/variants/bear_pink.png", crt_var_bear_blue:"assets/variants/bear_blue.png",
 };
 const BG={ green_forest:"assets/bg/green_forest.png", sunny_beach:"assets/bg/sunny_beach.png",
   candy_land:"assets/bg/candy_land.png", dino_valley:"assets/bg/dino_valley.png", ocean_kingdom:"assets/bg/ocean_kingdom.png" };
@@ -1081,15 +1105,16 @@ function hatch(){
   SFX.crackBig(); shakeScreen(); burst(30,$("#eggwrap"),true);
   const egg=$(".egg"); if(egg) egg.classList.add("crackburst");
   // STAGE 3 — epic reveal (pause scales with rarity)
-  const pause = c.rarity==="legend"?1000 : c.rarity==="magic"?800 : 600;
+  const pause = c.rarity==="legend"?1000 : (c.rarity==="magic"||c.rarity==="epic")?900 : 600;
   window._revealTimer=setTimeout(()=>revealCreature(c), pause);
   save();
 }
 function revealCreature(c){
   flash();
-  const n = c.rarity==="legend"?80 : c.rarity==="magic"?52 : c.rarity==="rare"?36 : 24;
+  const big=c.rarity==="legend", epicish=c.rarity==="epic"||c.rarity==="magic";
+  const n = big?80 : epicish?60 : c.rarity==="rare"?36 : 24;
   burst(n,$("#fx"),true);
-  if(c.rarity==="legend"){ SFX.legend(); legendaryCelebration(); } else SFX.hatch();
+  if(big){ SFX.legend(); legendaryCelebration(); } else if(epicish){ SFX.legend(); } else SFX.hatch();
   setTimeout(()=>SFX.signature(c.id),250);
   $("#eggwrap").innerHTML=`<div class="reveal" id="revealCr">${creatureMarkup(c,210)}</div>`;
   setTimeout(()=>{ const r=$("#revealCr"); if(r){ r.classList.remove("reveal"); r.classList.add("floaty"); } },720);
@@ -1290,13 +1315,20 @@ function renderAlbum(){
     const base=cs.filter(c=>!c.legend); const setHave=base.filter(c=>S.owned[c.id]).length;
     total+=cs.length; have+=cs.filter(c=>S.owned[c.id]).length;
     html+=`<div class="setbar"><span>${w.emoji} ${nm(w.name)}</span><span>${setHave}/${base.length}${setHave===base.length?" "+t("set_done"):""}</span></div>`;
-    html+=`<div class="grid">`+cs.map(c=>{ const owned=!!S.owned[c.id];
+    const card=c=>{ const owned=!!S.owned[c.id];
       return `<div class="cardlet ${owned?'':'locked'}" onclick="albumTap('${c.id}',${owned})">
         <div class="rar" style="background:${RARCOLOR[c.rarity]}">${owned?rarLabel(c.rarity):'?'}</div>
         <div class="sil">${creatureMarkup(c,82)}</div>
         <div class="nm">${owned?nm(c.name):'???'}</div>
-        ${owned&&S.owned[c.id]>1?`<div class="muted" style="font-size:11px">x${S.owned[c.id]}</div>`:''}</div>`;
-    }).join("")+`</div>`;
+        ${owned&&S.owned[c.id]>1?`<div class="muted" style="font-size:11px">x${S.owned[c.id]}</div>`:''}</div>`; };
+    if(cs.some(c=>c.base)){
+      const groups={}; cs.forEach(c=>{ (groups[c.base]=groups[c.base]||[]).push(c); });
+      Object.keys(groups).forEach(bk=>{ const g=groups[bk], gh=g.filter(c=>S.owned[c.id]).length;
+        html+=`<div class="setbar" style="padding:4px 16px 0;font-size:13px"><span>🐾 ${bk}</span><span>${gh}/${g.length}${gh===g.length?' 🌈':''}</span></div>`;
+        html+=`<div class="grid">`+g.map(card).join("")+`</div>`; });
+    } else {
+      html+=`<div class="grid">`+cs.map(card).join("")+`</div>`;
+    }
   });
   scroll.innerHTML=html; $("#ab_count").textContent=have; $("#ab_total").textContent=total;
 }

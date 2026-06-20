@@ -347,6 +347,7 @@
   @keyframes guestbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   .guesttag{position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:#ffd54a;color:#7a4d00;font-weight:800;font-size:11px;padding:2px 8px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,.2);z-index:2;}
   .placed.grounded::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:60%;height:11px;background:radial-gradient(ellipse at center,rgba(55,40,18,.30),rgba(55,40,18,0) 72%);border-radius:50%;z-index:-1;pointer-events:none;}
+  .coinfly{position:fixed;font-size:22px;z-index:9999;pointer-events:none;transition:transform .72s cubic-bezier(.45,.05,.3,1),opacity .72s ease-in;will-change:transform,opacity;}
   .moodbubble{position:absolute;font-size:18px;pointer-events:none;z-index:19;animation:moodbubble 2.2s ease-in-out;}
   @keyframes moodbubble{0%{opacity:0;transform:translateY(4px) scale(.6)}20%{opacity:1;transform:translateY(-6px) scale(1)}80%{opacity:1;transform:translateY(-12px)}100%{opacity:0;transform:translateY(-20px)}}
 </style>
@@ -1243,8 +1244,12 @@ function syncWallet(){
   $("#worldName").textContent=nm(world(S.currentWorld).name);
   const st=document.querySelector('#hatch .stage'); const b=BG[S.currentWorld];
   if(st) st.style.background = b? `linear-gradient(rgba(255,251,240,.60),rgba(255,251,240,.82)), url('${b}') center/cover no-repeat` : '';
-  const gc=$("#goalChip"); if(gc){ const ow=ownedCount(); const nx=DATA.worlds.find(w=>!S.worldsUnlocked.includes(w.id));
-    gc.innerHTML = nx ? `${ICON.hatch} ${Math.max(0,nx.unlock-ow)} ${t('creatures')} → ${nm(nx.name)}` : ''; }
+  const gc=$("#goalChip"); if(gc){ const cw=creaturesOf(world(S.currentWorld).sets).filter(c=>!c.legend), ownW=cw.filter(c=>S.owned[c.id]).length, totW=cw.length, left=totW-ownW; const en=S.locale!=='id';
+    const nx=DATA.worlds.find(w=>!S.worldsUnlocked.includes(w.id)); const need=nx?Math.max(0,nx.unlock-ownedCount()):0;
+    gc.innerHTML = left>2 ? `${ICON.hatch} ${ownW}/${totW} ${en?'collected':'terkumpul'}`
+                : left>0 ? `✨ ${left} ${en?'more for a Legendary!':'lagi untuk Legendary!'}`
+                : (nx&&need>0) ? `${ICON.hatch} ${need} → ${nm(nx.name)}`
+                : `🏆 ${en?'World complete!':'Dunia lengkap!'}`; }
   updateBonusBtn();
 }
 function pickEgg(){ const w=world(S.currentWorld)||DATA.worlds[0];
@@ -1437,15 +1442,24 @@ function finishChallenge(){
   try{ reward(); }catch(e){ console.warn("reward error", e); }
   if(!$("#rewardOverlay").classList.contains("active")) $("#rewardOverlay").classList.add("active"); // failsafe: never soft-lock
 }
+// coin juice: little coins arc up to the wallet counter
+function flyCoins(n){ const target=$("#w_coins"); if(!target)return; const tr=target.getBoundingClientRect();
+  const sx=window.innerWidth/2, sy=window.innerHeight*0.45;
+  for(let i=0;i<Math.min(8,Math.max(1,n));i++){ const c=document.createElement('div'); c.className='coinfly'; c.textContent='🪙';
+    c.style.left=(sx-12+(i%4-1.5)*16)+'px'; c.style.top=sy+'px'; document.body.appendChild(c);
+    const dx=tr.left+tr.width/2-sx, dy=tr.top+tr.height/2-sy;
+    requestAnimationFrame(()=>{ c.style.transform=`translate(${dx}px,${dy}px) scale(.5)`; c.style.opacity='0'; });
+    setTimeout(()=>c.remove(),760+i*40); } }
 function reward(){
   const c=LOOP.creature; if(!c){ $("#rewardOverlay").classList.remove("active"); newEgg(); return; }
   LOOP.answered=false;
   const count=S.owned[c.id]||1; const stars=3; S.currencies.stars+=stars; try{SFX.star();}catch(e){}
-  let gain="";
-  if(LOOP.isNew){ const coins=15; S.currencies.coins+=coins; gain=`+${stars}⭐  +${coins}🪙`; }
+  let gain="", coinsAdded=0;
+  if(LOOP.isNew){ const coins=15; S.currencies.coins+=coins; coinsAdded=coins; gain=`+${stars}⭐  +${coins}🪙`; }
   else { const dt=DATA.dropTables[(LOOP.egg&&LOOP.egg.dropTableId)||"drop_common_default"]||DATA.dropTables.drop_common_default;
-    S.currencies[dt.dupCurrency]=(S.currencies[dt.dupCurrency]||0)+dt.dupAmount;
+    S.currencies[dt.dupCurrency]=(S.currencies[dt.dupCurrency]||0)+dt.dupAmount; if(dt.dupCurrency==="coins") coinsAdded=dt.dupAmount;
     gain=`+${stars}⭐  +${dt.dupAmount}${dt.dupCurrency==="coins"?"🪙":"✨"}`; }
+  if(coinsAdded) setTimeout(()=>flyCoins(coinsAdded),320);
   setTimeout(()=>{try{SFX.coin();}catch(e){}},200);
   $("#rw_card").className="card3d rar-"+(c.rarity||"common");
   $("#rw_card").innerHTML=`${creatureMarkup(c,150)}<div style="font-weight:800;margin-top:2px">${nm(c.name)}</div>
@@ -1742,9 +1756,10 @@ function burst(n,parent,big){ const colors=["#ff8a3d","#7BC950","#C77DFF","#48CA
 const CRACKFX='<svg class="crackfx" id="crackFx" viewBox="0 0 188 236" width="188" height="236" aria-hidden="true"><path d="M94 30 L88 58 L100 76 L86 102 L98 124 L84 150 L96 176 L90 206"/><path d="M100 76 L120 68"/><path d="M86 102 L66 95"/><path d="M98 124 L118 132"/><path d="M84 150 L64 158"/><path d="M96 176 L116 183"/></svg>';
 function populateTitle(){
   const owned=Object.keys(S.owned||{}).length;
-  const tt=$("#title_tag"); if(tt) tt.textContent = owned
+  const tt=$("#title_tag"); if(tt){ tt.textContent = owned
     ? (S.locale==='id'?'Teman-temanmu menunggu! 💛':'Your friends are waiting! 💛')
     : (S.locale==='id'?'Tetas · Belajar · Koleksi':'Hatch · Learn · Collect');
+    if(S.daily && S.daily.streak>0) tt.textContent += `  ·  🔥 ${S.daily.streak}`; }
   const pb=$("#titleParent"); if(pb) pb.innerHTML=ICON.lock;
   const fx=$("#titleFx"); if(fx){ let h='';
     for(let i=0;i<6;i++) h+=`<span class="tleaf" style="left:${6+i*15}%;animation-delay:${(i*1.3).toFixed(1)}s;animation-duration:${7+i}s">🍃</span>`;

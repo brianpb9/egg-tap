@@ -1230,7 +1230,7 @@ function pickChallenge(){
 }
 let SEQ={expect:1,total:0};
 function startChallenge(asker){
-  const ch=pickChallenge(); LOOP.challenge=ch; LOOP.wrongs=0;
+  const ch=pickChallenge(); LOOP.challenge=ch; LOOP.wrongs=0; LOOP.resolved=false;
   $("#ch_av").innerHTML=creatureMarkup(asker,70);
   $("#ch_prompt").textContent=nm(ch.prompt);
   $("#ch_sample").innerHTML="";
@@ -1265,9 +1265,9 @@ function renderOptions(ch){
   }
 }
 function answer(el){
-  if(el.classList.contains("dim")||el.classList.contains("right")) return;
+  if(LOOP.resolved || el.classList.contains("dim")||el.classList.contains("right")) return;
   const correct=el.dataset.correct==="true"; const ch=LOOP.challenge;
-  if(correct){ SFX.correct(); haptic(25); el.classList.add("right"); recordAttempt(ch.skill,true); S.stats.challengesPassed++;
+  if(correct){ LOOP.resolved=true; SFX.correct(); haptic(25); el.classList.add("right"); recordAttempt(ch.skill,true); S.stats.challengesPassed++;
     burst(24,$("#fx"),true); const p=DATA.praise[S.locale][Math.floor(Math.random()*DATA.praise[S.locale].length)];
     if(!voPraise()) speak(p); setCue(p); awardBadges(); LOOP.answered=true;
     setTimeout(finishChallenge,700);
@@ -1275,17 +1275,18 @@ function answer(el){
     if(!vo("oops")) speak(DATA.oops[S.locale][Math.floor(Math.random()*DATA.oops[S.locale].length)]); escalateHint(); }
 }
 function answerSeq(el){
+  if(LOOP.resolved) return;
   const ord=parseInt(el.dataset.order,10); const ch=LOOP.challenge;
   if(el.classList.contains("picked")) return;
   if(ord===SEQ.expect){ SFX.star(); el.classList.add("picked"); el.insertAdjacentHTML("beforeend",`<span class="seqnum">${ord}</span>`); SEQ.expect++;
-    if(SEQ.expect>SEQ.total){ SFX.correct(); recordAttempt(ch.skill,true); S.stats.challengesPassed++; burst(24,$("#fx"),true);
+    if(SEQ.expect>SEQ.total){ LOOP.resolved=true; SFX.correct(); recordAttempt(ch.skill,true); S.stats.challengesPassed++; burst(24,$("#fx"),true);
       const p=DATA.praise[S.locale][0]; if(!voPraise()) speak(p); setCue(p); awardBadges(); LOOP.answered=true;
       setTimeout(finishChallenge,700); }
   } else { SFX.oops(); el.classList.add("wrong"); LOOP.wrongs++;
     speak(DATA.oops[S.locale][0]);
     // gentle hint: pulse the smallest remaining
     if(LOOP.wrongs>=2){ const next=[...$$("#ch_options .opt")].find(o=>parseInt(o.dataset.order,10)===SEQ.expect); if(next) next.classList.add("hint"); }
-    if(LOOP.wrongs>=3){ LOOP.answered=true; recordAttempt(ch.skill,true); S.stats.challengesPassed++; const p=DATA.praise[S.locale][0]; speak(p);
+    if(LOOP.wrongs>=3){ LOOP.answered=true; LOOP.resolved=true; recordAttempt(ch.skill,true); S.stats.challengesPassed++; const p=DATA.praise[S.locale][0]; speak(p);
       setTimeout(finishChallenge,600); }
   }
 }
@@ -1293,7 +1294,7 @@ function escalateHint(){
   const opts=$$("#ch_options .opt"); const right=opts.find(o=>o.dataset.correct==="true");
   if(LOOP.wrongs===1){ right.classList.add("hint"); }
   else if(LOOP.wrongs===2){ opts.forEach(o=>{ if(o.dataset.correct!=="true"&&!o.classList.contains("dim")) o.classList.add("dim"); }); right.classList.add("hint"); }
-  else if(LOOP.wrongs>=3){ LOOP.answered=true; right.classList.add("hint");
+  else if(LOOP.wrongs>=3){ LOOP.answered=true; LOOP.resolved=true; right.classList.add("hint");
     setTimeout(()=>{ right.classList.add("right"); SFX.correct(); recordAttempt(LOOP.challenge.skill,true); S.stats.challengesPassed++;
       if(!voPraise()) speak(DATA.praise[S.locale][0]); setTimeout(finishChallenge,700); },900); }
 }

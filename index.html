@@ -130,9 +130,12 @@
   .rar{position:absolute;top:6px;right:8px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;color:#fff;}
   .setbar{padding:10px 16px 2px;font-weight:800;color:var(--soft);display:flex;justify-content:space-between;}
   .badgestrip{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;}
-  .badge{flex:0 0 auto;width:64px;text-align:center;font-size:10px;font-weight:800;color:var(--soft);}
-  .badge .bc{width:54px;height:54px;border-radius:16px;background:#fff;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 3px;}
-  .badge.locked .bc{background:#ece2d3;filter:grayscale(1) opacity(.5);}
+  .badge{flex:0 0 auto;width:66px;text-align:center;font-size:10px;font-weight:800;color:#7a5a2e;}
+  .badge .bc{position:relative;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 50% 36%,#fff7e0,#ffe7a8);box-shadow:0 3px 8px rgba(244,163,0,.35),inset 0 0 0 3px #ffcf5c;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 4px;overflow:hidden;}
+  .badge:not(.locked) .bc::after{content:"";position:absolute;top:0;left:-70%;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.7),transparent);transform:skewX(-18deg);animation:cardshine 3.2s ease-in-out infinite;}
+  .badge:not(.locked) .bc::before{content:"✦";position:absolute;top:1px;right:4px;font-size:10px;color:#fff;text-shadow:0 0 4px #ffcf5c;}
+  .badge.locked{color:#b3a892;}
+  .badge.locked .bc{background:#ece2d3;box-shadow:inset 0 0 0 3px #d9cdb8;filter:grayscale(1) opacity(.55);}
 
   #home .room{flex:1;position:relative;margin:12px;border-radius:24px;overflow:hidden;background:#bfe6ff center/cover no-repeat;box-shadow:var(--shadow);}
   #home .room::after{content:"";position:absolute;inset:0;border-radius:24px;pointer-events:none;box-shadow:inset 0 -50px 70px rgba(60,40,20,.18), inset 0 0 0 5px #fff;}
@@ -733,11 +736,12 @@ const DATA = {
     {id:"first_hatch", emoji:"🥚", label:{id:"Telur Pertama",en:"First Hatch"}},
     {id:"hatch10",     emoji:"🐣", label:{id:"10 Telur",en:"10 Hatches"}},
     {id:"hatch50",     emoji:"🐥", label:{id:"50 Telur",en:"50 Hatches"}},
-    {id:"set_forest_friends", emoji:"🌳", label:{id:"Set Hutan",en:"Forest Set"}},
-    {id:"set_beach_buddies",  emoji:"🏖️", label:{id:"Set Pantai",en:"Beach Set"}},
-    {id:"set_candy_pals",     emoji:"🍭", label:{id:"Set Permen",en:"Candy Set"}},
-    {id:"set_dino_gang",      emoji:"🦕", label:{id:"Set Dino",en:"Dino Set"}},
-    {id:"set_ocean_crew",     emoji:"🌊", label:{id:"Set Laut",en:"Ocean Set"}},
+    {id:"set_forest", emoji:"🌳", label:{id:"Set Hutan",en:"Forest Set"}},
+    {id:"set_beach",  emoji:"🏖️", label:{id:"Set Pantai",en:"Beach Set"}},
+    {id:"set_candy",  emoji:"🍭", label:{id:"Set Permen",en:"Candy Set"}},
+    {id:"set_dino",   emoji:"🦕", label:{id:"Set Dino",en:"Dino Set"}},
+    {id:"set_ocean",  emoji:"🌊", label:{id:"Set Laut",en:"Ocean Set"}},
+    {id:"set_meadow", emoji:"🌈", label:{id:"Set Pelangi",en:"Rainbow Set"}},
     {id:"smart20",     emoji:"🧠", label:{id:"20 Jawaban Benar",en:"20 Correct"}},
   ],
 
@@ -909,6 +913,36 @@ DATA.challenges.push(
   // more odd-one-out
   [["🐶","🐱","🐰","🍎"],["🚗","🚌","🚂","🐶"],["🌳","🌳","🏠","🌳"],["🐟","🐠","🐙","🦋"],["🍓","🍒","🍎","🥦"],["1","3","5","A"],["⚽","🏀","🎾","🍕"],["🔵","🟢","🔵","🔵"]].forEach((set,i)=>{ const oddIdx=[3,3,2,3,3,3,3,1][i];
     add({id:`odd2_${i}`,archetype:"FIND_OBJECT",skill:"logic.pattern",tier:3,prompt:{id:"Mana yang BEDA?",en:"Which one is different?"},options:set.map((v,j)=>({v,correct:j===oddIdx}))}); });
+})();
+/* ===== Non-math enrichment (varied illustrations): colors, shapes, animals, feelings, sorting ===== */
+(function(){
+  const add=c=>DATA.challenges.push(c); const sh=a=>a.slice().sort(()=>Math.random()-.5);
+  DATA.skills.push({id:"colors.find",pillar:"colors",label:{id:"Mengenal warna",en:"Colors"}});
+  DATA.skills.push({id:"shapes.find",pillar:"shapes",label:{id:"Mengenal bentuk",en:"Shapes"}});
+  DATA.skills.push({id:"animals.find",pillar:"animals",label:{id:"Mengenal hewan",en:"Animals"}});
+  DATA.skills.push({id:"emotions.feel",pillar:"emotions",label:{id:"Mengenal perasaan",en:"Feelings"}});
+  DATA.skills.push({id:"logic.group",pillar:"logic",label:{id:"Kelompok",en:"Sorting"}});
+  const COL={red:["🍓","🍎","🌹","🍅","❤️","🚒"],blue:["🫐","🐳","💙","🔵","🌀","🩵"],yellow:["🍋","🌻","🐤","⭐","🧀","🌟"],green:["🥦","🍏","🐸","🌿","🥑","💚"],purple:["🍇","🍆","💜","🟣","🔮","🌂"],orange:["🍊","🥕","🦊","🏀","🟠","🍑"]};
+  const CN={red:{id:"merah",en:"red"},blue:{id:"biru",en:"blue"},yellow:{id:"kuning",en:"yellow"},green:{id:"hijau",en:"green"},purple:{id:"ungu",en:"purple"},orange:{id:"oranye",en:"orange"}};
+  const cols=Object.keys(COL);
+  cols.forEach(col=>COL[col].forEach((item,k)=>{ const wrongs=sh(cols.filter(c=>c!==col)).slice(0,2).map(c=>COL[c][k%COL[c].length]);
+    add({id:`xcol_${col}_${k}`,archetype:"FIND_ATTRIBUTE",skill:"colors.find",tier:k<2?1:k<4?2:3,prompt:{id:`Cari yang ${CN[col].id}!`,en:`Find the ${CN[col].en} one!`},options:sh([{v:item,correct:true},...wrongs.map(w=>({v:w,correct:false}))])}); }));
+  const SH={circle:["🔵","🟠","🟢","⚪"],square:["🟦","🟥","🟩","⬛"],triangle:["🔺","🔻","🔶","🔼"],star:["⭐","🌟","✨","💫"],heart:["❤️","💙","💚","💜"]};
+  const SN={circle:{id:"lingkaran",en:"circle"},square:{id:"kotak",en:"square"},triangle:{id:"segitiga",en:"triangle"},star:{id:"bintang",en:"star"},heart:{id:"hati",en:"heart"}};
+  const sk=Object.keys(SH);
+  sk.forEach(s=>{ for(let k=0;k<3;k++){ const others=sh(sk.filter(x=>x!==s)).slice(0,2);
+    add({id:`xsh_${s}_${k}`,archetype:"FIND_OBJECT",skill:"shapes.find",tier:k<1?1:k<2?2:3,prompt:{id:`Cari ${SN[s].id}!`,en:`Find the ${SN[s].en}!`},options:sh([{v:SH[s][k%SH[s].length],correct:true},...others.map(o=>({v:SH[o][k%SH[o].length],correct:false}))])}); } });
+  const ANI=[["cat","kucing","🐱"],["dog","anjing","🐶"],["rabbit","kelinci","🐰"],["bear","beruang","🐻"],["frog","katak","🐸"],["fox","rubah","🦊"],["bird","burung","🐦"],["fish","ikan","🐟"],["lion","singa","🦁"],["pig","babi","🐷"],["monkey","monyet","🐵"],["duck","bebek","🦆"]];
+  ANI.forEach(([en,id,e],i)=>{ const others=sh(ANI.filter(a=>a[0]!==en)).slice(0,3);
+    add({id:`xani_${en}`,archetype:"FIND_OBJECT",skill:"animals.find",tier:i<4?1:i<8?2:3,prompt:{id:`Cari ${id}!`,en:`Find the ${en}!`},options:sh([{v:e,correct:true},...others.map(o=>({v:o[2],correct:false}))])}); });
+  const EMO=[["happy","senang","😀"],["sad","sedih","😢"],["angry","marah","😡"],["surprised","kaget","😲"],["sleepy","mengantuk","😴"],["scared","takut","😨"],["love","sayang","🥰"]];
+  EMO.forEach(([en,id,e],i)=>{ const others=sh(EMO.filter(a=>a[0]!==en)).slice(0,2);
+    add({id:`xemo_${en}`,archetype:"FIND_OBJECT",skill:"emotions.feel",tier:i<2?1:i<4?2:3,prompt:{id:`Mana wajah ${id}?`,en:`Which face is ${en}?`},options:sh([{v:e,correct:true},...others.map(o=>({v:o[2],correct:false}))])}); });
+  const GR={food:["🍎","🍌","🍪","🍕","🥕"],animal:["🐶","🐱","🐟","🐰","🦊"],vehicle:["🚗","🚌","🚂","✈️","🚲"],toy:["🧸","🎈","🪁","🎀","🪀"]};
+  const GN={food:{id:"makanan",en:"food"},animal:{id:"hewan",en:"animal"},vehicle:{id:"kendaraan",en:"vehicle"},toy:{id:"mainan",en:"toy"}};
+  const gk=Object.keys(GR);
+  gk.forEach(g=>{ for(let k=0;k<2;k++){ const other=sh(gk.filter(x=>x!==g))[0];
+    add({id:`xgrp_${g}_${k}`,archetype:"FIND_OBJECT",skill:"logic.group",tier:3,prompt:{id:`Mana ${GN[g].id}?`,en:`Which is ${GN[g].en}?`},options:sh([{v:sh(GR[g])[0],correct:true},...sh(GR[other]).slice(0,2).map(o=>({v:o,correct:false}))])}); } });
 })();
 /* ===== V3 Batch B — 50 color variants + rarity + Rainbow Meadow ===== */
 (function(){

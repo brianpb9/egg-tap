@@ -264,6 +264,7 @@
   <!-- S2 HATCH -->
   <section id="hatch" class="screen">
     <button class="corner" title="Parent" onclick="openGate()">🔒</button>
+    <button class="corner" id="musicBtn" style="left:10px;right:auto" onclick="toggleMusic()">🔊</button>
     <div class="topbar">
       <div class="title" id="worldName">Hutan Hijau</div>
       <div class="wallet">
@@ -743,7 +744,7 @@ function defaultSave(){ return {
   onboarded:false, ageBand:4, locale:"en", owned:{}, currencies:{stars:0,coins:0,stardust:0,tickets:0},
   skillProgress:{}, worldsUnlocked:["green_forest"], currentWorld:"green_forest", home:[],
   daily:{lastClaim:null,streak:0}, pity:{}, badges:[], setsAwarded:[],
-  stats:{hatches:0,challengesPassed:0,correct:0,playSeconds:0,weekSkills:[]}, entitlements:{plus:false} }; }
+  stats:{hatches:0,challengesPassed:0,correct:0,playSeconds:0,weekSkills:[]}, entitlements:{plus:false}, settings:{music:true,sfx:true} }; }
 function load(){ try{ S=JSON.parse(localStorage.getItem(SAVE_KEY)); }catch(e){} if(!S) S=defaultSave(); }
 function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
 function t(k){ return (I18N[S.locale]||I18N.id)[k] ?? k; }
@@ -769,7 +770,24 @@ const SFX={
   crackBig(){ tone(140,0.18,"sawtooth",0.26); tone(90,0.26,"square",0.2,0.02); [660,880,1100].forEach((f,i)=>tone(f,0.12,"triangle",0.14,0.12+i*0.04)); },
   signature(id){let h=0;for(const ch of id)h=(h*31+ch.charCodeAt(0))&0xffff;const base=330+(h%420);
     [0,0.09,0.18].forEach((w,i)=>tone(base*(1+i*0.25),0.16,["sine","triangle","sine"][i],0.18,w));},
+  fanfare(rarity){
+    if(rarity==="legend"){ this.legend(); [1568,1760,2093].forEach((f,i)=>tone(f,0.3,"triangle",0.16,0.5+i*0.12)); }
+    else if(rarity==="epic"||rarity==="magic"){ [659,880,1047,1319].forEach((f,i)=>tone(f,0.22,"triangle",0.18,i*0.09)); }
+    else if(rarity==="rare"){ [659,988,1175].forEach((f,i)=>tone(f,0.18,"triangle",0.16,i*0.08)); }
+    else this.hatch();
+  },
 };
+/* ---- gentle WebAudio background music (toggleable, low-arousal for toddlers) ---- */
+let _bgmTimer=null, _bgmStep=0;
+const BGM_SCALE=[392.00,440.00,523.25,587.33,659.25,783.99];
+function musicNote(freq,dur,vol){ const c=ac(); if(!c) return; const o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();
+  o.type="sine"; o.frequency.value=freq; f.type="lowpass"; f.frequency.value=1100; o.connect(f); f.connect(g); g.connect(c.destination);
+  const tt=c.currentTime; g.gain.setValueAtTime(0,tt); g.gain.linearRampToValueAtTime(vol,tt+0.09); g.gain.exponentialRampToValueAtTime(0.0001,tt+dur); o.start(tt); o.stop(tt+dur+0.05); }
+function bgmStep(){ if(!AC||(S.settings&&S.settings.music===false)) return; const pat=[0,2,4,2,1,3,5,3]; const n=BGM_SCALE[pat[_bgmStep%pat.length]]; _bgmStep++; musicNote(n,1.1,0.05); if(_bgmStep%4===0) musicNote(n/2,1.7,0.03); }
+function startBGM(){ if(_bgmTimer) return; if(S.settings&&S.settings.music===false) return; _bgmTimer=setInterval(bgmStep,720); }
+function stopBGM(){ clearInterval(_bgmTimer); _bgmTimer=null; }
+function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; S.settings.music=!S.settings.music; save();
+  if(S.settings.music) startBGM(); else stopBGM(); const b=$("#musicBtn"); if(b) b.textContent=S.settings.music?"🔊":"🔇"; }
 function speak(text){ try{ if(!window.speechSynthesis)return; const u=new SpeechSynthesisUtterance(text);
   u.lang=S.locale==="id"?"id-ID":"en-US"; u.rate=0.95; u.pitch=1.25; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
 
@@ -1124,7 +1142,7 @@ function revealCreature(c){
   const big=c.rarity==="legend", epicish=c.rarity==="epic"||c.rarity==="magic";
   const n = big?80 : epicish?60 : c.rarity==="rare"?36 : 24;
   burst(n,$("#fx"),true);
-  if(big){ SFX.legend(); legendaryCelebration(); } else if(epicish){ SFX.legend(); } else SFX.hatch();
+  SFX.fanfare(c.rarity); if(big) legendaryCelebration();
   setTimeout(()=>SFX.signature(c.id),250);
   $("#eggwrap").innerHTML=`<div class="reveal" id="revealCr">${creatureMarkup(c,210)}</div>`;
   setTimeout(()=>{ const r=$("#revealCr"); if(r){ r.classList.remove("reveal"); r.classList.add("floaty"); } },720);
@@ -1345,8 +1363,10 @@ function renderAlbum(){
 function albumTap(id,owned){ if(!owned) return; SFX.signature(id); speak(nm(creature(id).name)+"!"); }
 
 /* ===================== HOME ===================== */
+const HOME_LEVELS={1:{id:"Kamar",en:"Cozy Room"},2:{id:"Taman",en:"Garden"},3:{id:"Taman Main",en:"Playground"},4:{id:"Rumah Pohon",en:"Treehouse"},5:{id:"Istana",en:"Castle"}};
 function renderHome(){
   $("#hm_coins").textContent=S.currencies.coins;
+  const lvl=Math.min(5,1+Math.floor(S.home.length/3)); $("#t_home").textContent=`${t("home")} · Lv${lvl} ${nm(HOME_LEVELS[lvl])}`;
   const w=world(S.currentWorld); const room=$("#room");
   room.style.background = BG[w.id] ? `url('${BG[w.id]}') center/cover no-repeat` : `linear-gradient(180deg,${w.bg[0]},${w.bg[1]} 55%,${w.bg[2]})`;
   room.innerHTML=`<div class="floatlabel">${t("placed_hint")}</div>`;
@@ -1441,7 +1461,7 @@ function burst(n,parent,big){ const colors=["#ff8a3d","#7BC950","#C77DFF","#48CA
 function boot(){
   load(); applyStaticI18n();
   setInterval(()=>{ S.stats.playSeconds++; if(S.stats.playSeconds%20===0) save(); },1000);
-  window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; },{once:true});
+  window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; startBGM(); const b=$("#musicBtn"); if(b) b.textContent=(S.settings&&S.settings.music===false)?"🔇":"🔊"; },{once:true});
   renderNav($("#nav"));
   if(S.onboarded){ show("hatch"); maybeDaily(); newEgg(); } else { show("onboard"); }
 }

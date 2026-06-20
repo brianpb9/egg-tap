@@ -1784,25 +1784,21 @@ function startPlay(){ try{SFX.tap();}catch(e){} if(S.onboarded){ show("hatch"); 
     if(!DATA.eggs.find(x=>x.id===id)) DATA.eggs.push({id,crackStates:3,dropTableId:'drop_common_default',base:'#fff',accent:'#ddd',pattern:'dots'});
     EGGIMG[id]='assets/bubu/eggs/ingame_'+EGGB[world]+'.png';
     const w=DATA.worlds.find(x=>x.id===world); if(w) w.eggIds=[id]; });
-  // ensure every world has cozy decorations (emoji fallback render) — no dead-end Home
+  // curated decorations per world — all with real art (transparent PNGs)
   const MOREDECO=[
-   {id:"deco_beach_palm",world:"sunny_beach",emoji:"🌴",cost:45,label:{id:"Pohon Palem",en:"Palm Tree"}},
-   {id:"deco_beach_ball",world:"sunny_beach",emoji:"🏐",cost:30,label:{id:"Bola Pantai",en:"Beach Ball"}},
    {id:"deco_candy_cupcake",world:"candy_land",emoji:"🧁",cost:60,label:{id:"Kue Mangkok",en:"Cupcake"}},
    {id:"deco_candy_donut",world:"candy_land",emoji:"🍩",cost:40,label:{id:"Donat",en:"Donut"}},
-   {id:"deco_candy_icecream",world:"candy_land",emoji:"🍦",cost:35,label:{id:"Es Krim",en:"Ice Cream"}},
    {id:"deco_dino_egg",world:"dino_valley",emoji:"🥚",cost:50,label:{id:"Telur Dino",en:"Dino Egg"}},
    {id:"deco_dino_bone",world:"dino_valley",emoji:"🦴",cost:35,label:{id:"Tulang",en:"Bone"}},
-   {id:"deco_dino_fern",world:"dino_valley",emoji:"🌴",cost:40,label:{id:"Pakis",en:"Fern"}},
    {id:"deco_ocean_shell",world:"ocean_kingdom",emoji:"🐚",cost:40,label:{id:"Kerang",en:"Shell"}},
-   {id:"deco_ocean_bubbles",world:"ocean_kingdom",emoji:"🫧",cost:30,label:{id:"Gelembung",en:"Bubbles"}},
    {id:"deco_ocean_star",world:"ocean_kingdom",emoji:"⭐",cost:35,label:{id:"Bintang Laut",en:"Starfish"}},
    {id:"deco_meadow_rainbow",world:"rainbow_meadow",emoji:"🌈",cost:70,label:{id:"Pelangi",en:"Rainbow"}},
    {id:"deco_meadow_cloud",world:"rainbow_meadow",emoji:"☁️",cost:40,label:{id:"Awan",en:"Cloud"}},
-   {id:"deco_meadow_star",world:"rainbow_meadow",emoji:"🌟",cost:35,label:{id:"Bintang",en:"Star"}},
    {id:"deco_meadow_flower",world:"rainbow_meadow",emoji:"🌸",cost:30,label:{id:"Bunga",en:"Blossom"}}
   ];
   MOREDECO.forEach(d=>{ if(!DATA.decorations.find(x=>x.id===d.id)) DATA.decorations.push(d); });
+  const DECOART={deco_candy_lolly:'candy_lolly',deco_candy_cupcake:'candy_cupcake',deco_candy_donut:'candy_donut',deco_dino_volcano:'dino_volcano',deco_dino_egg:'dino_egg',deco_dino_bone:'dino_bone',deco_ocean_coral:'ocean_coral',deco_ocean_shell:'ocean_shell',deco_ocean_star:'ocean_star',deco_meadow_rainbow:'meadow_rainbow',deco_meadow_cloud:'meadow_cloud',deco_meadow_flower:'meadow_flower'};
+  if(typeof DECOIMG!=='undefined') Object.keys(DECOART).forEach(k=>DECOIMG[k]='assets/deco/'+DECOART[k]+'.png');
 })();
 function boot(){
   load(); applyStaticI18n();

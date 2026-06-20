@@ -1607,6 +1607,7 @@ function tapGuest(el){ const id=S.guest; S.guest=null; floatEmote(el,'💗',-6);
   S.currencies.coins+=5; if(typeof syncWallet==='function') syncWallet(); const hc=$("#hm_coins"); if(hc) hc.textContent=S.currencies.coins;
   toast((S.locale==='id'?'✨ Terima kasih sudah mampir!':'✨ Thanks for visiting!')+' +5 🪙'); save();
   setTimeout(()=>{ const h=document.getElementById('home'); if(h&&h.classList.contains('active')) renderHome(); },650); }
+const HOMEFLAT={green_forest:'assets/home/flat_green_forest.png',sunny_beach:'assets/home/flat_sunny_beach.png',candy_land:'assets/home/flat_candy_land.png',dino_valley:'assets/home/flat_dino_valley.png',ocean_kingdom:'assets/home/flat_ocean_kingdom.png',rainbow_meadow:'assets/home/flat_rainbow_meadow.png'};
 const HOME_BASE_CAP=5;
 function homeCapacity(){ return HOME_BASE_CAP + (S.home||[]).filter(it=>it.decoId).length*3; } // each decoration invites more friends over
 function renderHome(){
@@ -1620,8 +1621,8 @@ function renderHome(){
   const visitors=visitorPool.slice(0, decor.length*2); // each decoration invites 2 friends from other worlds to visit
   const showFriends=friendsAll.concat(visitors); // owned-world friends ALWAYS show; visitors are a bonus
   const lvl=homeLevel(friendsAll.length+decor.length);
-  $("#t_home").textContent=`${t("home")} · Lv${lvl} ${nm(HOME_LEVELS[lvl])}`;
-  room.style.background=`url('${HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`;
+  $("#t_home").textContent=`${t("home")} · ${nm(world(S.currentWorld).name)} · Lv${lvl}`;
+  room.style.background=`url('${HOMEFLAT[S.currentWorld]||HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`;
   const wtotal=creaturesOf(w.sets).length;
   const canInvite=visitorPool.length>visitors.length;
   const chip = !friendsAll.length ? (S.locale==='id'?'Tetaskan teman dulu! 🥚':'Hatch some friends first! 🥚')
@@ -1633,19 +1634,19 @@ function renderHome(){
   // --- decorations: small back row along the lawn horizon, evenly spread (percent positions)
   const dn=decor.length;
   decor.forEach((it,i)=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); if(!d)return;
-    const size=54, leftPct=((i+1)/(dn+1))*100, topPct=46+(i%2)*3.5;
+    const size=54, leftPct=((i+1)/(dn+1))*100, topPct=58+(i%2)*4;
     const de=document.createElement("div"); de.className="placed grounded"; de.style.left=leftPct+"%"; de.style.top=topPct+"%"; de.style.width=size+"px"; de.style.marginLeft=(-size/2)+"px"; de.style.marginTop=(-size/2)+"px"; de.style.zIndex=Math.round(topPct*4); de.innerHTML=decoMarkup(d,size); room.appendChild(de); });
   // --- friends: tidy front rows on the lawn, below the decor (percent positions => never clipped)
   const n=showFriends.length;
   if(n){ const cols=Math.min(4,Math.max(2,Math.ceil(Math.sqrt(n)))), rows=Math.ceil(n/cols);
     const size=Math.max(46,Math.min(64,Math.floor(rw*0.72/cols)));
     showFriends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols), inRow=Math.min(cols,n-rr*cols);
-      const leftPct=((cc+1)/(inRow+1))*100, topPct=rows<=1?74:(66+18*(rr/(rows-1)));
+      const leftPct=((cc+1)/(inRow+1))*100, topPct=rows<=1?80:(70+16*(rr/(rows-1)));
       mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'floaty grounded'); });
   }
   // daily visiting guest (stands to the side with a ribbon)
   ensureGuest();
-  if(S.guest){ const gc=creature(S.guest); if(gc){ const ge=mkFriend(room,gc,82,46,54,9000,'guest grounded');
+  if(S.guest){ const gc=creature(S.guest); if(gc){ const ge=mkFriend(room,gc,84,58,54,9000,'guest grounded');
     if(ge){ ge.onclick=()=>tapGuest(ge); const tag=document.createElement('div'); tag.className='guesttag'; tag.textContent=(S.locale==='id'?'✨ Tamu!':'✨ Guest!'); ge.appendChild(tag); } } }
   // tray: decoration shop — buying decor invites more friends to hang out
   const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);

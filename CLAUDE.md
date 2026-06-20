@@ -46,6 +46,7 @@ Prinsip utama: **"game adalah data, bukan kode."** Engine kecil menjalankan kont
 - **V3.1 polish** ✅ UI kit SVG (ganti emoji nav/currency/lock/music/goalchip), frame kartu per-rarity, haptic, tutorial first-run, Home grid/z-order/ground, + perbaikan bug (no-Next soft-lock & "tap setelah benar terhitung salah").
 - Bug status: **data & flow integrity = 0 bug** (cek via JS), 1 bug tap-after-correct sudah fix.
 - **Home per-level room art** ✅ (`HOMEBG`, 5 background AI) — Interior "dibangun".
+- **V3.3** ✅ Mobile: bottom-nav full-width + safe-area header/corner. Home: **1 makhluk per spesies + auto-arrange grid** (anti-spam) + pacing `[0,4,9,15,22]` + tap-react (pet hidup). Reward premium (aura per-rarity + partikel + dupe "Bonus Reward!"). **No-fail anti-stuck** (`escalateHint` auto-solve walau anak diam) + `vercel.json` no-cache. **No-repeat** challenge (hindari 10 terakhir). **KING EGG** (~5%, 10 ketuk, art mahkota emas → Legend pasti). Green Forest di-regenerate (10 art) + 6 telur warna + art King Egg.
 - Audit ~**8.7–9.0/10**. Sisa ke 10/10: (1) parallax/ambient background hidup; (2) regresi test + migrasi save + device matrix; (3) animasi karakter (Spine) untuk produksi.
 
 ## Konvensi

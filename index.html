@@ -1674,8 +1674,36 @@ function populateTitle(){
     for(let i=0;i<6;i++) h+=`<span class="tspark" style="left:${14+i*14}%;top:${18+(i%3)*10}%;animation-delay:${(i*0.5).toFixed(1)}s">✦</span>`;
     fx.innerHTML=h; } }
 function startPlay(){ try{SFX.tap();}catch(e){} if(S.onboarded){ show("hatch"); maybeDaily(); newEgg(); } else { show("onboard"); } }
+/* ===================== BUBU FRIENDS roster (overrides legacy creatures) ===================== */
+(function(){
+  const DEF={
+   green_forest:[['Bubu','bubu','common'],['Nibi','nibi','common'],['Poppy','poppy','common'],['Mushu','mushu','common'],['Acoro','acoro','common'],['Flik','flik','rare'],['Bambu','bambu','rare'],['Lumi','lumi','epic'],['Mori','mori','epic'],['Eldero','eldero','legend']],
+   sunny_beach:[['Shelly','shelly','common'],['Sandy','sandy','common'],['Coral','coral','common'],['Pebble','pebble','common'],['Finny','finny','common'],['Surfy','surfy','rare'],['Wavy','wavy','rare'],['Bubbles','bubbles','epic'],['Tidal','tidal','epic'],['Sunbeam','sunbeam','legend']],
+   candy_land:[['Lolly','lolly','common'],['Gummi','gummi','common'],['Cupcake','cupcake','common'],['Marshy','marshy','common'],['Choco','choco','common'],['Donuty','donuty','rare'],['Jelly','jelly','rare'],['Sprinkle','sprinkle','epic'],['Macalon','macalon','epic'],['Sugar Queen','sugarqueen','legend']],
+   dino_valley:[['Rocky','rocky','common'],['Tiny','tiny','common'],['Spike','spike','common'],['Dizzy','dizzy','common'],['Clawy','clawy','common'],['Rexy','rexy','rare'],['Ptero','ptero','rare'],['Tricera','tricera','epic'],['Lava','lava','epic'],['Dino King','dinoking','legend']],
+   ocean_kingdom:[['Bubble','bubble','common'],['Kelpy','kelpy','common'],['Seallo','seallo','common'],['Octi','octi','common'],['Pearly','pearly','common'],['Manta','manta','rare'],['Narvi','narvi','rare'],['Coralia','coralia','epic'],['Poseidon','poseidon','epic'],['Ocean Queen','oceanqueen','legend']],
+   rainbow_meadow:[['Flora','flora','common'],['Beeby','beeby','common'],['Petal','petal','common'],['Poof','poof','common'],['Butta','butta','common'],['Rainy','rainy','rare'],['Sunny','sunny','rare'],['Lumina','lumina','epic'],['Twinkle','twinkle','epic'],['Rainbow Guardian','rainbowguardian','legend']]
+  };
+  const SET={green_forest:'forest',sunny_beach:'beach',candy_land:'candy',dino_valley:'dino',ocean_kingdom:'ocean',rainbow_meadow:'meadow'};
+  const UNLOCK={green_forest:0,sunny_beach:9,candy_land:16,dino_valley:23,ocean_kingdom:30,rainbow_meadow:37};
+  const RARCOL={common:'#9aa7b0',rare:'#4d9be0',epic:'#9b59f0',legend:'#F4A300'};
+  const C=[], IM={};
+  Object.keys(DEF).forEach(world=>{ const set=SET[world];
+    DEF[world].forEach(([name,slug,rarity])=>{ const id='crt_'+slug;
+      C.push({id,name:{id:name,en:name},set,world,rarity,color:RARCOL[rarity],pal:['#ffffff','#cccccc'],kind:'round',eyes:'sparkle',pattern:'belly',legend:rarity==='legend'});
+      IM[id]='assets/bubu/chars/'+slug+'.png'; });
+  });
+  DATA.creatures=C;
+  Object.keys(IMG).forEach(k=>delete IMG[k]); Object.assign(IMG,IM);
+  DATA.worlds.forEach(w=>{ if(SET[w.id]){ w.sets=[SET[w.id]]; w.unlock=UNLOCK[w.id]; } });
+})();
 function boot(){
   load(); applyStaticI18n();
+  // sanitize legacy saves against the new BUBU roster (old creature ids no longer exist)
+  S.owned=Object.fromEntries(Object.entries(S.owned||{}).filter(([k])=>creature(k)));
+  S.home=(S.home||[]).filter(h=>h.decoId||creature(h.creatureId));
+  if(!S.worldsUnlocked||!S.worldsUnlocked.length) S.worldsUnlocked=['green_forest'];
+  if(!DATA.worlds.find(w=>w.id===S.currentWorld)) S.currentWorld='green_forest';
   setInterval(()=>{ S.stats.playSeconds++; if(S.stats.playSeconds%20===0) save(); },1000);
   window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; startBGM(); },{once:true});
   { const b=$("#musicBtn"); if(b) b.innerHTML=(S.settings&&S.settings.music===false)?ICON.muted:ICON.music; }

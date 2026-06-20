@@ -342,6 +342,15 @@
   .cardlet.rar-rare .cardscrim,.cardlet.rar-epic .cardscrim{background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.6),rgba(255,255,255,.04) 60%),radial-gradient(2px 2px at 18% 24%,#fff,transparent 60%),radial-gradient(2px 2px at 80% 28%,#fff,transparent 60%),radial-gradient(2px 2px at 28% 80%,#fff,transparent 60%),radial-gradient(2px 2px at 74% 82%,#fff,transparent 60%);}
   .cardlet.rar-legend{box-shadow:inset 0 0 0 3px #F4A300,0 0 20px rgba(244,163,0,.7);}
   .cardlet.rar-legend .cardscrim{background:radial-gradient(circle at 50% 42%,rgba(255,250,228,.66),rgba(255,243,205,.06) 60%),radial-gradient(2.4px 2.4px at 20% 24%,#fff3bf,transparent 60%),radial-gradient(2.4px 2.4px at 78% 26%,#fff3bf,transparent 60%),radial-gradient(2.4px 2.4px at 30% 82%,#fff3bf,transparent 60%),radial-gradient(2.4px 2.4px at 72% 80%,#fff3bf,transparent 60%);}
+  /* tap-to-zoom collectible card */
+  .zoomcard{width:min(76vw,290px);aspect-ratio:3/4;border-radius:26px;overflow:visible;cursor:default;animation:zoompop .32s cubic-bezier(.2,.8,.3,1.2);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  @keyframes zoompop{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}
+  .zoomcard .zoomchar{position:relative;z-index:2;}
+  .zoomcard .zoomname{position:relative;z-index:2;font-weight:800;font-size:22px;color:#5a4326;margin-top:8px;background:rgba(255,255,255,.86);border-radius:12px;padding:2px 14px;}
+  .zoomcard .zoommeta{position:relative;z-index:2;font-size:13px;font-weight:700;color:#6a5a3a;margin-top:5px;background:rgba(255,255,255,.72);border-radius:10px;padding:1px 10px;}
+  .zoomcard .rar{top:10px;right:10px;font-size:13px;padding:3px 10px;}
+  .zoomcard .crown{top:-10px;font-size:26px;}
+  .zoomclose{position:absolute;top:-16px;right:-12px;z-index:6;width:38px;height:38px;border-radius:50%;border:none;background:#fff;font-weight:800;font-size:17px;color:#7a572b;box-shadow:var(--shadow);cursor:pointer;}
   @keyframes cardshine{0%{left:-70%}55%,100%{left:140%}}
   /* first-run tutorial pointer */
   #tapHint{position:absolute;left:50%;top:60%;transform:translateX(-50%);font-weight:800;font-size:22px;color:var(--btn);pointer-events:none;z-index:4;text-shadow:0 1px 2px #fff,0 0 8px #fff;animation:taphint 1.1s ease-in-out infinite;}
@@ -1541,9 +1550,15 @@ function reward(){
 function nextEgg(){ SFX.tap(); $("#rewardOverlay").classList.remove("active");
   if(SESSION_HATCH>0 && SESSION_HATCH%SOFT_STOP_EVERY===0) showSoftStop(); else newEgg(); }
 
+function worldComplete(w){ const base=creaturesOf(w.sets).filter(c=>!c.legend); return base.length>0 && base.every(c=>S.owned[c.id]); }
 function checkUnlocks(){
-  const owned=ownedCount();
-  DATA.worlds.forEach(w=>{ if(!S.worldsUnlocked.includes(w.id)&&owned>=w.unlock){ S.worldsUnlocked.push(w.id); toast(`🎉 ${nm(w.name)}!`); } });
+  // SEQUENTIAL: a world opens only after the PREVIOUS world's set is fully collected (recomputed each time -> self-heals)
+  const want=[DATA.worlds[0].id];
+  for(let i=1;i<DATA.worlds.length;i++){ if(worldComplete(DATA.worlds[i-1])) want.push(DATA.worlds[i].id); else break; }
+  const newly=want.filter(id=>!(S.worldsUnlocked||[]).includes(id));
+  S.worldsUnlocked=want;
+  if(!want.includes(S.currentWorld)) S.currentWorld=want[want.length-1];
+  newly.forEach(id=>{ try{SFX.fanfare&&SFX.fanfare('epic');}catch(e){} toast(`🎉 ${nm(world(id).name)}!`); });
 }
 function checkSets(){
   DATA.worlds.forEach(w=>{ w.sets.forEach(setId=>{
@@ -1637,7 +1652,22 @@ function renderAlbum(){
   });
   scroll.innerHTML=html; $("#ab_count").textContent=have; $("#ab_total").textContent=total;
 }
-function albumTap(id,owned){ if(!owned) return; SFX.signature(id); speak(nm(creature(id).name)+"!"); }
+function albumTap(id,owned){ if(!owned) return; const c=creature(id); if(!c)return; try{SFX.signature(id);}catch(e){} speak(nm(c.name)+"!"); openCardZoom(c); }
+function openCardZoom(c){ const en=S.locale!=='id'; const dup=S.owned[c.id]||1;
+  let ov=document.getElementById('cardZoom');
+  if(!ov){ ov=document.createElement('div'); ov.id='cardZoom'; ov.className='overlay'; ov.addEventListener('click',e=>{ if(e.target===ov) closeCardZoom(); }); $("#device").appendChild(ov); }
+  ov.innerHTML=`<div class="cardlet rar-${c.rarity} zoomcard" style="background-image:url('${ALBUMBG[c.world]||''}')">
+    <div class="cardscrim"></div>
+    <div class="rar" style="background:${RARCOLOR[c.rarity]}">${rarLabel(c.rarity)}</div>
+    ${c.rarity==='legend'?'<div class="crown">👑</div>':''}
+    <div class="zoomchar">${creatureMarkup(c,190)}</div>
+    <div class="zoomname">${nm(c.name)}</div>
+    <div class="zoommeta">${world(c.world)?nm(world(c.world).name):''} · ${en?'collected':'punya'} ×${dup}</div>
+    <button class="zoomclose" onclick="closeCardZoom()" aria-label="close">✕</button></div>`;
+  ov.classList.add('active');
+  try{ burst(c.rarity==='legend'?30:c.rarity==='epic'||c.rarity==='magic'?20:12, ov, true); }catch(e){}
+}
+function closeCardZoom(){ const ov=document.getElementById('cardZoom'); if(ov) ov.classList.remove('active'); }
 
 /* ===================== HOME ===================== */
 const HOME_LEVELS={1:{id:"Kamar",en:"Cozy Room"},2:{id:"Taman",en:"Garden"},3:{id:"Taman Main",en:"Playground"},4:{id:"Rumah Pohon",en:"Treehouse"},5:{id:"Istana",en:"Castle"}};
@@ -1757,8 +1787,9 @@ function renderWorld(){
   const POS=[6,22.5,39,55.5,72,88]; // vertical % positions weaving down the path
   const nodes=DATA.worlds.map((w,i)=>{ const un=S.worldsUnlocked.includes(w.id); const cur=S.currentWorld===w.id;
     const all=creaturesOf(w.sets); const got=all.filter(c=>S.owned[c.id]).length; const done=all.length>0&&got>=all.length; const mascot=all.find(c=>!c.legend);
-    const upct=w.unlock===0?100:Math.min(100,Math.round(owned/w.unlock*100));
     const cpct=all.length?Math.round(got/all.length*100):100;
+    const prev=i>0?DATA.worlds[i-1]:null; const pbase=prev?creaturesOf(prev.sets).filter(c=>!c.legend):[]; const pgot=pbase.filter(c=>S.owned[c.id]).length;
+    const upct=pbase.length?Math.round(pgot/pbase.length*100):0;
     const side=i%2?'right':'left'; const bg=BG[w.id];
     const friends=S.locale==='id'?'teman':'friends';
     return `<div class="wpanel ${side} ${un?'':'locked'} ${cur?'here':''}" style="top:${POS[i]!=null?POS[i]:6+i*16}%" onclick="${un?`pickWorld('${w.id}')`:''}">
@@ -1766,7 +1797,7 @@ function renderWorld(){
       <div class="wp-body">
         <div class="wp-name">${nm(w.name)}</div>
         ${un ? `<div class="wp-sub">${got}/${all.length} ${friends}${done?' ✓':''}</div>`
-             : `<div class="wp-sub">${t('need')} ${w.unlock} (${owned}/${w.unlock})</div>`}
+             : `<div class="wp-sub">${S.locale==='id'?'Selesaikan':'Finish'} ${prev?nm(prev.name):''} (${pgot}/${pbase.length})</div>`}
         <div class="wp-bar"><i style="width:${un?cpct:upct}%"></i></div>
       </div></div>`; }).join("");
   $("#worldScroll").innerHTML=`<div class="worldmap-wrap">${nodes}</div>`;
@@ -1908,6 +1939,7 @@ function boot(){
   if(!S.worldsUnlocked||!S.worldsUnlocked.length) S.worldsUnlocked=['green_forest'];
   if(!DATA.worlds.find(w=>w.id===S.currentWorld)) S.currentWorld='green_forest';
   if(!S.localeMigrated){ S.locale='en'; S.localeMigrated=true; } // English-first default; Parent Zone toggle still works afterward
+  checkUnlocks(); // re-derive world unlocks sequentially (self-heals any wrongly-unlocked worlds)
   setInterval(()=>{ S.stats.playSeconds++; if(S.stats.playSeconds%20===0) save(); },1000);
   window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; startBGM(); },{once:true});
   { const b=$("#musicBtn"); if(b) b.innerHTML=(S.settings&&S.settings.music===false)?ICON.muted:ICON.music; }

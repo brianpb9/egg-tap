@@ -854,12 +854,16 @@ const PRAISE_VO=["assets/audio/vo_praise.mp3","assets/audio/vo_praise2.mp3","ass
 // which prompt VO to play per challenge id (else Web Speech)
 const PROMPTVO={ c_red1:"find_red", c_red2:"find_red", c_blue1:"blue", c_blue2:"blue", c_circle1:"circle", c_circle2:"circle",
   c_cat1:"cat", c_count3:"count3", c_count5:"count3", c_happy1:"happy", c_food1:"food", c_food2:"food",
-  c_match1:"match", c_match2:"match", c_seq1:"seq", c_seq2:"seq", c_big1:"big", c_letterA:"letter" };
+  c_match1:"match", c_match2:"match", c_seq1:"seq", c_seq2:"seq", c_big1:"big", c_letterA:"letter",
+  x_pat_rb2:"next", x_pat_an2:"next", x_pat_tri3:"next", x_pat_star3:"next" };
 const _voCache={};
 function playSrc(p){ try{ const a=_voCache[p]||(_voCache[p]=new Audio(p)); a.currentTime=0; a.play().catch(()=>{}); return true; }catch(e){ return false; } }
-// VO mp3 are Indonesian (Maya). For non-id locales, fall back to Web Speech in that language.
-function vo(key){ if(S.locale!=="id") return false; const p=VOICE[key]; return p?playSrc(p):false; }
-function voPraise(){ if(S.locale!=="id") return false; return playSrc(PRAISE_VO[Math.floor(Math.random()*PRAISE_VO.length)]); }
+// English VO (Maya). Locales without a clip fall back to Web Speech in that language.
+const VOICE_EN={ tap:"assets/audio/vo_en_tap.mp3", oops:"assets/audio/vo_en_oops.mp3", remember:"assets/audio/vo_en_remember.mp3",
+  find_red:"assets/audio/vo_en_red.mp3", blue:"assets/audio/vo_en_blue.mp3", cat:"assets/audio/vo_en_cat.mp3", next:"assets/audio/vo_en_next.mp3" };
+const PRAISE_VO_EN=["assets/audio/vo_en_praise1.mp3","assets/audio/vo_en_praise2.mp3","assets/audio/vo_en_praise3.mp3"];
+function vo(key){ const set = S.locale==="id"?VOICE : S.locale==="en"?VOICE_EN : null; if(!set) return false; const p=set[key]; return p?playSrc(p):false; }
+function voPraise(){ const set = S.locale==="id"?PRAISE_VO : S.locale==="en"?PRAISE_VO_EN : null; if(!set) return false; return playSrc(set[Math.floor(Math.random()*set.length)]); }
 function creatureMarkup(c,size){ const p=c&&IMG[c.id];
   return p?`<img src="${p}" alt="" width="${size}" height="${size}" loading="lazy" decoding="async" style="object-fit:contain;display:block" draggable="false">`:creatureSVG(c,size); }
 function eggMarkup(egg){ const p=EGGIMG[egg.id];

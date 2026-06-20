@@ -345,7 +345,8 @@
   @keyframes atdecor{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
   .placed.guest{animation:guestbob 1.3s ease-in-out infinite;}
   @keyframes guestbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-  .guesttag{position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:#ffd54a;color:#7a4d00;font-weight:800;font-size:11px;padding:2px 8px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,.2);}
+  .guesttag{position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:#ffd54a;color:#7a4d00;font-weight:800;font-size:11px;padding:2px 8px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,.2);z-index:2;}
+  .placed.grounded::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:60%;height:11px;background:radial-gradient(ellipse at center,rgba(55,40,18,.30),rgba(55,40,18,0) 72%);border-radius:50%;z-index:-1;pointer-events:none;}
   .moodbubble{position:absolute;font-size:18px;pointer-events:none;z-index:19;animation:moodbubble 2.2s ease-in-out;}
   @keyframes moodbubble{0%{opacity:0;transform:translateY(4px) scale(.6)}20%{opacity:1;transform:translateY(-6px) scale(1)}80%{opacity:1;transform:translateY(-12px)}100%{opacity:0;transform:translateY(-20px)}}
 </style>
@@ -1568,7 +1569,7 @@ const HOME_TOOLS=[['pat','💗'],['feed','🍓'],['wash','🫧'],['play','🎵']
 const CARE={pat:{emo:'💗'},feed:{emo:'🍓',extra:'😋'},wash:{emo:'🫧',extra:'✨'},play:{emo:'🎵',extra:'🎉'},sleep:{emo:'😴',extra:'💤'}};
 function setHomeTool(tool){ HOMETOOL=tool; document.querySelectorAll('.carebar button').forEach(b=>b.classList.toggle('sel',b.dataset.tool===tool)); try{SFX.tap&&SFX.tap();}catch(e){} }
 function floatEmote(el,ch,dx){ const room=$("#room"); if(!room||!el)return; const s=document.createElement('span'); s.className='floatemote'; s.textContent=ch;
-  const x=(parseFloat(el.style.left)||0)+(el.offsetWidth/2||30)+(dx||0); const y=(parseFloat(el.style.top)||0)-4;
+  const x=el.offsetLeft+(el.offsetWidth/2)+(dx||0), y=el.offsetTop-4;
   s.style.left=(x-12)+'px'; s.style.top=y+'px'; room.appendChild(s); setTimeout(()=>s.remove(),1000); }
 function petHome(el,id){ const cw=el.querySelector('.cwrap'); if(cw){ cw.classList.remove('react'); void cw.offsetWidth; cw.classList.add('react'); }
   const care=CARE[HOMETOOL]||CARE.pat; haptic(12);
@@ -1580,8 +1581,9 @@ function petHome(el,id){ const cw=el.querySelector('.cwrap'); if(cw){ cw.classLi
 function homeIdle(){ const home=document.getElementById('home'); const room=$("#room"); if(!room||!home||!home.classList.contains('active')) return;
   const els=[...room.querySelectorAll('.placed.floaty')]; if(!els.length) return;
   const el=els[Math.floor(Math.random()*els.length)]; const b=document.createElement('span'); b.className='moodbubble'; b.textContent=['💗','🎵','✨','😴','💤'][Math.floor(Math.random()*5)];
-  b.style.left=((parseFloat(el.style.left)||0)+(el.offsetWidth/2||28))+'px'; b.style.top=((parseFloat(el.style.top)||0)-8)+'px'; room.appendChild(b); setTimeout(()=>b.remove(),2200); }
-function mkFriend(room,c,left,top,size,z,cls){ if(!room||!c)return null; const el=document.createElement("div"); el.className="placed "+(cls||"floaty"); el.style.left=left+"px"; el.style.top=top+"px"; el.style.zIndex=z; el.innerHTML=`<div class="cwrap">${creatureMarkup(c,size)}</div>`; el.onclick=()=>petHome(el,c.id); room.appendChild(el); return el; }
+  b.style.left=(el.offsetLeft+(el.offsetWidth/2))+'px'; b.style.top=(el.offsetTop-8)+'px'; room.appendChild(b); setTimeout(()=>b.remove(),2200); }
+// left/top are PERCENT of the room (robust against clientHeight races); centered via negative margins
+function mkFriend(room,c,leftPct,topPct,size,z,cls){ if(!room||!c)return null; const el=document.createElement("div"); el.className="placed "+(cls||"floaty"); el.style.left=leftPct+"%"; el.style.top=topPct+"%"; el.style.width=size+"px"; el.style.marginLeft=(-size/2)+"px"; el.style.marginTop=(-size/2)+"px"; el.style.zIndex=z; el.innerHTML=`<div class="cwrap">${creatureMarkup(c,size)}</div>`; el.onclick=()=>petHome(el,c.id); room.appendChild(el); return el; }
 function homeToday(){ try{ return new Date().toDateString(); }catch(e){ return 'day'; } }
 function ensureGuest(){ if(S.lastGuestDay===homeToday()) return; S.lastGuestDay=homeToday();
   const pool=DATA.creatures.filter(c=>!c.legend); const notOwned=pool.filter(c=>!S.owned[c.id]); const list=notOwned.length?notOwned:pool;
@@ -1605,38 +1607,30 @@ function renderHome(){
   const lvl=homeLevel(friendsAll.length+decor.length);
   $("#t_home").textContent=`${t("home")} · Lv${lvl} ${nm(HOME_LEVELS[lvl])}`;
   room.style.background=`url('${HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`;
+  const wtotal=creaturesOf(w.sets).length;
   const canInvite=visitorPool.length>visitors.length;
   const chip = !friendsAll.length ? (S.locale==='id'?'Tetaskan teman dulu! 🥚':'Hatch some friends first! 🥚')
-    : `🐾 ${friendsAll.length} `+(S.locale==='id'?'teman':'friends')
-      +(visitors.length?` · +${visitors.length} ${S.locale==='id'?'berkunjung':'visiting'}`:'')
-      +(canInvite?` · ${S.locale==='id'?'beli dekor untuk undang teman':'buy decor to invite friends over'}`:'');
+    : `🐾 ${friendsAll.length}/${wtotal} `+(S.locale==='id'?'terkumpul':'collected')
+      +(friendsAll.length<wtotal?` · ${S.locale==='id'?'tetaskan lagi!':'hatch more!'}`:` 🏆 ${S.locale==='id'?'lengkap!':'complete!'}`)
+      +(visitors.length?` · +${visitors.length} ${S.locale==='id'?'tamu':'visiting'}`:'');
   room.innerHTML=`<div class="ground"></div><div class="floatlabel">${chip}</div>`;
-  const rw=room.clientWidth||340, rh=room.clientHeight||440;
-  const clampX=v=>Math.max(8,Math.min(rw-72,v)), clampY=v=>Math.max(rh*0.16,Math.min(rh-94,v));
-  let assigned=0;
-  // decorations laid out on a tidy grid (no overlap) + friends gathering at them
-  const dn=decor.length, dcols=Math.min(3,Math.max(1,dn));
+  const rw=room.clientWidth||340;
+  // --- decorations: small back row along the lawn horizon, evenly spread (percent positions)
+  const dn=decor.length;
   decor.forEach((it,i)=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); if(!d)return;
-    const col=i%dcols, rowi=Math.floor(i/dcols);
-    const x=clampX(rw*(0.18+0.30*col)-32), y=clampY(rh*(0.30+0.15*rowi));
-    const de=document.createElement("div"); de.className="placed"; de.style.left=x+"px"; de.style.top=y+"px"; de.style.zIndex=Math.round(y); de.innerHTML=decoMarkup(d,76); room.appendChild(de);
-    const host=Math.min(2,showFriends.length-assigned);
-    for(let k=0;k<host;k++){ const c=showFriends[assigned++]; const off=k===0?-30:34;
-      mkFriend(room,c,clampX(x+off),clampY(y+(k===0?28:10)),54,Math.round(y)+30,'atdecor'); }
-  });
-  // remaining friends auto-arranged on the floor — tap any to pet
-  const rest=showFriends.slice(assigned), n=rest.length;
-  if(n){ const cols=Math.max(2,Math.min(4,Math.ceil(Math.sqrt(n)))), rows=Math.ceil(n/cols);
-    const padX=rw*0.06, padTop=rh*0.18, padBot=rh*0.10;
-    const cellW=(rw-2*padX)/cols, cellH=(rh-padTop-padBot)/rows;
-    const size=Math.max(46,Math.min(82,Math.min(cellW,cellH)*0.82));
-    rest.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols);
-      const cx=padX+cellW*cc+cellW/2, cy=padTop+cellH*rr+cellH/2;
-      mkFriend(room,c,cx-size/2,cy-size/2,size,Math.round(cy)+20,''); });
+    const size=54, leftPct=((i+1)/(dn+1))*100, topPct=46+(i%2)*3.5;
+    const de=document.createElement("div"); de.className="placed grounded"; de.style.left=leftPct+"%"; de.style.top=topPct+"%"; de.style.width=size+"px"; de.style.marginLeft=(-size/2)+"px"; de.style.marginTop=(-size/2)+"px"; de.style.zIndex=Math.round(topPct*4); de.innerHTML=decoMarkup(d,size); room.appendChild(de); });
+  // --- friends: tidy front rows on the lawn, below the decor (percent positions => never clipped)
+  const n=showFriends.length;
+  if(n){ const cols=Math.min(4,Math.max(2,Math.ceil(Math.sqrt(n)))), rows=Math.ceil(n/cols);
+    const size=Math.max(46,Math.min(64,Math.floor(rw*0.72/cols)));
+    showFriends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols), inRow=Math.min(cols,n-rr*cols);
+      const leftPct=((cc+1)/(inRow+1))*100, topPct=rows<=1?74:(66+18*(rr/(rows-1)));
+      mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'floaty grounded'); });
   }
-  // daily visiting guest
+  // daily visiting guest (stands to the side with a ribbon)
   ensureGuest();
-  if(S.guest){ const gc=creature(S.guest); if(gc){ const ge=mkFriend(room,gc,clampX(rw*0.5-32),clampY(rh*0.2),64,9000,'guest');
+  if(S.guest){ const gc=creature(S.guest); if(gc){ const ge=mkFriend(room,gc,82,46,54,9000,'guest grounded');
     if(ge){ ge.onclick=()=>tapGuest(ge); const tag=document.createElement('div'); tag.className='guesttag'; tag.textContent=(S.locale==='id'?'✨ Tamu!':'✨ Guest!'); ge.appendChild(tag); } } }
   // tray: decoration shop — buying decor invites more friends to hang out
   const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);

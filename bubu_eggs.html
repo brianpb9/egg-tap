@@ -232,10 +232,12 @@ function Egg({stage, egg, k, size=132}){
 const STAGES=["UTUH","RETAK","KEBELAH"];
 function StageEgg({egg,k,initial}){
   const [stage,setStage]=useState(initial);
+  const slug=egg.name.toLowerCase().replace(/ egg$/,'').trim().replace(/ /g,'_');
   return (
     <div className="flex flex-col items-center gap-1 select-none">
       <div className="stage-egg" onClick={()=>setStage((stage+1)%3)} title="Klik untuk membuka">
-        <Egg stage={stage} egg={egg} k={k+"_"+stage} size={92}/>
+        <img src={`assets/bubu/eggs/${slug}_${stage}.png`} alt="" width="94"
+             style={{height:'auto',display:'block',filter:'drop-shadow(0 4px 6px rgba(0,0,0,.14))'}}/>
       </div>
       <span className="text-[11px] font-extrabold tracking-wide px-2 py-[2px] rounded-full"
         style={{color:egg.pal.dark, background:"#ffffffcc"}}>{STAGES[stage]}</span>

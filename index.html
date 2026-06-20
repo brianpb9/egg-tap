@@ -867,8 +867,8 @@ function defaultSave(){ return {
   stats:{hatches:0,challengesPassed:0,correct:0,playSeconds:0,weekSkills:[]}, entitlements:{plus:false}, settings:{music:true,sfx:true} }; }
 function load(){ try{ S=JSON.parse(localStorage.getItem(SAVE_KEY)); }catch(e){} if(!S) S=defaultSave(); }
 function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
-function t(k){ return (I18N[S.locale]||I18N.id)[k] ?? k; }
-function nm(o){ return o[S.locale] ?? o.id ?? o.en; }
+function t(k){ return (I18N[S.locale]||I18N.en)[k] ?? k; }
+function nm(o){ return o[S.locale] ?? o.en ?? o.id; }
 
 /* ===================== AUDIO ===================== */
 let AC=null, AUDIO_READY=false;

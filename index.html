@@ -1057,7 +1057,10 @@ const SFX={
   },
 };
 /* ---- gentle WebAudio background music (toggleable, low-arousal for toddlers) ---- */
-let _bgmTimer=null, _bgmStep=0;
+let _bgmTimer=null, _bgmStep=0, _bgmAudio=null;
+// Real-music slot: fill these once mp3/ogg loops are added under assets/audio/bgm/.
+// While empty, the layered WebAudio synth plays instead (offline-first, no files needed).
+const BGMFILE={ /* green_forest:'assets/audio/bgm/forest.mp3', sunny_beach:'assets/audio/bgm/beach.mp3', candy_land:'assets/audio/bgm/candy.mp3', dino_valley:'assets/audio/bgm/dino.mp3', ocean_kingdom:'assets/audio/bgm/ocean.mp3', rainbow_meadow:'assets/audio/bgm/meadow.mp3' */ };
 const BGM_SCALE=[392.00,440.00,523.25,587.33,659.25,783.99];
 // each world gets its own gentle musical mood
 const WORLD_BGM={
@@ -1078,8 +1081,13 @@ function bgmStep(){ if(!AC||(S.settings&&S.settings.music===false)) return;
   if(_bgmStep%4===0) musicNote(sc[0]/2,1.8,0.03,"sine",520);                          // gentle bass
   if(_bgmStep%8===3) musicNote(sc[5]*2,0.55,0.014,"sine",2200);                       // airy shimmer
   _bgmStep++; }
-function startBGM(){ if(_bgmTimer) return; if(S.settings&&S.settings.music===false) return; _bgmTimer=setInterval(bgmStep,720); }
-function stopBGM(){ clearInterval(_bgmTimer); _bgmTimer=null; }
+function startBGM(){ if(S.settings&&S.settings.music===false) return;
+  const f=BGMFILE[S.currentWorld];
+  if(f){ if(_bgmTimer){clearInterval(_bgmTimer);_bgmTimer=null;} // real music file for this world
+    try{ if(!_bgmAudio){ _bgmAudio=new Audio(); _bgmAudio.loop=true; _bgmAudio.volume=0.55; } if(!_bgmAudio.src||_bgmAudio.src.indexOf(f)<0){ _bgmAudio.src=f; } _bgmAudio.play().catch(()=>{}); }catch(e){} return; }
+  if(_bgmTimer) return; _bgmTimer=setInterval(bgmStep,720); } // fall back to layered synth
+function stopBGM(){ if(_bgmTimer){clearInterval(_bgmTimer);_bgmTimer=null;} if(_bgmAudio){ try{_bgmAudio.pause();}catch(e){} } }
+function refreshBGM(){ if(!Object.keys(BGMFILE).length) return; stopBGM(); startBGM(); } // switch track when world changes (file mode)
 function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; S.settings.music=!S.settings.music; save();
   if(S.settings.music) startBGM(); else stopBGM(); const b=$("#musicBtn"); if(b) b.innerHTML=S.settings.music?ICON.music:ICON.muted; }
 function haptic(p){ try{ if(navigator.vibrate && !(S.settings&&S.settings.sfx===false)) navigator.vibrate(p); }catch(e){} }
@@ -1697,7 +1705,7 @@ function celebrateWorld(id){ const w=world(id); if(!w) return; const en=S.locale
   ov.classList.add('active'); try{ burst(40,ov,true); SFX.fanfare&&SFX.fanfare('legend'); }catch(e){}
 }
 function closeWorldCelebrate(){ const ov=document.getElementById('worldCelebrate'); if(ov) ov.classList.remove('active'); }
-function gotoNewWorld(id){ closeWorldCelebrate(); try{SFX.tap&&SFX.tap();}catch(e){} S.currentWorld=id; save(); show('hatch'); newEgg(); }
+function gotoNewWorld(id){ closeWorldCelebrate(); try{SFX.tap&&SFX.tap();}catch(e){} S.currentWorld=id; save(); refreshBGM(); show('hatch'); newEgg(); }
 function checkSets(){
   DATA.worlds.forEach(w=>{ w.sets.forEach(setId=>{
     if(S.setsAwarded.includes(setId)) return;
@@ -1951,7 +1959,7 @@ function renderWorld(){
       </div></div>`; }).join("");
   $("#worldScroll").innerHTML=`<div class="worldmap-wrap">${nodes}</div>`;
 }
-function pickWorld(id){ SFX.tap(); S.currentWorld=id; save(); show("hatch"); newEgg(); }
+function pickWorld(id){ SFX.tap(); S.currentWorld=id; save(); refreshBGM(); show("hatch"); newEgg(); }
 
 /* ===================== DAILY ===================== */
 function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }

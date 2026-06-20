@@ -1068,10 +1068,16 @@ const WORLD_BGM={
   ocean_kingdom:{scale:[349,392,494,587,659,698],pat:[0,2,3,1,4,2,5,3]},      // dreamy
   rainbow_meadow:{scale:[440,523,659,698,880,1047],pat:[0,2,4,3,5,1,4,2]}     // airy & magical
 };
-function musicNote(freq,dur,vol){ const c=ac(); if(!c) return; const o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();
-  o.type="sine"; o.frequency.value=freq; f.type="lowpass"; f.frequency.value=1100; o.connect(f); f.connect(g); g.connect(c.destination);
-  const tt=c.currentTime; g.gain.setValueAtTime(0,tt); g.gain.linearRampToValueAtTime(vol,tt+0.09); g.gain.exponentialRampToValueAtTime(0.0001,tt+dur); o.start(tt); o.stop(tt+dur+0.05); }
-function bgmStep(){ if(!AC||(S.settings&&S.settings.music===false)) return; const wb=WORLD_BGM[S.currentWorld]||{scale:BGM_SCALE,pat:[0,2,4,2,1,3,5,3]}; const n=wb.scale[wb.pat[_bgmStep%wb.pat.length]]; _bgmStep++; musicNote(n,1.1,0.05); if(_bgmStep%4===0) musicNote(n/2,1.7,0.03); }
+function musicNote(freq,dur,vol,type,filterHz){ const c=ac(); if(!c) return; const o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();
+  o.type=type||"sine"; o.frequency.value=freq; f.type="lowpass"; f.frequency.value=filterHz||1200; o.connect(f); f.connect(g); g.connect(c.destination);
+  const tt=c.currentTime; g.gain.setValueAtTime(0,tt); g.gain.linearRampToValueAtTime(vol,tt+0.10); g.gain.exponentialRampToValueAtTime(0.0001,tt+dur); o.start(tt); o.stop(tt+dur+0.05); }
+function bgmStep(){ if(!AC||(S.settings&&S.settings.music===false)) return;
+  const wb=WORLD_BGM[S.currentWorld]||{scale:BGM_SCALE,pat:[0,2,4,2,1,3,5,3]}; const sc=wb.scale, pat=wb.pat, i=_bgmStep%pat.length;
+  musicNote(sc[pat[i]],1.0,0.05,"sine",1500);                                        // melody / lead
+  if(_bgmStep%2===0){ [sc[0]/2,sc[2]/2,sc[4]/2].forEach(fq=>musicNote(fq,1.9,0.02,"triangle",850)); } // soft pad chord
+  if(_bgmStep%4===0) musicNote(sc[0]/2,1.8,0.03,"sine",520);                          // gentle bass
+  if(_bgmStep%8===3) musicNote(sc[5]*2,0.55,0.014,"sine",2200);                       // airy shimmer
+  _bgmStep++; }
 function startBGM(){ if(_bgmTimer) return; if(S.settings&&S.settings.music===false) return; _bgmTimer=setInterval(bgmStep,720); }
 function stopBGM(){ clearInterval(_bgmTimer); _bgmTimer=null; }
 function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; S.settings.music=!S.settings.music; save();

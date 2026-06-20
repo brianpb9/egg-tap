@@ -1652,7 +1652,7 @@ function renderHome(){
   S.home=(S.home||[]).filter(it=>it.decoId);
   const w=world(S.currentWorld), room=$("#room");
   const friendsAll=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);
-  const decor=S.home;
+  const decor=S.home.filter(it=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); return d&&d.world===S.currentWorld; }); // only THIS world's decor — no clutter from other worlds
   const visitorPool=Object.keys(S.owned).map(creature).filter(c=>c&&c.world!==S.currentWorld);
   const visitors=visitorPool.slice(0, decor.length*2); // each decoration invites 2 friends from other worlds to visit
   const showFriends=friendsAll.concat(visitors); // owned-world friends ALWAYS show; visitors are a bonus
@@ -1668,16 +1668,17 @@ function renderHome(){
   room.innerHTML=`<div class="ground"></div><div class="floatlabel">${chip}</div>`;
   const rw=room.clientWidth||340;
   // --- decorations: small back row along the lawn horizon, evenly spread (percent positions)
-  const dn=decor.length;
+  const dn=decor.length, dcols=Math.min(4,Math.max(1,dn)), drows=Math.ceil(dn/dcols);
   decor.forEach((it,i)=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); if(!d)return;
-    const size=54, leftPct=((i+1)/(dn+1))*100, topPct=58+(i%2)*4;
+    const cc=i%dcols, rr=Math.floor(i/dcols), inRow=Math.min(dcols,dn-rr*dcols);
+    const size=dn>6?44:52, leftPct=((cc+1)/(inRow+1))*100, topPct=(drows<=1?52:48+9*(rr/(drows-1)))+(cc%2)*2;
     const de=document.createElement("div"); de.className="placed grounded"; de.style.left=leftPct+"%"; de.style.top=topPct+"%"; de.style.width=size+"px"; de.style.marginLeft=(-size/2)+"px"; de.style.marginTop=(-size/2)+"px"; de.style.zIndex=Math.round(topPct*4); de.innerHTML=decoMarkup(d,size); room.appendChild(de); });
-  // --- friends: tidy front rows on the lawn, below the decor (percent positions => never clipped)
+  // --- friends: spread wide across the front floor, fewer rows + staggered + scaled so they never pile up
   const n=showFriends.length;
-  if(n){ const cols=Math.min(4,Math.max(2,Math.ceil(Math.sqrt(n)))), rows=Math.ceil(n/cols);
-    const size=Math.max(46,Math.min(64,Math.floor(rw*0.72/cols)));
+  if(n){ const cols=Math.min(4,Math.max(2,Math.ceil(n/2))), rows=Math.ceil(n/cols);
+    const size=Math.max(40,Math.min(60,Math.floor(rw*0.70/cols)));
     showFriends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols), inRow=Math.min(cols,n-rr*cols);
-      const leftPct=((cc+1)/(inRow+1))*100, topPct=rows<=1?80:(70+16*(rr/(rows-1)));
+      const half=50/(inRow+1), leftPct=((cc+1)/(inRow+1))*100+(rr%2?half:0), topPct=rows<=1?78:(64+26*(rr/(rows-1)));
       mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'floaty grounded'); });
   }
   // daily visiting guest (stands to the side with a ribbon)

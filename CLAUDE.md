@@ -3,58 +3,52 @@
 Panduan untuk Claude (dan developer) saat bekerja di repo ini.
 
 ## Apa ini
-**Egg Tap** — prototipe game edukasi anak usia 3–5 (Bahasa Indonesia first, English second).
-Loop inti: **tap telur → menetas → tantangan belajar (no-fail) → reward → koleksi**.
-Dibangun dari `EGG_TAP_MASTER_BIBLE` (lihat `/docs` jika ada) sebagai **vertical slice** yang bisa dimainkan.
-
-Prinsip utama: **"game adalah data, bukan kode."** Engine kecil menjalankan konten yang
-didefinisikan sebagai data. Tambah konten = tambah data + aset, tanpa ubah logika.
+**Egg Tap** — game edukasi anak usia 3–6. **English-first** (target global Play Store), Indonesia kedua.
+Loop inti: **tap telur → menetas (dramatis) → tantangan belajar (no-fail) → reward → koleksi**.
+Prinsip utama: **"game adalah data, bukan kode."** Engine kecil menjalankan konten data; tambah konten = tambah data + aset.
 
 ## Bentuk teknis
-- **Satu file**: `index.html` — HTML + CSS + JS inline, **tanpa build step**, **offline-first** (localStorage, key `eggtap_save_v2`).
-- Tidak ada framework, tidak ada dependency. Buka langsung di browser.
-- Target akhir (per Bible) adalah Unity+Spine; file ini adalah prototipe web untuk membuktikan loop & feel.
+- **Satu file**: `index.html` — HTML+CSS+JS inline, **tanpa build step**, **offline-first** (localStorage `eggtap_save_v2`).
+- Tanpa framework/dependency. Entry = `index.html` (penting untuk Vercel: root menyajikan `index.html`).
+- Deploy: static host apa pun (repo `egg-tap` → Vercel auto-deploy on push). `assets/` HARUS ikut.
 
 ## Cara menjalankan / menguji
-- **Paling gampang:** buka `index.html` di browser (double-click).
-- **Disarankan saat dev:** jalankan server lokal lalu buka `http://localhost:8753/index.html`.
-  Mesin ini TIDAK punya Node/Python. Server pakai PowerShell `HttpListener`
-  (jangan pakai `-ExecutionPolicy Bypass` — diblok sandbox). Jalankan listener inline di background.
-- Verifikasi visual/bug pakai **Chrome MCP** (`mcp__Claude_in_Chrome__*`): navigate ke localhost,
-  `read_console_messages`, `javascript_tool`, `computer screenshot`. `file://` ditolak tool navigate.
-- Reset progress: tombol 🔒 (Zona Orang Tua) → "Mulai Ulang Data", atau `localStorage.removeItem('eggtap_save_v2')`.
+- Buka `index.html` langsung, atau server lokal `http://localhost:8753/index.html`.
+- Mesin TIDAK punya Node/Python. Server pakai PowerShell `HttpListener` inline di background (jangan `-ExecutionPolicy Bypass` — diblok). Versi single-thread lebih andal untuk screenshot daripada multi-thread.
+- Verifikasi pakai **Chrome MCP**. **Catatan:** di sesi panjang, screenshot CDP sering time-out (`document_idle`) pada layar banyak-gambar — itu keterbatasan harness, bukan bug. Andalkan **assertion via `javascript_tool`** (cek state `S`, `IMG`, jumlah, `read_console_messages` errors) untuk verifikasi.
+- Reset progress: 🔒 Zona Orang Tua → reset, atau `localStorage.removeItem('eggtap_save_v2')`.
 
 ## Struktur kode di `index.html`
-- `DATA` = sumber konten: `worlds, creatures, eggs, dropTables, skills, challenges, decorations, badges, praise, story`.
-- `I18N` = string UI (`id`/`en`). `t(key)` untuk UI, `nm(obj)` untuk objek `{id,en}`.
-- **State/Save**: `S` (objek save), `load()/save()`, default di `defaultSave()`.
-- **Audio**: `SFX.*` (WebAudio sintesis), `speak()` (Web Speech fallback), `vo(key)/voPraise()` (mp3 VO Higgsfield).
-- **Render karakter/telur**: `creatureSVG()` (fallback prosedural per `kind`), `eggSVG()`.
-  `creatureMarkup()/eggMarkup()` memilih **gambar AI** bila ada, else SVG.
-- **Loop**: `newEgg → tapEgg → hatch → startChallenge → answer/answerSeq → reward → nextEgg`.
-- **Adaptif**: `tierFor()/recordAttempt()` (success-rate 5 percobaan terakhir, naik/turun tier).
-- Layar: `show(id)` + `renderNav/renderAlbum/renderHome/renderWorld/renderParent`.
+- `DATA` = `worlds, creatures, eggs, dropTables, skills, challenges, decorations, badges, praise, story`.
+  - Blok tambahan via IIFE: skill+challenge ekstra (Batch A), generator angka/hitung, **50 varian warna + Rainbow Meadow** (Batch B).
+- `I18N` (`id`/`en`), `t(key)` UI, `nm(obj)` objek `{id,en}`. Default locale **`en`**.
+- State/Save: `S`, `load()/save()`, `defaultSave()` (termasuk `settings.music`).
+- **Audio**: `SFX.*` + `SFX.fanfare(rarity)` (WebAudio); **BGM** loop WebAudio (`startBGM/toggleMusic`, toggle 🔊); `speak()` Web Speech; `vo(key)/voPraise()` → mp3 VO (`VOICE` id, `VOICE_EN` en; locale lain pakai Web Speech).
+- **Render**: `creatureSVG()` (fallback prosedural per `kind`), `eggSVG()`. `creatureMarkup()` pilih gambar AI (`IMG`) bila ada — **ukuran ≤120 pakai thumbnail** `assets/thumbs/`. `eggMarkup()` (`EGGIMG`), `decoMarkup()` (`DECOIMG`). `BG` = background dunia.
+- **Loop**: `newEgg → tapEgg → hatch → revealCreature (3-stage: shake→crack→reveal, fanfare per-rarity) → startChallenge → answer/answerSeq → reward → nextEgg`. `resumeHatch()` cegah soft-lock saat kembali ke layar Hatch.
+- **Adaptif 4-tier**: `tierFor()/recordAttempt()` (cap tier 4), `TIER_NAMES` (Beginner..Expert), usia 3/4/5 → T1/T2/T3.
+- **Soft-stop** tiap 8 telur, **misi harian** (`MISSIONS`), **telur bonus** stardust, **Home progresif** (`HOME_LEVELS` Lv1–5).
+- Arketipe challenge: FIND_ATTRIBUTE, FIND_OBJECT, COUNT, EMOTION, MATCH, MEMORY, SEQUENCE, PATTERN (+observation/odd-one-out via FIND_OBJECT).
 
 ## Aset AI (Higgsfield MCP)
-- Lokasi: `assets/creatures/*.png` (38, transparan), `assets/eggs/*.png` (5), `assets/bg/*.png` (5 background dunia), `assets/audio/*.mp3` (VO Bahasa Indonesia, suara "Maya"/ElevenLabs).
-- Dipetakan ke data lewat **`IMG` (creatureId→file)**, **`BG` (worldId→file)**, **`VOICE`/`PRAISE_VO`/`PROMPTVO`** di awal `<script>`.
-- Aturan: kalau aset ada → dipakai; kalau tidak → fallback SVG/Web Speech. **Tambah aset = tambah baris di peta ini.**
-- Pipeline: `nano_banana_pro` (gambar, pakai 1 creature "jangkar" sbg referensi gaya agar konsisten) → `remove_background` (transparan) → download lokal. VO: `text2speech_v2_elevenlabs`.
-- **Penting:** `assets/` HARUS ikut di samping `index.html` agar gambar/suara termuat.
+- `assets/creatures/*.png` (38), `assets/variants/*.png` (50 varian warna), `assets/eggs/*.png`, `assets/bg/*.png` (6 dunia), `assets/deco/*.png` (8), `assets/audio/*.mp3` (VO id+en), `assets/thumbs/{creatures,variants}/*.png` (256px), `assets/store/{icon.png,trailer.mp4}`.
+- Peta di awal `<script>`: **`IMG`** (creatureId→png), **`BG`** (worldId→png), **`DECOIMG`**, **`EGGIMG`**, **`VOICE`/`VOICE_EN`/`PRAISE_VO`/`PROMPTVO`**. Aset ada → dipakai; else fallback SVG/Web Speech. **Tambah aset = tambah baris peta.**
+- Pipeline: `nano_banana_pro` (pakai 1 creature "anchor" id `161f37b3-...` sbg referensi gaya agar konsisten) → `remove_background` (transparan, **maks 8 job konkuren**) → download lokal. Thumbnail via PowerShell `System.Drawing`. VO: `text2speech_v2_elevenlabs` (voice "Maya"). **Musik latar TIDAK bisa di-generate standalone** (sonilo_music khusus pipeline game) → pakai sintesis WebAudio.
+- Rarity: `common`(grey)/`rare`(blue)/`epic`(purple, alias `magic`)/`legend`(gold) di `RARCOLOR`/`RARLABEL`.
+
+## Status (V3)
+- **Batch A** ✅ 4-tier difficulty + 86 challenge + arketipe baru.
+- **Batch B** ✅ 50 varian + rarity Epic + Rainbow Meadow + album chase; **88/88 creature ber-art AI**.
+- **Batch C** ✅ BGM WebAudio + fanfare per-rarity + Home progresif + English VO + dekorasi AI.
+- **Batch D** ✅ thumbnail perf + app icon + trailer (`assets/store/`) + `STORE.md`.
+- Audit terakhir ~**7.7–8.0/10**. Menuju 10/10: (1) Home ber-art per-level + grid; (2) UI kit ber-art (ganti emoji currency/nav); (3) parallax/ambient background; (4) tutorial first-run + audio-everywhere + haptic; (5) regresi test + migrasi save + device matrix.
 
 ## Konvensi
-- Bahasa UI utama: **Indonesia**. Semua teks pemain lewat `t()`/`nm()` (siap lokalisasi).
-- Toddler-UX: 1 aksi utama/layar, tap target ≥64px, no-fail, audio+ikon (teks minimal), tanpa timer/iklan.
-- Kepatuhan: tanpa iklan, tanpa PII anak, tanpa pembelian acak; pembelian (jika ada) di balik gerbang ortu.
-- Creature id: `crt_<world>_<name>`. Gambar disimpan dgn nama pendek (mis. `bunny.png`) dan dipetakan via `IMG`.
-
-## Status & roadmap (per audit QA terakhir)
-- **Quick wins:** SELESAI (fix COUNT overflow, gerbang ortu pakai kata, kontras cue, goal chip, label rarity lokal, lazy-load, avatar AI, redesign onboarding hero, reward duplikat, guard VO autoplay).
-- **Berikutnya (Medium):** soft-stop sesi, misi harian, sink stardust, thumbnail aset (perf low-end), safe-area/orientation, perlambat MEMORY + angka urutan SEQUENCE.
-- **Big:** Home progresif + dekorasi ber-art AI (ganti emoji), animasi karakter (Spine), musik latar, IAP/cloud save.
-- Publish readiness: ⚠️ menuju soft-launch (dua blocker — COUNT & gerbang ortu — sudah diperbaiki).
+- UI utama **English** (lewat `t()`/`nm()`). Toddler-UX: 1 aksi/layar, tap ≥64px, no-fail, audio+ikon, tanpa timer/iklan.
+- Kepatuhan: tanpa iklan/PII anak/pembelian acak; aksi sensitif di balik gerbang ortu (berbasis kata-angka).
+- Creature id: `crt_<world>_<name>`; varian `crt_var_<animal>_<color>`. Aset disimpan nama pendek, dipetakan via `IMG`.
 
 ## Catatan kerja
-- File besar satu berkas: gunakan edit bertarget (anchor unik), bukan tulis ulang penuh kecuali perlu.
-- Selalu verifikasi perubahan di Chrome (console bersih + screenshot) sebelum menyatakan selesai.
-- Hindari mem+ emoji decorations yang bentrok gaya dengan aset AI (temuan audit visual).
+- Edit bertarget (anchor unik), bukan tulis ulang penuh.
+- Verifikasi via JS assertion + console bersih sebelum klaim selesai (screenshot harness tidak reliabel).
+- Commit per-batch ke `main`; aset besar (png/mp4) ikut di-commit.

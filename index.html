@@ -1482,7 +1482,7 @@ function recordAttempt(s,ok){
   sp.last5.push(ok?1:0); if(sp.last5.length>5) sp.last5.shift();
   if(sp.last5.length>=5){ const r=sp.last5.reduce((a,b)=>a+b,0)/5; if(r>=0.8&&sp.tier<4)sp.tier++; else if(r<=0.4&&sp.tier>1)sp.tier--; }
   S.stats.attempts=(S.stats.attempts||0)+1;
-  if(ok){ S.stats.correct++; missionProgress('correct'); if(!S.stats.weekSkills.includes(s)) S.stats.weekSkills.push(s); }
+  if(ok){ S.stats.correct++; missionProgress('correct'); if(!(S.stats.weekSkills||(S.stats.weekSkills=[])).includes(s)) S.stats.weekSkills.push(s); }
 }
 let _recentCh=[];
 function pickChallenge(){
@@ -1566,7 +1566,8 @@ function escalateHint(){
   if(!right){ LOOP.resolved=true; LOOP.answered=true; setTimeout(finishChallenge,400); return; } // safety: malformed -> just move on
   // AGE 5 = assessment mode: no win-assist. A subtle nudge, then reveal the answer to learn and SKIP (counts as missed, not a win).
   if(S.ageBand>=5){
-    if(LOOP.wrongs>=2){ LOOP.resolved=true; LOOP.answered=true;
+    const need=opts.length<=2?1:2; // 2-option questions: one wrong already means a miss
+    if(LOOP.wrongs>=need){ LOOP.resolved=true; LOOP.answered=true;
       opts.forEach(o=>{ if(o.dataset.correct!=="true") o.classList.add("dim"); }); right.classList.add("hint");
       setCue(S.locale==='id'?'Belum tepat — lain kali ya! 💪':'Not quite — next time! 💪');
       if(!vo('oops')) speak(S.locale==='id'?'Lain kali ya':'Next time');
@@ -1897,7 +1898,7 @@ function openGate(){ GATE_TARGET=[31,47,52,68,73,29][Math.floor(Math.random()*6)
   $("#gateNums").innerHTML=[...nums].sort(()=>Math.random()-0.5).map(n=>`<button onclick="tryGate(${n})">${n}</button>`).join("");
   openModal("gateModal"); }
 function tryGate(n){ if(n===GATE_TARGET){ SFX.correct(); closeModal("gateModal"); show("parent"); } else { SFX.oops(); bounceModal("gateModal"); } }
-function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newSkills=S.stats.weekSkills.length; const en=S.locale!=='id';
+function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newSkills=(S.stats.weekSkills||[]).length; const en=S.locale!=='id';
   const att=S.stats.attempts||0, acc=att?Math.round(S.stats.correct/att*100):0;
   $("#p_summary").innerHTML=en
     ? `Your child hatched <b>${S.stats.hatches}</b> eggs, collected <b>${owned}</b> creatures, and answered <b>${S.stats.correct}/${att}</b> challenges correctly (<b>${acc}%</b> accuracy). New skills this week: <b>${newSkills}</b>. Streak: <b>${S.daily.streak}</b> days · Badges: <b>${S.badges.length}</b>.`
@@ -2015,6 +2016,7 @@ function boot(){
   if(!S.localeMigrated){ S.locale='en'; S.localeMigrated=true; } // English-first default; Parent Zone toggle still works afterward
   checkUnlocks(); // re-derive world unlocks sequentially (self-heals any wrongly-unlocked worlds)
   if(!Array.isArray(S.albumSeen)) S.albumSeen=Object.keys(S.owned||{}); // existing collection isn't flagged NEW; only future hatches are
+  S.stats=Object.assign({hatches:0,challengesPassed:0,correct:0,playSeconds:0,attempts:0,weekSkills:[]}, S.stats||{}); if(!Array.isArray(S.stats.weekSkills)) S.stats.weekSkills=[]; // robust against old/partial saves
   setInterval(()=>{ S.stats.playSeconds++; if(S.stats.playSeconds%20===0) save(); },1000);
   window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; startBGM(); },{once:true});
   { const b=$("#musicBtn"); if(b) b.innerHTML=(S.settings&&S.settings.music===false)?ICON.muted:ICON.music; }

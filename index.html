@@ -1574,41 +1574,45 @@ function homeIdle(){ const home=document.getElementById('home'); const room=$("#
   const els=[...room.querySelectorAll('.placed.floaty')]; if(!els.length) return;
   const el=els[Math.floor(Math.random()*els.length)]; const b=document.createElement('span'); b.className='moodbubble'; b.textContent=['💗','🎵','✨','😴','💤'][Math.floor(Math.random()*5)];
   b.style.left=((parseFloat(el.style.left)||0)+(el.offsetWidth/2||28))+'px'; b.style.top=((parseFloat(el.style.top)||0)-8)+'px'; room.appendChild(b); setTimeout(()=>b.remove(),2200); }
+const HOME_BASE_CAP=5;
+function homeCapacity(){ return HOME_BASE_CAP + (S.home||[]).filter(it=>it.decoId).length*3; } // each decoration invites more friends over
 function renderHome(){
   $("#hm_coins").textContent=S.currencies.coins;
-  // 1 instance per species: drop duplicate creatures (decorations may repeat)
-  const seen=new Set(); S.home=S.home.filter(it=>{ if(it.creatureId){ if(seen.has(it.creatureId)) return false; seen.add(it.creatureId); } return true; });
-  const lvl=homeLevel(S.home.length); $("#t_home").textContent=`${t("home")} · Lv${lvl} ${nm(HOME_LEVELS[lvl])}`;
-  const w=world(S.currentWorld); const room=$("#room");
-  room.style.background = `url('${HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`; // room art changes per Home level
-  const hint = S.home.length ? (S.locale==='id'?'Ketuk teman untuk menyapa! 👋':'Tap a friend to say hi! 👋')
-                             : (S.locale==='id'?'Tambahkan teman dari bawah ⬇️':'Add friends from below ⬇️');
-  const careBar = S.home.some(it=>it.creatureId)
-    ? `<div class="carebar">`+HOME_TOOLS.map(([k,e])=>`<button data-tool="${k}" class="${HOMETOOL===k?'sel':''}" onclick="setHomeTool('${k}')">${e}</button>`).join('')+`</div>` : '';
-  room.innerHTML=`<div class="ground"></div><div class="floatlabel">${hint}</div>${careBar}`;
-  // auto-arrange in a tidy grid — no overlap, no spam
-  const items=S.home, n=items.length;
-  if(n){ const rw=room.clientWidth||340, rh=room.clientHeight||440;
-    const cols=Math.max(2,Math.min(4,Math.ceil(Math.sqrt(n)))), rows=Math.ceil(n/cols);
-    const padX=rw*0.05, padTop=rh*0.12, padBot=rh*0.08;
+  // Habitat model: friends you own in this world auto-gather here; S.home stores only decorations.
+  S.home=(S.home||[]).filter(it=>it.decoId);
+  const w=world(S.currentWorld), room=$("#room");
+  const friendsAll=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);
+  const cap=homeCapacity(), friends=friendsAll.slice(0,cap), decor=S.home;
+  const lvl=homeLevel(friends.length+decor.length);
+  $("#t_home").textContent=`${t("home")} · Lv${lvl} ${nm(HOME_LEVELS[lvl])}`;
+  room.style.background=`url('${HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`;
+  const extra=friendsAll.length-friends.length;
+  const chip = !friendsAll.length ? (S.locale==='id'?'Tetaskan teman dulu! 🥚':'Hatch some friends first! 🥚')
+    : `🐾 ${friends.length}/${friendsAll.length} `+(S.locale==='id'?'teman':'friends')+(extra>0?` · ${S.locale==='id'?'beli dekor untuk undang +'+extra:'buy decor to invite +'+extra}`:'');
+  room.innerHTML=`<div class="ground"></div><div class="floatlabel">${chip}</div>`;
+  const rw=room.clientWidth||340, rh=room.clientHeight||440;
+  // decorations (props that invite more friends over)
+  decor.forEach(it=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); if(!d)return;
+    const x=(it.x!=null?it.x:rw*0.6), y=(it.y!=null?it.y:rh*0.5);
+    const el=document.createElement("div"); el.className="placed"; el.style.left=x+"px"; el.style.top=y+"px"; el.style.zIndex=Math.round(y);
+    el.innerHTML=decoMarkup(d,78); room.appendChild(el); });
+  // friends auto-arranged on the floor — tap any to pet
+  const n=friends.length;
+  if(n){ const cols=Math.max(2,Math.min(4,Math.ceil(Math.sqrt(n)))), rows=Math.ceil(n/cols);
+    const padX=rw*0.06, padTop=rh*0.18, padBot=rh*0.08;
     const cellW=(rw-2*padX)/cols, cellH=(rh-padTop-padBot)/rows;
-    const size=Math.max(46,Math.min(88,Math.min(cellW,cellH)*0.84));
-    items.forEach((it,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols);
+    const size=Math.max(46,Math.min(84,Math.min(cellW,cellH)*0.82));
+    friends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols);
       const cx=padX+cellW*cc+cellW/2, cy=padTop+cellH*rr+cellH/2;
-      const el=document.createElement("div"); el.className="placed"; el.style.left=(cx-size/2)+"px"; el.style.top=(cy-size/2)+"px"; el.style.zIndex=Math.round(cy);
-      if(it.decoId){ const d=DATA.decorations.find(x=>x.id===it.decoId); el.innerHTML=d?decoMarkup(d,size):''; }
-      else { el.innerHTML=`<div class="cwrap">${creatureMarkup(creature(it.creatureId),size)}</div>`; el.classList.add("floaty"); el.onclick=()=>petHome(el,it.creatureId); }
-      room.appendChild(el); });
+      const el=document.createElement("div"); el.className="placed floaty"; el.style.left=(cx-size/2)+"px"; el.style.top=(cy-size/2)+"px"; el.style.zIndex=Math.round(cy)+20;
+      el.innerHTML=`<div class="cwrap">${creatureMarkup(c,size)}</div>`; el.onclick=()=>petHome(el,c.id); room.appendChild(el); });
   }
-  const owned=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);
-  let html=`<div class="traytag">🐾<div>${S.locale==='id'?'Teman':'Pets'}</div></div>`;
-  html+= owned.length? owned.map(c=>{ const inHome=S.home.some(h=>h.creatureId===c.id);
-      return `<div class="trayitem ${inHome?'in-home':''}" onclick="placeCreature('${c.id}')">${creatureMarkup(c,52)}${nm(c.name)}${inHome?'<div class="muted" style="color:var(--good)">✓</div>':''}</div>`; }).join("")
-    : `<div class="trayitem cantafford" style="cursor:default">${S.locale==='id'?'Tetaskan dulu':'Hatch first'} 🥚</div>`;
+  // tray: decoration shop — buying decor invites more friends to hang out
   const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);
-  html+=`<div class="traytag">🎨<div>${S.locale==='id'?'Hias':'Decor'}</div></div>`;
-  html+=decos.map(d=>{ const af=S.currencies.coins>=d.cost;
-    return `<div class="trayitem ${af?'':'cantafford'}" onclick="buyPlaceDeco('${d.id}')">${decoMarkup(d,40)}${nm(d.label)}<div class="muted">🪙${d.cost}</div></div>`; }).join("");
+  let html=`<div class="traytag">🎁<div>${S.locale==='id'?'Undang':'Invite'}</div></div>`;
+  html+= decos.length ? decos.map(d=>{ const af=S.currencies.coins>=d.cost, have=decor.filter(h=>h.decoId===d.id).length;
+      return `<div class="trayitem ${af?'':'cantafford'}" onclick="buyPlaceDeco('${d.id}')">${decoMarkup(d,40)}${nm(d.label)}<div class="muted">${have?'×'+have+' ':''}🪙${d.cost}</div></div>`; }).join("")
+    : `<div class="trayitem cantafford" style="cursor:default">—</div>`;
   $("#tray").innerHTML=html;
 }
 function placeSpot(){ const r=$("#room"); const W=r.clientWidth||300, H=r.clientHeight||420; return {x:Math.round(24+Math.random()*(W-130)), y:Math.round(H*0.42+Math.random()*(H*0.34))}; }
@@ -1754,6 +1758,7 @@ function boot(){
   S.home=(S.home||[]).filter(h=>h.decoId||creature(h.creatureId));
   if(!S.worldsUnlocked||!S.worldsUnlocked.length) S.worldsUnlocked=['green_forest'];
   if(!DATA.worlds.find(w=>w.id===S.currentWorld)) S.currentWorld='green_forest';
+  if(!S.localeMigrated){ S.locale='en'; S.localeMigrated=true; } // English-first default; Parent Zone toggle still works afterward
   setInterval(()=>{ S.stats.playSeconds++; if(S.stats.playSeconds%20===0) save(); },1000);
   window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; startBGM(); },{once:true});
   { const b=$("#musicBtn"); if(b) b.innerHTML=(S.settings&&S.settings.music===false)?ICON.muted:ICON.music; }

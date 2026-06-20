@@ -11,20 +11,20 @@ Prinsip utama: **"game adalah data, bukan kode."** Engine kecil menjalankan kont
 didefinisikan sebagai data. Tambah konten = tambah data + aset, tanpa ubah logika.
 
 ## Bentuk teknis
-- **Satu file**: `eggtap.html` — HTML + CSS + JS inline, **tanpa build step**, **offline-first** (localStorage, key `eggtap_save_v2`).
+- **Satu file**: `index.html` — HTML + CSS + JS inline, **tanpa build step**, **offline-first** (localStorage, key `eggtap_save_v2`).
 - Tidak ada framework, tidak ada dependency. Buka langsung di browser.
 - Target akhir (per Bible) adalah Unity+Spine; file ini adalah prototipe web untuk membuktikan loop & feel.
 
 ## Cara menjalankan / menguji
-- **Paling gampang:** buka `eggtap.html` di browser (double-click).
-- **Disarankan saat dev:** jalankan server lokal lalu buka `http://localhost:8753/eggtap.html`.
+- **Paling gampang:** buka `index.html` di browser (double-click).
+- **Disarankan saat dev:** jalankan server lokal lalu buka `http://localhost:8753/index.html`.
   Mesin ini TIDAK punya Node/Python. Server pakai PowerShell `HttpListener`
   (jangan pakai `-ExecutionPolicy Bypass` — diblok sandbox). Jalankan listener inline di background.
 - Verifikasi visual/bug pakai **Chrome MCP** (`mcp__Claude_in_Chrome__*`): navigate ke localhost,
   `read_console_messages`, `javascript_tool`, `computer screenshot`. `file://` ditolak tool navigate.
 - Reset progress: tombol 🔒 (Zona Orang Tua) → "Mulai Ulang Data", atau `localStorage.removeItem('eggtap_save_v2')`.
 
-## Struktur kode di `eggtap.html`
+## Struktur kode di `index.html`
 - `DATA` = sumber konten: `worlds, creatures, eggs, dropTables, skills, challenges, decorations, badges, praise, story`.
 - `I18N` = string UI (`id`/`en`). `t(key)` untuk UI, `nm(obj)` untuk objek `{id,en}`.
 - **State/Save**: `S` (objek save), `load()/save()`, default di `defaultSave()`.
@@ -40,7 +40,7 @@ didefinisikan sebagai data. Tambah konten = tambah data + aset, tanpa ubah logik
 - Dipetakan ke data lewat **`IMG` (creatureId→file)**, **`BG` (worldId→file)**, **`VOICE`/`PRAISE_VO`/`PROMPTVO`** di awal `<script>`.
 - Aturan: kalau aset ada → dipakai; kalau tidak → fallback SVG/Web Speech. **Tambah aset = tambah baris di peta ini.**
 - Pipeline: `nano_banana_pro` (gambar, pakai 1 creature "jangkar" sbg referensi gaya agar konsisten) → `remove_background` (transparan) → download lokal. VO: `text2speech_v2_elevenlabs`.
-- **Penting:** `assets/` HARUS ikut di samping `eggtap.html` agar gambar/suara termuat.
+- **Penting:** `assets/` HARUS ikut di samping `index.html` agar gambar/suara termuat.
 
 ## Konvensi
 - Bahasa UI utama: **Indonesia**. Semua teks pemain lewat `t()`/`nm()` (siap lokalisasi).

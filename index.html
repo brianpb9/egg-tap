@@ -1654,6 +1654,7 @@ function reward(){
   syncWallet(); checkUnlocks(); checkSets(); save();
 }
 function nextEgg(){ SFX.tap(); $("#rewardOverlay").classList.remove("active");
+  if(S.pendingFinale){ S.pendingFinale=null; S.pendingNewWorld=null; save(); newEgg(); celebrateComplete(); return; } // 100% collection finale
   if(S.pendingNewWorld){ const nw=S.pendingNewWorld; S.pendingNewWorld=null; save(); newEgg(); celebrateWorld(nw); return; } // celebrate + nudge to the freshly unlocked world
   if(SESSION_HATCH>0 && SESSION_HATCH%SOFT_STOP_EVERY===0) showSoftStop(); else newEgg(); }
 
@@ -1667,7 +1668,16 @@ function checkUnlocks(){
   if(!want.includes(S.currentWorld)) S.currentWorld=want[want.length-1];
   newly.forEach(id=>{ try{SFX.fanfare&&SFX.fanfare('epic');}catch(e){} toast(`🎉 ${nm(world(id).name)}!`); });
   if(newly.length) S.pendingNewWorld=newly[newly.length-1]; // celebrate + nudge the player to the new world at a safe moment
+  if(!S.gameComplete && Object.keys(S.owned).filter(id=>creature(id)).length>=DATA.creatures.length){ S.gameComplete=true; S.pendingFinale=true; } // 100% collection grand finale
 }
+function celebrateComplete(){ const en=S.locale!=='id';
+  let ov=document.getElementById('worldCelebrate'); if(!ov){ ov=document.createElement('div'); ov.id='worldCelebrate'; ov.className='overlay'; $("#device").appendChild(ov); }
+  ov.innerHTML=`<div class="wc-card">
+    <div class="wc-burst" style="font-size:38px">🏆🌈</div>
+    <div class="wc-title">${en?'COLLECTION COMPLETE!':'KOLEKSI LENGKAP!'}</div>
+    <div class="wc-world">${en?'You found all 60 friends!':'Semua 60 teman terkumpul!'}</div>
+    <button class="wc-go" onclick="closeWorldCelebrate()">${en?'Yay! 🎉':'Hore! 🎉'}</button></div>`;
+  ov.classList.add('active'); try{ burst(70,ov,true); SFX.fanfare&&SFX.fanfare('legend'); if(typeof legendaryCelebration==='function') legendaryCelebration(); }catch(e){} }
 function celebrateWorld(id){ const w=world(id); if(!w) return; const en=S.locale!=='id'; const mascot=creaturesOf(w.sets).find(c=>!c.legend);
   let ov=document.getElementById('worldCelebrate');
   if(!ov){ ov=document.createElement('div'); ov.id='worldCelebrate'; ov.className='overlay'; $("#device").appendChild(ov); }

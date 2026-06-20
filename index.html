@@ -1012,6 +1012,7 @@ function nm(o){ return o[S.locale] ?? o.en ?? o.id; }
 let AC=null, AUDIO_READY=false;
 function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
 function tone(freq,dur=0.12,type="sine",vol=0.2,when=0){
+  if(S.settings&&S.settings.music===false) return; // master mute (speaker toggle silences SFX too)
   const c=ac(); if(!c) return; const o=c.createOscillator(),g=c.createGain();
   o.type=type;o.frequency.value=freq;o.connect(g);g.connect(c.destination);
   const tt=c.currentTime+when; g.gain.setValueAtTime(0,tt); g.gain.linearRampToValueAtTime(vol,tt+0.01);
@@ -1047,7 +1048,7 @@ function stopBGM(){ clearInterval(_bgmTimer); _bgmTimer=null; }
 function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; S.settings.music=!S.settings.music; save();
   if(S.settings.music) startBGM(); else stopBGM(); const b=$("#musicBtn"); if(b) b.innerHTML=S.settings.music?ICON.music:ICON.muted; }
 function haptic(p){ try{ if(navigator.vibrate && !(S.settings&&S.settings.sfx===false)) navigator.vibrate(p); }catch(e){} }
-function speak(text){ try{ if(!window.speechSynthesis)return; const u=new SpeechSynthesisUtterance(text);
+function speak(text){ try{ if(S.settings&&S.settings.music===false)return; if(!window.speechSynthesis)return; const u=new SpeechSynthesisUtterance(text);
   u.lang=S.locale==="id"?"id-ID":"en-US"; u.rate=0.95; u.pitch=1.25; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
 
 /* ===================== HELPERS ===================== */
@@ -1136,8 +1137,8 @@ function playSrc(p){ try{ const a=_voCache[p]||(_voCache[p]=new Audio(p)); a.cur
 const VOICE_EN={ tap:"assets/audio/vo_en_tap.mp3", oops:"assets/audio/vo_en_oops.mp3", remember:"assets/audio/vo_en_remember.mp3",
   find_red:"assets/audio/vo_en_red.mp3", blue:"assets/audio/vo_en_blue.mp3", cat:"assets/audio/vo_en_cat.mp3", next:"assets/audio/vo_en_next.mp3" };
 const PRAISE_VO_EN=["assets/audio/vo_en_praise1.mp3","assets/audio/vo_en_praise2.mp3","assets/audio/vo_en_praise3.mp3"];
-function vo(key){ const set = S.locale==="id"?VOICE : S.locale==="en"?VOICE_EN : null; if(!set) return false; const p=set[key]; return p?playSrc(p):false; }
-function voPraise(){ const set = S.locale==="id"?PRAISE_VO : S.locale==="en"?PRAISE_VO_EN : null; if(!set) return false; return playSrc(set[Math.floor(Math.random()*set.length)]); }
+function vo(key){ if(S.settings&&S.settings.music===false) return false; const set = S.locale==="id"?VOICE : S.locale==="en"?VOICE_EN : null; if(!set) return false; const p=set[key]; return p?playSrc(p):false; }
+function voPraise(){ if(S.settings&&S.settings.music===false) return false; const set = S.locale==="id"?PRAISE_VO : S.locale==="en"?PRAISE_VO_EN : null; if(!set) return false; return playSrc(set[Math.floor(Math.random()*set.length)]); }
 function creatureMarkup(c,size){ const p=c&&IMG[c.id];
   if(!p) return creatureSVG(c,size);
   const src = size<=120 ? p.replace("assets/","assets/thumbs/") : p; // small displays use 256px thumbs (perf)

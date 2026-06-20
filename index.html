@@ -30,7 +30,7 @@
     display:flex; align-items:center; justify-content:center;
   }
   #device{
-    position:relative; width:min(440px,100vw); height:min(900px,100vh);
+    position:relative; width:min(440px,100vw); height:min(900px,100dvh);
     background:linear-gradient(180deg,#fff9f0,#ffeccb);
     overflow:hidden; box-shadow:var(--shadow);
   }
@@ -150,7 +150,7 @@
 
   .gateNums{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
   .gateNums button{min-height:60px;border-radius:18px;border:none;background:#fff7ee;font-family:inherit;font-weight:800;font-size:26px;box-shadow:var(--shadow);cursor:pointer;}
-  .corner{position:absolute;top:10px;right:10px;width:46px;height:46px;border-radius:14px;border:none;background:rgba(255,255,255,.7);font-size:22px;cursor:pointer;z-index:30;box-shadow:var(--shadow);}
+  .corner{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:10px;width:46px;height:46px;border-radius:14px;border:none;background:rgba(255,255,255,.7);font-size:22px;cursor:pointer;z-index:30;box-shadow:var(--shadow);}
   .skillrow{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #f0e6d6;}
   .skillrow .lab{flex:1;font-weight:700;}
   .tiertag{font-weight:800;border-radius:999px;padding:3px 10px;color:#fff;font-size:12px;background:var(--sky);}
@@ -197,7 +197,18 @@
   @keyframes hintfade{0%,70%{opacity:1}100%{opacity:0}}
 
   /* ===== Medium improvements ===== */
-  .topbar{padding-top:max(12px,env(safe-area-inset-top));}
+  /* ===== Mobile safe-area header (V3.2) ===== */
+  .topbar{padding-top:calc(env(safe-area-inset-top,0px) + 12px);}
+  #hatch .topbar{padding-left:56px;padding-right:56px;} /* reserve room for music(left)+lock(right) corner buttons */
+  .topbar .title{min-width:0;flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .wallet{flex:0 0 auto;}
+  @media(max-width:459px){
+    body{align-items:flex-start;}                 /* anchor to top so header is never pushed above the viewport */
+    #device{height:100dvh;}
+    .coin{padding:4px 9px;font-size:14px;gap:4px;} /* compact currency so the world name has room */
+    .coin svg{width:15px;height:15px;}
+    .topbar .title{font-size:18px;}
+  }
   .nav{padding-bottom:max(14px,env(safe-area-inset-bottom));}
   .bonusbtn{margin-top:12px;border:none;border-radius:999px;font-family:inherit;font-weight:800;font-size:15px;color:#fff;background:linear-gradient(180deg,#7ad7ff,#48cae4);box-shadow:0 4px 0 #2a9ec0,var(--shadow);padding:11px 20px;cursor:pointer;z-index:3;}
   .bonusbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #2a9ec0;}
@@ -239,7 +250,7 @@
   .nav .ic{font-size:0;}
   .nav .ic svg{width:27px;height:27px;display:block;}
   .coin svg{width:17px;height:17px;flex:0 0 auto;}
-  #worldName{margin-left:46px;}
+  #worldName{margin-left:0;}
   .corner svg{width:24px;height:24px;display:block;margin:0 auto;}
   .goalchip svg{width:15px;height:15px;vertical-align:-2px;}
   /* rarity card frames (album) */

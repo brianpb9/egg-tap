@@ -329,7 +329,19 @@
   .cardlet.rar-rare{box-shadow:inset 0 0 0 3px #4d9be0, var(--shadow);}
   .cardlet.rar-epic,.cardlet.rar-magic{box-shadow:inset 0 0 0 3px #9b59f0, var(--shadow);}
   .cardlet.rar-legend{box-shadow:inset 0 0 0 3px #F4A300, 0 0 16px rgba(244,163,0,.5);}
-  .cardlet.rar-legend::after{content:"";position:absolute;top:0;left:-70%;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-18deg);animation:cardshine 3s ease-in-out infinite;pointer-events:none;}
+  .cardlet.rar-legend::after{content:"";position:absolute;top:0;left:-70%;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-18deg);animation:cardshine 3s ease-in-out infinite;pointer-events:none;z-index:2;}
+  /* ALBUM 2-layer slots: world background (Layer 1) + rarity overlay (Layer 2); character stays hero */
+  .cardlet{background-size:cover;background-position:center;}
+  .cardlet .cardscrim{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.62),rgba(255,255,255,.04) 60%);}
+  .cardlet .sil{position:relative;z-index:2;}
+  .cardlet .nm{position:relative;z-index:2;background:rgba(255,255,255,.8);border-radius:9px;padding:0 7px;margin-bottom:5px;}
+  .cardlet .rar{position:absolute;top:6px;right:6px;z-index:3;}
+  .cardlet .crown{position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:17px;z-index:3;filter:drop-shadow(0 2px 2px rgba(180,120,0,.5));}
+  .cardlet .dupe{position:absolute;bottom:6px;right:7px;z-index:3;font-size:11px;font-weight:800;color:#7a572b;background:rgba(255,255,255,.82);border-radius:8px;padding:0 5px;}
+  /* rarity sparkle layer (rare/epic/legend feel progressively more magical) */
+  .cardlet.rar-rare .cardscrim,.cardlet.rar-epic .cardscrim{background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.6),rgba(255,255,255,.04) 60%),radial-gradient(2px 2px at 18% 24%,#fff,transparent 60%),radial-gradient(2px 2px at 80% 28%,#fff,transparent 60%),radial-gradient(2px 2px at 28% 80%,#fff,transparent 60%),radial-gradient(2px 2px at 74% 82%,#fff,transparent 60%);}
+  .cardlet.rar-legend{box-shadow:inset 0 0 0 3px #F4A300,0 0 20px rgba(244,163,0,.7);}
+  .cardlet.rar-legend .cardscrim{background:radial-gradient(circle at 50% 42%,rgba(255,250,228,.66),rgba(255,243,205,.06) 60%),radial-gradient(2.4px 2.4px at 20% 24%,#fff3bf,transparent 60%),radial-gradient(2.4px 2.4px at 78% 26%,#fff3bf,transparent 60%),radial-gradient(2.4px 2.4px at 30% 82%,#fff3bf,transparent 60%),radial-gradient(2.4px 2.4px at 72% 80%,#fff3bf,transparent 60%);}
   @keyframes cardshine{0%{left:-70%}55%,100%{left:140%}}
   /* first-run tutorial pointer */
   #tapHint{position:absolute;left:50%;top:60%;transform:translateX(-50%);font-weight:800;font-size:22px;color:var(--btn);pointer-events:none;z-index:4;text-shadow:0 1px 2px #fff,0 0 8px #fff;animation:taphint 1.1s ease-in-out infinite;}
@@ -1555,12 +1567,14 @@ function renderAlbum(){
     const base=cs.filter(c=>!c.legend); const setHave=base.filter(c=>S.owned[c.id]).length;
     total+=cs.length; have+=cs.filter(c=>S.owned[c.id]).length;
     html+=`<div class="setbar"><span>${w.emoji} ${nm(w.name)}</span><span>${setHave}/${base.length}${setHave===base.length?" "+t("set_done"):""}</span></div>`;
-    const card=c=>{ const owned=!!S.owned[c.id];
-      return `<div class="cardlet ${owned?'rar-'+c.rarity:'locked'}" onclick="albumTap('${c.id}',${owned})">
+    const card=c=>{ const owned=!!S.owned[c.id]; const bg=owned&&ALBUMBG[c.world]?` style="background-image:url('${ALBUMBG[c.world]}')"`:'';
+      return `<div class="cardlet ${owned?'rar-'+c.rarity:'locked'}"${bg} onclick="albumTap('${c.id}',${owned})">
+        ${owned?'<div class="cardscrim"></div>':''}
         <div class="rar" style="background:${RARCOLOR[c.rarity]}">${owned?rarLabel(c.rarity):'?'}</div>
+        ${owned&&c.rarity==='legend'?'<div class="crown">👑</div>':''}
         <div class="sil">${creatureMarkup(c,82)}</div>
         <div class="nm">${owned?nm(c.name):'???'}</div>
-        ${owned&&S.owned[c.id]>1?`<div class="muted" style="font-size:11px">x${S.owned[c.id]}</div>`:''}</div>`; };
+        ${owned&&S.owned[c.id]>1?`<div class="dupe">×${S.owned[c.id]}</div>`:''}</div>`; };
     if(cs.some(c=>c.base)){
       const groups={}; cs.forEach(c=>{ (groups[c.base]=groups[c.base]||[]).push(c); });
       Object.keys(groups).forEach(bk=>{ const g=groups[bk], gh=g.filter(c=>S.owned[c.id]).length;
@@ -1608,6 +1622,7 @@ function tapGuest(el){ const id=S.guest; S.guest=null; floatEmote(el,'💗',-6);
   toast((S.locale==='id'?'✨ Terima kasih sudah mampir!':'✨ Thanks for visiting!')+' +5 🪙'); save();
   setTimeout(()=>{ const h=document.getElementById('home'); if(h&&h.classList.contains('active')) renderHome(); },650); }
 const HOMEFLAT={green_forest:'assets/home/flat_green_forest.png',sunny_beach:'assets/home/flat_sunny_beach.png',candy_land:'assets/home/flat_candy_land.png',dino_valley:'assets/home/flat_dino_valley.png',ocean_kingdom:'assets/home/flat_ocean_kingdom.png',rainbow_meadow:'assets/home/flat_rainbow_meadow.png'};
+const ALBUMBG={green_forest:'assets/album/world_green_forest.png',sunny_beach:'assets/album/world_sunny_beach.png',candy_land:'assets/album/world_candy_land.png',dino_valley:'assets/album/world_dino_valley.png',ocean_kingdom:'assets/album/world_ocean_kingdom.png',rainbow_meadow:'assets/album/world_rainbow_meadow.png'};
 const HOME_BASE_CAP=5;
 function homeCapacity(){ return HOME_BASE_CAP + (S.home||[]).filter(it=>it.decoId).length*3; } // each decoration invites more friends over
 function renderHome(){

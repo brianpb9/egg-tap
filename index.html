@@ -267,6 +267,19 @@
   .play-btn:active{transform:translateY(4px);box-shadow:0 3px 0 #3f8f24;}
   .play-mini{position:absolute;left:18px;bottom:6%;width:54px;height:54px;border-radius:16px;border:none;background:rgba(255,255,255,.85);box-shadow:var(--shadow);cursor:pointer;padding:11px;z-index:3;}
   .play-mini svg{width:100%;height:100%;display:block;}
+  /* ===== World journey map ===== */
+  .worldmap{position:relative;padding:26px 14px 36px;display:flex;flex-direction:column;gap:26px;}
+  .worldmap::before{content:"";position:absolute;top:18px;bottom:18px;left:50%;width:6px;transform:translateX(-50%);background:repeating-linear-gradient(#ffd591 0 13px,transparent 13px 26px);border-radius:4px;z-index:0;}
+  .mapnode{position:relative;z-index:1;display:flex;align-items:center;gap:14px;width:84%;cursor:pointer;}
+  .mapnode.left{align-self:flex-start;}
+  .mapnode.right{align-self:flex-end;flex-direction:row-reverse;text-align:right;}
+  .mapdot{position:relative;width:84px;height:84px;flex:0 0 auto;border-radius:50%;background:#f1e6d4 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 5px 0 rgba(0,0,0,.12),var(--shadow);border:4px solid #fff;}
+  .mapnode.locked{filter:grayscale(.45) opacity(.7);cursor:default;}
+  .mapnode.locked .mapdot{font-size:30px;background:#e7ddd0;}
+  .mapnode.here .mapdot{border-color:#ffcf5c;box-shadow:0 0 0 4px rgba(255,207,92,.55),var(--shadow);animation:playpulse 1.5s ease-in-out infinite;}
+  .herepin{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:20px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
+  .mapinfo{min-width:0;}
+  .mapname{font-weight:800;font-size:16px;}
   #device.screenshake{animation:screenshake .5s;}
   @keyframes screenshake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(7px,-3px)}60%{transform:translate(-5px,-2px)}80%{transform:translate(5px,2px)}}
   .hatchflash{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(circle at 50% 45%,#fff,rgba(255,255,255,0) 62%);opacity:0;}
@@ -1574,13 +1587,19 @@ function makeDraggable(el,idx){ let sx,sy,ox,oy,drag=false;
 /* ===================== WORLD MAP ===================== */
 function renderWorld(){
   const owned=ownedCount();
-  $("#worldScroll").innerHTML=DATA.worlds.map(w=>{ const un=S.worldsUnlocked.includes(w.id); const cur=S.currentWorld===w.id;
-    const pct=Math.min(100,w.unlock===0?100:Math.round(owned/w.unlock*100));
-    return `<div class="worldrow ${un?'':'locked'}" onclick="${un?`pickWorld('${w.id}')`:''}">
-      <div class="orb" style="background:${cur?'#ffe1b8':'#f1e6d4'}">${un?w.emoji:'🔒'}</div>
-      <div class="meta"><div style="font-weight:800">${nm(w.name)} ${cur?'• ✓':''}</div>
-        <div class="pill">${un?'':`${t('need')} ${w.unlock} ${t('creatures')} (${owned}/${w.unlock})`}</div>
-        ${un?'':`<div class="prog"><i style="width:${pct}%"></i></div>`}</div></div>`; }).join("");
+  const nodes=DATA.worlds.map((w,i)=>{ const un=S.worldsUnlocked.includes(w.id); const cur=S.currentWorld===w.id;
+    const all=creaturesOf(w.sets); const got=all.filter(c=>S.owned[c.id]).length; const done=all.length>0&&got>=all.length;
+    const pct=w.unlock===0?100:Math.min(100,Math.round(owned/w.unlock*100));
+    const side=i%2?'right':'left'; const bg=BG[w.id];
+    const friends=S.locale==='id'?'teman':'friends';
+    return `<div class="mapnode ${side} ${un?'':'locked'} ${cur?'here':''}" onclick="${un?`pickWorld('${w.id}')`:''}">
+      <div class="mapdot" style="${un&&bg?`background-image:url('${bg}')`:''}">${un?(done?'✓':w.emoji):'🔒'}${cur?'<span class="herepin">★</span>':''}</div>
+      <div class="mapinfo">
+        <div class="mapname">${nm(w.name)}</div>
+        ${un ? `<div class="pill">${got}/${all.length} ${friends}${done?' • '+(S.locale==='id'?'Lengkap!':'Complete!'):''}</div>`
+             : `<div class="pill">🔒 ${t('need')} ${w.unlock} ${t('creatures')} (${owned}/${w.unlock})</div><div class="prog"><i style="width:${pct}%"></i></div>`}
+      </div></div>`; }).join("");
+  $("#worldScroll").innerHTML=`<div class="worldmap">${nodes}</div>`;
 }
 function pickWorld(id){ SFX.tap(); S.currentWorld=id; save(); show("hatch"); newEgg(); }
 

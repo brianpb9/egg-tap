@@ -1532,7 +1532,7 @@ function revealCreature(c){
   showBanner(txt);
   speak(LOOP.isNew ? (en?"New friend! "+nm(c.name):"Teman baru! "+nm(c.name)) : nm(c.name));
   const st=$("#hatch .stage"); if(st) st.classList.remove("hatching");
-  window._challengeTimer=setTimeout(()=>startChallenge(c), c.rarity==="legend"?2200:1700);
+  window._challengeTimer=setTimeout(()=>{ if(shouldChallenge()) startChallenge(c); else { LOOP.resolved=true; LOOP.answered=true; finishChallenge(); } }, c.rarity==="legend"?2200:1700);
 }
 function flash(){ const f=$("#hatchFlash"); if(!f)return; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
 function shakeScreen(){ const d=$("#device"); d.classList.remove("screenshake"); void d.offsetWidth; d.classList.add("screenshake"); setTimeout(()=>d.classList.remove("screenshake"),520); }
@@ -1564,6 +1564,8 @@ function pickChallenge(){
   return pick;
 }
 let SEQ={expect:1,total:0};
+function shouldChallenge(){ if((S.stats.hatches||0)<=3) return true; /* always teach the loop early */ const f=(S.settings&&S.settings.learnFreq)||'normal'; const p=f==='often'?1:(f==='chill'?0.4:0.7); return Math.random()<p; }
+function setLearnFreq(f){ S.settings=S.settings||{}; S.settings.learnFreq=f; save(); try{SFX.tap&&SFX.tap();}catch(e){} if(typeof renderParent==='function') renderParent(); }
 function startChallenge(asker){
   const ch=pickChallenge(); LOOP.challenge=ch; LOOP.wrongs=0; LOOP.resolved=false;
   $("#ch_av").innerHTML=creatureMarkup(asker,70);
@@ -2021,7 +2023,10 @@ function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newS
     +`<div class="note" style="margin:2px 2px 6px;color:#7a6a4a">${S.ageBand>=5?(en?'⚡ Age 5: real challenges + extra math — wrong answers are NOT auto-solved.':'⚡ Umur 5: tantangan nyata + lebih banyak matematika — jawaban salah TIDAK dibantu.'):(en?'🌿 Ages 3–4: gentle no-fail mode (always succeeds).':'🌿 Umur 3–4: mode lembut tanpa gagal (selalu berhasil).')}</div>`;
   const atog=(key,lab)=>`<button onclick="setAudioPref('${key}')" style="border:2px solid ${S.settings&&S.settings[key]!==false?'#4f8f24':'#ffd591'};background:${S.settings&&S.settings[key]!==false?'#a8e46c':'#fff'};color:#5a4a2a;font-weight:800;font-size:12px;padding:6px 14px;border-radius:999px;cursor:pointer">${lab}: ${S.settings&&S.settings[key]!==false?'ON':'OFF'}</button>`;
   const audioRow=`<div class="setbar"><span>${en?'Sound':'Suara'}</span></div><div class="skillrow" style="gap:10px;align-items:center;justify-content:flex-start">${atog('music',en?'🎵 Music':'🎵 Musik')} ${atog('sfx',en?'🔊 Effects':'🔊 Efek')}</div>`;
-  $("#skillList").innerHTML=ageRow+audioRow
+  const lf=(S.settings&&S.settings.learnFreq)||'normal';
+  const lbtn=(k,lab)=>`<button onclick="setLearnFreq('${k}')" style="border:2px solid ${lf===k?'#4f8f24':'#ffd591'};background:${lf===k?'#a8e46c':'#fff'};color:#5a4a2a;font-weight:800;font-size:12px;padding:6px 13px;border-radius:999px;cursor:pointer">${lab}</button>`;
+  const learnRow=`<div class="setbar"><span>${en?'Learning frequency':'Frekuensi belajar'}</span></div><div class="skillrow" style="gap:8px;align-items:center;justify-content:flex-start">${lbtn('chill',en?'Chill':'Santai')}${lbtn('normal',en?'Normal':'Normal')}${lbtn('often',en?'Often':'Sering')}</div>`;
+  $("#skillList").innerHTML=ageRow+audioRow+learnRow
     +`<div class="setbar"><span>${en?'Mastery by area':'Penguasaan per bidang'}</span></div>`+pillHtml+callout
     +`<div class="setbar"><span>${en?'Skill detail':'Detail keterampilan'}</span></div>`
     +DATA.skills.map(sk=>{ const sp=S.skillProgress[sk.id]||{tier:1,last5:[]};

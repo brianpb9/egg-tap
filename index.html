@@ -441,6 +441,8 @@
   @keyframes taphint{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-16px)}}
   /* Home: ground band so placed items sit on a floor (depth) */
   #home .room .ground{position:absolute;left:0;right:0;bottom:0;height:32%;background:linear-gradient(180deg,transparent,rgba(90,60,25,.16));pointer-events:none;z-index:1;}
+  #home .room::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;box-shadow:inset 0 0 50px rgba(20,30,60,.10),inset 0 -46px 46px rgba(60,40,15,.18),inset 0 22px 30px rgba(255,255,255,.10);} /* depth: soft vignette + grounded foreground so the scene reads as a place, not a flat backdrop */
+  .moodbubble img{width:22px;height:22px;display:block;}
   /* living habitat: floating emotes (care bar styled in the Home care-loop block below) */
   .carebar button.sel{background:linear-gradient(180deg,#c3f0a4,#8add5f)!important;border-color:#4f8f24!important;transform:translateY(-2px) scale(1.05);}
   .floatemote{position:absolute;font-size:24px;pointer-events:none;z-index:20;animation:floatemote 1s ease-out forwards;}
@@ -2105,7 +2107,7 @@ function petHome(el,id){ const cw=el.querySelector('.cwrap'); const react=()=>{ 
   save(); }
 function homeIdle(){ const home=document.getElementById('home'); const room=$("#room"); if(!room||!home||!home.classList.contains('active')) return;
   const els=[...room.querySelectorAll('.placed.floaty')]; if(!els.length) return;
-  const el=els[Math.floor(Math.random()*els.length)]; const b=document.createElement('span'); b.className='moodbubble'; b.textContent=['💗','🎵','✨','😴','💤'][Math.floor(Math.random()*5)];
+  const el=els[Math.floor(Math.random()*els.length)]; const b=document.createElement('span'); b.className='moodbubble'; b.innerHTML=careIco(['pat','play','sleep'][Math.floor(Math.random()*3)],22);
   b.style.left=(el.offsetLeft+(el.offsetWidth/2))+'px'; b.style.top=(el.offsetTop-8)+'px'; room.appendChild(b); setTimeout(()=>b.remove(),2200);
   if(Math.random()<0.18){ const before=Object.keys(S.homeNeeds||{}).length; ensureNeeds(homeGridIds()); if(Object.keys(S.homeNeeds).length>before) applyNeedBubbles(room); } } // needs appear gently, not constantly
 // left/top are PERCENT of the room (robust against clientHeight races); centered via negative margins

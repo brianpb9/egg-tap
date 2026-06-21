@@ -416,7 +416,7 @@
     <div class="title-logo"><div class="inner"><div class="biglogo"><span class="lg-wonder">Wonder</span><span class="lg-egg">Egg</span> <span class="lg-tap">World</span><small id="title_tag">Your friends are waiting! 💛</small></div></div></div>
     <img class="title-mascot" src="assets/bubu/mascot.png" alt="" onclick="titleMascotTap(this)" />
     <button class="play-btn" id="playBtn" onclick="startPlay()">▶ Play</button>
-    <button class="play-mini" id="titleParent" title="Parent" onclick="openGate()"></button>
+    <button class="play-mini" id="titleParent" title="Parent" aria-label="Parent zone" onclick="openGate()"></button>
   </section>
 
   <section id="onboard" class="screen">
@@ -442,8 +442,8 @@
 
   <!-- S2 HATCH -->
   <section id="hatch" class="screen">
-    <button class="corner" title="Parent" onclick="openGate()"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.4" fill="#ffd591" stroke="#cf8a2c" stroke-width="1.6"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="#cf8a2c" stroke-width="1.8"/><circle cx="12" cy="14.6" r="1.6" fill="#cf8a2c"/></svg></button>
-    <button class="corner" id="musicBtn" style="left:10px;right:auto" onclick="toggleMusic()"></button>
+    <button class="corner" title="Parent" aria-label="Parent zone" onclick="openGate()"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.4" fill="#ffd591" stroke="#cf8a2c" stroke-width="1.6"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="#cf8a2c" stroke-width="1.8"/><circle cx="12" cy="14.6" r="1.6" fill="#cf8a2c"/></svg></button>
+    <button class="corner" id="musicBtn" style="left:10px;right:auto" aria-label="Toggle sound" onclick="toggleMusic()"></button>
     <div class="topbar">
       <div class="title" id="worldName">Hutan Hijau</div>
       <div class="wallet">
@@ -464,7 +464,7 @@
       <div class="cue" id="cue"></div>
       <div class="tapdots" id="tapdots"></div>
       <div id="tapHint" style="display:none">👆 Tap!</div>
-      <button class="bonusbtn" id="bonusEgg" style="display:none" onclick="buyBonusEgg()"></button>
+      <button class="bonusbtn" id="bonusEgg" style="display:none" aria-label="Bonus magic egg" onclick="buyBonusEgg()"></button>
     </div>
     <div class="overlay" id="challengeOverlay">
       <div class="sheet">
@@ -571,7 +571,7 @@
   <!-- PARENT ZONE -->
   <section id="parent" class="screen">
     <div class="topbar"><div class="title" id="t_parent">Zona Orang Tua</div>
-      <button class="corner" style="position:static" onclick="show('hatch')">✕</button></div>
+      <button class="corner" style="position:static" aria-label="Close" onclick="show('hatch')">✕</button></div>
     <div class="scroll">
       <div class="pad">
         <div style="background:#fff;border-radius:22px;padding:16px;box-shadow:var(--shadow)">

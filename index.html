@@ -207,6 +207,8 @@
   .sk-dots i.ok{background:var(--good);}
   .sk-dots i.no{background:#ff9a8a;}
   .skrow.exp{background:linear-gradient(90deg,#fff7e6,#fffdf6);}
+  .adschip{border:none;background:linear-gradient(180deg,#8be36b,#5fb83e);color:#fff;font-weight:800;font-size:12px;padding:7px 13px;border-radius:999px;cursor:pointer;box-shadow:0 2px 7px rgba(95,184,62,.45);white-space:nowrap;}
+  .adschip:active{transform:scale(.94);}
   .note{font-size:13px;color:var(--soft);line-height:1.4;}
   .lang{display:flex;gap:8px;}
   .lang button{flex:1;border-radius:14px;border:3px solid #eee;background:#fff;padding:10px;font-weight:800;font-family:inherit;cursor:pointer;}
@@ -530,7 +532,7 @@
 
   <!-- S7 WORLD MAP -->
   <section id="world" class="screen">
-    <div class="topbar"><div class="title" id="t_world">Dunia</div></div>
+    <div class="topbar" style="display:flex;align-items:center;justify-content:space-between"><div class="title" id="t_world">Worlds</div><span id="world_ads"></span></div>
     <div class="scroll" id="worldScroll"></div>
     <div class="nav"></div>
   </section>
@@ -2041,6 +2043,7 @@ function renderWorld(){
         <div class="wp-bar"><i style="width:${un?cpct:upct}%"></i></div>
       </div></div>`; }).join("");
   $("#worldScroll").innerHTML=`<div class="worldmap-wrap">${nodes}</div>`;
+  const wa=document.getElementById('world_ads'); if(wa) wa.innerHTML=S.adsRemoved?'':`<button class="adschip" onclick="openGate('removeads')">✨ ${S.locale==='id'?'Bebas Iklan':'Remove Ads'}</button>`;
 }
 function pickWorld(id){ SFX.tap(); S.currentWorld=id; save(); refreshBGM(); show("hatch"); newEgg(); }
 
@@ -2057,13 +2060,14 @@ function claimDaily(){ S.daily.lastClaim=todayStr(); S.daily.streak++; S.currenc
 /* ===================== PARENT GATE / ZONE ===================== */
 let GATE_TARGET=47;
 const NUMWORDS={31:{id:"tiga puluh satu",en:"thirty-one"},47:{id:"empat puluh tujuh",en:"forty-seven"},52:{id:"lima puluh dua",en:"fifty-two"},68:{id:"enam puluh delapan",en:"sixty-eight"},73:{id:"tujuh puluh tiga",en:"seventy-three"},29:{id:"dua puluh sembilan",en:"twenty-nine"}};
-function openGate(){ GATE_TARGET=[31,47,52,68,73,29][Math.floor(Math.random()*6)];
+let GATE_AFTER='parent';
+function openGate(after){ GATE_AFTER=after||'parent'; GATE_TARGET=[31,47,52,68,73,29][Math.floor(Math.random()*6)];
   $("#g_sub").innerHTML=`${t("gate_sub")} <b>${nm(NUMWORDS[GATE_TARGET])}</b>`;
   speak(`${t("gate_sub")} ${nm(NUMWORDS[GATE_TARGET])}`);
   const nums=new Set([GATE_TARGET]); while(nums.size<9) nums.add(20+Math.floor(Math.random()*60));
   $("#gateNums").innerHTML=[...nums].sort(()=>Math.random()-0.5).map(n=>`<button onclick="tryGate(${n})">${n}</button>`).join("");
   openModal("gateModal"); }
-function tryGate(n){ if(n===GATE_TARGET){ SFX.correct(); closeModal("gateModal"); show("parent"); } else { SFX.oops(); bounceModal("gateModal"); } }
+function tryGate(n){ if(n===GATE_TARGET){ SFX.correct(); closeModal("gateModal"); show("parent"); if(GATE_AFTER==='removeads') setTimeout(()=>removeAds(),350); } else { SFX.oops(); bounceModal("gateModal"); } }
 function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newSkills=(S.stats.weekSkills||[]).length; const en=S.locale!=='id';
   const att=S.stats.attempts||0, acc=att?Math.round(S.stats.correct/att*100):0;
   $("#p_summary").innerHTML=en

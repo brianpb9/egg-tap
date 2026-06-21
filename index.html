@@ -2113,6 +2113,7 @@ function homeIdle(){ const home=document.getElementById('home'); const room=$("#
   const els=[...room.querySelectorAll('.placed.alive')]; if(!els.length) return;
   const el=els[Math.floor(Math.random()*els.length)]; const b=document.createElement('span'); b.className='moodbubble'; b.innerHTML=careIco(['pat','play','sleep'][Math.floor(Math.random()*3)],22);
   b.style.left=(el.offsetLeft+(el.offsetWidth/2))+'px'; b.style.top=(el.offsetTop-8)+'px'; room.appendChild(b); setTimeout(()=>b.remove(),2200);
+  if(Math.random()<0.45){ const cw=els[Math.floor(Math.random()*els.length)].querySelector('.cwrap'); if(cw){ cw.classList.remove('react'); void cw.offsetWidth; cw.classList.add('react'); } } // a random friend does a little spontaneous bounce -> habitat feels alive
   if(Math.random()<0.18){ const before=Object.keys(S.homeNeeds||{}).length; ensureNeeds(homeGridIds()); if(Object.keys(S.homeNeeds).length>before) applyNeedBubbles(room); } } // needs appear gently, not constantly
 // left/top are PERCENT of the room (robust against clientHeight races); centered via negative margins
 function mkFriend(room,c,leftPct,topPct,size,z,cls){ if(!room||!c)return null; const el=document.createElement("div"); el.className="placed "+(cls||"floaty"); el.style.left=leftPct+"%"; el.style.top=topPct+"%"; el.style.width=size+"px"; el.style.marginLeft=(-size/2)+"px"; el.style.marginTop=(-size/2)+"px"; el.style.zIndex=z; el.dataset.cid=c.id; el.innerHTML=`<div class="cwrap">${creatureMarkup(c,size)}</div>`; room.appendChild(el); return el; }
@@ -2173,7 +2174,7 @@ function renderHome(){
     const size=Math.max(52,Math.min(64,Math.floor(rh*0.24))); // CONSISTENT big size (depends on room height, NOT how many friends)
     gridFriends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols), inRow=Math.min(cols,n-rr*cols);
       const pp=homePos(c.id); const leftPct=pp?pp.x:((cc+1)/(inRow+1))*100, topPct=pp?pp.y:(rows<=1?72:(bandTop+bandH*(rr/(rows-1))));
-      const el=mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'alive grounded'); if(el) el.addEventListener('pointerdown',ev=>startPlaceDrag(ev,el,c.id,true)); });
+      const el=mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'alive grounded'); if(el){ el.style.animationDelay=(-(idx*0.73)).toFixed(2)+'s'; el.style.animationDuration=(3.0+(idx%3)*0.45).toFixed(2)+'s'; el.addEventListener('pointerdown',ev=>startPlaceDrag(ev,el,c.id,true)); } }); // stagger so they never breathe in unison (organic, not robotic)
   }
   if(friendsAll.length){ const cbn=document.createElement('button'); cbn.className='choosebtn'; cbn.innerHTML=`👥 ${S.locale==='id'?'Pilih 5':'Choose 5'}`; cbn.onclick=openHomePicker; room.appendChild(cbn); } // pick which friends live here
   // daily visiting guest (stands to the side with a ribbon)

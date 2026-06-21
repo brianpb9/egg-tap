@@ -1941,27 +1941,27 @@ function shareHatch(){
 let LAST_CARD=null;
 function drawCard(c){
   const cv=$("#hatchCanvas"), x=cv.getContext("2d"); const W=cv.width,H=cv.height;
-  const g=x.createLinearGradient(0,0,0,H); g.addColorStop(0,"#fff7e6"); g.addColorStop(1,(c.pal&&c.pal[0])||"#ffe3c2");
-  x.fillStyle=g; x.fillRect(0,0,W,H);
-  // rounded border
-  x.strokeStyle=c.color; x.lineWidth=14; x.strokeRect(20,20,W-40,H-40);
-  // confetti dots
-  for(let i=0;i<40;i++){ x.fillStyle=["#ff8a3d","#7BC950","#C77DFF","#48CAE4","#FFD166"][i%5]; x.globalAlpha=.5;
-    x.fillRect(40+ (i*53)%(W-80), 60+(i*97)%(H-120), 10,10); } x.globalAlpha=1;
-  // title
-  x.fillStyle="#3b2a1d"; x.textAlign="center"; x.font="bold 34px sans-serif";
-  x.fillText(t("share_title"), W/2, 90);
-  // creature image
-  const svg=creatureSVG(c,300); const img=new Image();
-  const url="data:image/svg+xml;base64,"+btoa(unescape(encodeURIComponent(svg)));
-  img.onload=()=>{ x.drawImage(img,(W-300)/2,140,300,300);
-    x.fillStyle=c.color; x.font="bold 52px sans-serif"; x.fillText(nm(c.name),W/2,540);
-    x.fillStyle="#7a6a5b"; x.font="bold 26px sans-serif"; x.fillText(c.rarity.toUpperCase(),W/2,580);
-    x.font="bold 30px sans-serif"; x.fillStyle="#ff8a3d"; x.fillText("🥚 Wonder Egg World",W/2,650);
-    try{ LAST_CARD=cv.toDataURL("image/png"); }catch(e){ LAST_CARD=null; }
+  const rc=(typeof RARCOLOR!=='undefined'&&RARCOLOR[c.rarity])||c.color||'#ff8a3d';
+  const rr=(x0,y0,w,h,r)=>{ x.beginPath(); if(x.roundRect){ x.roundRect(x0,y0,w,h,r); } else { x.moveTo(x0+r,y0); x.arcTo(x0+w,y0,x0+w,y0+h,r); x.arcTo(x0+w,y0+h,x0,y0+h,r); x.arcTo(x0,y0+h,x0,y0,r); x.arcTo(x0,y0,x0+w,y0,r); x.closePath(); } };
+  const render=(bg,cr)=>{
+    x.clearRect(0,0,W,H);
+    if(bg){ const s=Math.max(W/bg.width,H/bg.height), bw=bg.width*s, bh=bg.height*s; x.drawImage(bg,(W-bw)/2,(H-bh)/2,bw,bh); } // world background (like the Album card)
+    else { const g=x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#fff7e6'); g.addColorStop(1,'#ffe3c2'); x.fillStyle=g; x.fillRect(0,0,W,H); }
+    const sc=x.createLinearGradient(0,0,0,H); sc.addColorStop(0,'rgba(255,255,255,.5)'); sc.addColorStop(.45,'rgba(255,255,255,.12)'); sc.addColorStop(1,'rgba(255,255,255,.72)'); x.fillStyle=sc; x.fillRect(0,0,W,H); // legibility scrim
+    x.lineWidth=20; x.strokeStyle=rc; rr(14,14,W-28,H-28,30); x.stroke(); // rarity frame
+    x.lineWidth=7; x.strokeStyle='#fff'; rr(28,28,W-56,H-56,22); x.stroke(); // white inner edge
+    x.textAlign='center';
+    if(c.rarity==='legend'){ x.font='40px sans-serif'; x.fillText('👑', W/2, 70); }
+    x.fillStyle='#5a4a2a'; x.font='bold 32px sans-serif'; x.fillText(t('share_title'), W/2, 104);
+    if(cr){ x.drawImage(cr,(W-300)/2,128,300,300); }
+    x.font='900 52px sans-serif'; x.lineWidth=7; x.lineJoin='round'; x.strokeStyle='#fff'; x.strokeText(nm(c.name),W/2,498); x.fillStyle=rc; x.fillText(nm(c.name),W/2,498); // name with white outline
+    const rl=(typeof rarLabel==='function'?rarLabel(c.rarity):String(c.rarity).toUpperCase()); x.font='bold 26px sans-serif'; const pw=x.measureText(rl).width+44;
+    x.fillStyle=rc; rr((W-pw)/2,522,pw,42,21); x.fill(); x.fillStyle='#fff'; x.fillText(rl,W/2,551); // rarity pill
+    x.fillStyle='#ff8a3d'; x.font='bold 28px sans-serif'; x.fillText('🥚 Wonder Egg World', W/2, H-42);
+    try{ LAST_CARD=cv.toDataURL('image/png'); }catch(e){ LAST_CARD=null; }
   };
-  img.crossOrigin="anonymous";
-  img.src=IMG[c.id]||url;
+  const load=(url,cb)=>{ if(!url){ cb(null); return; } const im=new Image(); im.crossOrigin='anonymous'; im.onload=()=>cb(im); im.onerror=()=>cb(null); im.src=url; };
+  load((typeof ALBUMBG!=='undefined'&&ALBUMBG[c.world])||'', bg=>{ const cu=IMG[c.id]||('data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(creatureSVG(c,300))))); load(cu, cr=>render(bg,cr)); });
 }
 function downloadCard(){
   if(!LAST_CARD){ LAST_CARD=$("#hatchCanvas").toDataURL("image/png"); }

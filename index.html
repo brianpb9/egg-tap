@@ -398,6 +398,11 @@
   .coinfly{position:fixed;font-size:22px;z-index:9999;pointer-events:none;transition:transform .72s cubic-bezier(.45,.05,.3,1),opacity .72s ease-in;will-change:transform,opacity;}
   .moodbubble{position:absolute;font-size:18px;pointer-events:none;z-index:19;animation:moodbubble 2.2s ease-in-out;}
   @keyframes moodbubble{0%{opacity:0;transform:translateY(4px) scale(.6)}20%{opacity:1;transform:translateY(-6px) scale(1)}80%{opacity:1;transform:translateY(-12px)}100%{opacity:0;transform:translateY(-20px)}}
+  /* accessibility: calm constant motion for sensory-sensitive players (one-shot feedback still plays) */
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-iteration-count:1 !important; }
+    .title-fx, #obFloaters{ display:none !important; }
+  }
 </style>
 </head>
 <body>

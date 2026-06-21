@@ -1389,7 +1389,7 @@ function setAge(a){ SFX.tap(); S.ageBand=a; S.onboarded=true;
 
 /* ===================== CORE LOOP ===================== */
 let LOOP={crack:0,egg:null,creature:null,challenge:null,wrongs:0,isNew:false};
-let SESSION_HATCH=0; const SOFT_STOP_EVERY=8; const BONUS_COST=40;
+let SESSION_HATCH=0; const SOFT_STOP_EVERY=8; const BONUS_COST=40; const STAR_WISH=50;
 const MISSIONS=[
   {id:"hatch", goal:5, reward:30, emoji:"🥚", label:{id:"Tetaskan 5 telur",en:"Hatch 5 eggs"}},
   {id:"correct", goal:5, reward:30, emoji:"✅", label:{id:"Jawab 5 benar",en:"Answer 5 right"}},
@@ -1417,7 +1417,7 @@ function updateBonusBtn(){ const b=$("#bonusEgg"); if(!b) return;
   b.style.display=ok?"inline-block":"none";
   b.textContent=(S.locale==='id'?'✨ Telur Ajaib':'✨ Magic Egg')+` (${BONUS_COST}✨)`; }
 function syncWallet(){
-  $("#w_stars").textContent=S.currencies.stars; $("#w_coins").textContent=S.currencies.coins; $("#w_dust").textContent=S.currencies.stardust;
+  $("#w_stars").textContent=S.currencies.stars+"/"+STAR_WISH; $("#w_coins").textContent=S.currencies.coins; $("#w_dust").textContent=S.currencies.stardust;
   $("#worldName").textContent=nm(world(S.currentWorld).name);
   const st=document.querySelector('#hatch .stage'); const b=BG[S.currentWorld];
   if(st) st.style.background = b? `linear-gradient(rgba(255,251,240,.60),rgba(255,251,240,.82)), url('${b}') center/cover no-repeat` : '';
@@ -1439,11 +1439,13 @@ function newEgg(){
   $("#revealBanner").classList.remove("go");
   let egg=pickEgg();
   if(Math.random()<0.05){ egg={id:"egg_king",king:true,crackStates:10,dropTableId:"drop_legend_default",base:"#FFE9A8",accent:"#F4A300",pattern:"crown"}; } // rare KING EGG -> 10 taps -> guaranteed Legend
+  if(!egg.king && S.wishEgg){ S.wishEgg=false; const ww=world(S.currentWorld); const eid=(ww.eggIds||[]).find(id=>id&&id.indexOf('begg_epic_')===0); const e=eid&&DATA.eggs.find(x=>x.id===eid); if(e) egg=Object.assign({},e,{wish:true}); } // free Wish egg earned with stars
   LOOP={crack:0,egg,creature:null,challenge:null,wrongs:0,isNew:false};
   $("#eggwrap").innerHTML='<div class="eggglow" id="eggGlow"></div>'+eggMarkup(LOOP.egg)+CRACKFX;
   $("#eggwrap").classList.remove("jolt"); $("#eggwrap").classList.toggle("kingegg",!!egg.king);
   setCue(egg.king?(S.locale==='id'?'👑 TELUR RAJA! Ketuk 10×!':'👑 KING EGG! Tap 10×!'):t("tap_cue")); updateDots(); syncWallet();
   if(egg.king) toast(S.locale==='id'?'👑 Telur Raja! Ada Legenda di dalam!':'👑 King Egg! A Legend awaits!');
+  else if(egg.wish) toast(S.locale==='id'?'⭐ Permintaan terkabul! Telur spesial gratis! ✨':'⭐ Wish granted! A free special egg! ✨');
   else if(egg.epic) toast(S.locale==='id'?'✨ Telur Spesial! Peluang langka lebih besar':'✨ Special Egg! Better odds for rare friends');
   { const th=$("#tapHint"); if(th){ th.textContent=S.locale==='id'?'👆 Ketuk!':'👆 Tap!'; th.style.display=S.tutDone?"none":"block"; } }
   clearTimeout(window._idle);
@@ -1650,6 +1652,7 @@ function reward(){
   const c=LOOP.creature; if(!c){ $("#rewardOverlay").classList.remove("active"); newEgg(); return; }
   LOOP.answered=false;
   const count=S.owned[c.id]||1; const stars=3; S.currencies.stars+=stars; try{SFX.star();}catch(e){}
+  if(S.currencies.stars>=STAR_WISH && !S.wishEgg){ S.currencies.stars-=STAR_WISH; S.wishEgg=true; setTimeout(()=>toast(S.locale==='id'?'⭐ Bintang penuh! Telur spesial menanti! ✨':'⭐ Stars full! A special egg awaits! ✨'),950); } // stars -> free Wish egg
   let gain="", coinsAdded=0;
   if(LOOP.isNew){ const coins=15; S.currencies.coins+=coins; coinsAdded=coins; gain=`+${stars}⭐  +${coins}🪙`; }
   else { const dt=DATA.dropTables[(LOOP.egg&&LOOP.egg.dropTableId)||"drop_common_default"]||DATA.dropTables.drop_common_default;

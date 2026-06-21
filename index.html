@@ -1144,9 +1144,17 @@ function pickEnVoice(){ try{ const vs=speechSynthesis.getVoices(); if(!vs.length
   return en.find(v=>/natural|google|female|aria|jenny|samantha/i.test(v.name||'')) || en.find(v=>v.default) || en[0];
 }catch(e){ return null; } }
 if(window.speechSynthesis){ try{ speechSynthesis.onvoiceschanged=()=>{ _enVoice=pickEnVoice(); }; _enVoice=pickEnVoice(); }catch(e){} }
+function speakable(txt){ try{ return String(txt)
+  .replace(/(\d)\s*[-−–—]\s*(\d)/g,'$1 minus $2')   // "9 − 6" -> spoken "9 minus 6"
+  .replace(/(\d)\s*\+\s*(\d)/g,'$1 plus $2')
+  .replace(/(\d)\s*[×x]\s*(\d)/g,'$1 times $2')
+  .replace(/\s*=\s*\?/g,'?')                          // drop "= ?" so it ends as a question
+  .replace(/\s*=\s*/g,' equals ')
+  .replace(/[−–—]/g,' minus ')
+  .replace(/\s{2,}/g,' ').trim(); }catch(e){ return txt; } }
 function speak(text){ try{ if(S.settings&&S.settings.sfx===false)return; if(!window.speechSynthesis)return; const en=S.locale!=='id';
   if(en && !_enVoice) _enVoice=pickEnVoice();
-  const u=new SpeechSynthesisUtterance(text);
+  const u=new SpeechSynthesisUtterance(speakable(text));
   u.lang=en?"en-US":"id-ID"; if(en && _enVoice) u.voice=_enVoice; // pick a clear, natural English voice instead of the device default
   u.rate=0.72; u.pitch=1.05; // extra slow & calm — the voice guides pre-readers (ages 3-5)
   speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }

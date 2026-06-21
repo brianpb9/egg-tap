@@ -1161,8 +1161,8 @@ function speak(text){ try{ if(S.settings&&S.settings.sfx===false)return; if(!win
   speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
 function sayPrompt(ch){ if(!ch) return;
   if(PROMPTVO[ch.id] && vo(PROMPTVO[ch.id])) return;                                   // curated per-challenge VO
-  if(S.locale!=='id' && !(S.settings&&S.settings.sfx===false)){                         // recorded Maya VO for common prompts
-    const slug=PROMPT_VO_EN[nm(ch.prompt)]; if(slug && playSrc('assets/audio/vo/'+slug+'.mp3')) return; }
+  if(S.locale!=='id' && !(S.settings&&S.settings.sfx===false)){                         // recorded Maya VO (keyword-normalized across variants)
+    const slug=voSlug(nm(ch.prompt)); if(slug && VO_HAVE.has(slug) && playSrc('assets/audio/vo/'+slug+'.mp3')) return; }
   speak(nm(ch.prompt)); }                                                               // fallback: TTS (with speakable())
 function replayPrompt(){ try{SFX.tap&&SFX.tap();}catch(e){} sayPrompt(LOOP&&LOOP.challenge); } // tap 🔊 to hear the question again
 
@@ -1258,6 +1258,24 @@ const PROMPT_VO_EN={
   "Find the circle!":"find_circle","Find the square!":"find_square","Find the triangle!":"find_triangle","Find the star!":"find_star","Find the heart!":"find_heart",
   "Which one did you see?":"which_saw","Match the same!":"match_same","Find the SAME one!":"find_same","Find the cat!":"find_cat","Find the letter A!":"find_letter_a",
   "Find the food!":"find_food","Which is a fruit?":"which_fruit","Find the happy face!":"find_happy","Who is sad?":"who_sad" };
+// Every recorded VO slug that has an mp3 in assets/audio/vo/ (so we only route to files that exist).
+const VO_HAVE=new Set(["which_different","which_bigger","what_next","what_number_next","find_red","find_blue","find_yellow","find_green","find_purple","find_orange","find_circle","find_square","find_triangle","find_star","find_heart","which_saw","match_same","find_same","find_cat","find_letter_a","find_food","which_fruit","find_happy","who_sad","find_num_1","find_num_2","find_num_3","find_num_4","find_num_5","find_num_6","find_num_7","find_num_8","find_num_9","find_num_10","cnt_1","cnt_2","cnt_3","cnt_4","cnt_5","cnt_6","cnt_7","cnt_8","cnt_9","cnt_10","find_dog","find_cow","find_pig","find_lion","find_fox","find_letter_b","find_letter_c","find_letter_m","find_letter_s","emo_angry","emo_scared","emo_sleepy","emo_love","seq_s2b","seq_big"]);
+const _NUMW={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+// Map ANY English prompt to a recorded-VO slug (so "Find red!", "Which is red?", "Quick! Find red!" all use find_red).
+function voSlug(en){ if(PROMPT_VO_EN[en]) return PROMPT_VO_EN[en]; const s=String(en).toLowerCase(); let m;
+  if(m=s.match(/which has (\d+)/)) return 'cnt_'+m[1];
+  if(m=s.match(/which has (\w+)/)) { if(_NUMW[m[1]]) return 'cnt_'+_NUMW[m[1]]; }
+  if(m=s.match(/number (\d+)/)) return 'find_num_'+m[1];
+  if(m=s.match(/letter ([a-z])/)) return 'find_letter_'+m[1];
+  for(const c of ['red','blue','yellow','green','purple','orange']) if(s.includes(c)) return 'find_'+c;
+  if(s.includes('round')) return 'find_circle';
+  for(const sh of ['circle','square','triangle','star','heart']) if(s.includes(sh)) return 'find_'+sh;
+  for(const a of ['cat','dog','cow','pig','lion','fox']) if(s.includes(a)) return 'find_'+a;
+  if(s.includes('happy')) return 'find_happy'; if(s.includes('sad')) return 'who_sad';
+  for(const e of ['angry','scared','sleepy']) if(s.includes(e)) return 'emo_'+e; if(s.includes('love')) return 'emo_love';
+  if(/small.*big|order/.test(s)) return 'seq_s2b'; if(s.includes('biggest')) return 'seq_big';
+  if(s.includes('same')) return 'find_same'; if(s.includes('which one')||s.includes('did you see')||s.includes('was it')) return 'which_saw';
+  return null; }
 const PRAISE_VO_EN=["assets/audio/vo_en_praise1.mp3","assets/audio/vo_en_praise2.mp3","assets/audio/vo_en_praise3.mp3"];
 function vo(key){ if(S.settings&&S.settings.sfx===false) return false; const set = S.locale==="id"?VOICE : S.locale==="en"?VOICE_EN : null; if(!set) return false; const p=set[key]; return p?playSrc(p):false; }
 function voPraise(){ if(S.settings&&S.settings.sfx===false) return false; const set = S.locale==="id"?PRAISE_VO : S.locale==="en"?PRAISE_VO_EN : null; if(!set) return false; return playSrc(set[Math.floor(Math.random()*set.length)]); }

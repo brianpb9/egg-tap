@@ -46,7 +46,7 @@
   .screen{position:absolute;inset:0;display:none;flex-direction:column;}
   .screen.active{display:flex;}
   .pad{padding:16px;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:14px;background:url('assets/ui/topbar_bg.png') center/100% 100% no-repeat;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:14px;background:url('assets/ui/topbar_bg.png') center/100% 100% no-repeat;align-self:stretch;width:100%;box-sizing:border-box;min-width:0;overflow:hidden;}
   .topbar .title{text-shadow:0 1px 2px rgba(255,255,255,.7),0 0 6px rgba(255,255,255,.5);}
   .wallet{display:flex;gap:8px;}
   .coin{display:flex;align-items:center;gap:5px;background:linear-gradient(180deg,#ffffff,#f6e9f3);border:2px solid #fff;border-radius:999px;padding:6px 13px;font-weight:800;color:#6b4a5e;box-shadow:0 3px 0 rgba(206,150,182,.55),0 5px 9px rgba(120,40,90,.18);font-size:15px;}
@@ -270,11 +270,13 @@
   #hatch .topbar{padding-left:20px;padding-right:16px;} /* breathing room for the world name + gap to the wallet */
   .topbar .title{min-width:0;flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .wallet{flex:0 0 auto;}
-  @media(max-width:459px){
-    .coin{padding:5px 10px;font-size:14px;gap:4px;} /* compact currency so the world name has room */
+  @media(max-width:520px){
+    .coin{padding:4px 8px;font-size:13px;gap:3px;} /* compact currency so the long world name fits */
     .coin svg{width:15px;height:15px;}
-    .coin img{width:17px;height:17px;}
-    .topbar .title{font-size:18px;}
+    .coin img{width:16px;height:16px;}
+    .topbar{gap:9px;}
+    .topbar .title{font-size:17px;}
+    #hatch .topbar{padding-left:14px;padding-right:12px;}
   }
   .nav{padding-bottom:max(14px,env(safe-area-inset-bottom));}
   .bonusbtn{margin-top:12px;border:none;border-radius:999px;font-family:inherit;font-weight:800;font-size:15px;color:#fff;background:linear-gradient(180deg,#7ad7ff,#48cae4);box-shadow:0 4px 0 #2a9ec0,var(--shadow);padding:11px 20px;cursor:pointer;z-index:3;}

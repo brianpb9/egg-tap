@@ -162,7 +162,8 @@
   #home .room{flex:1 1 0;min-height:0;position:relative;margin:10px 12px;border-radius:24px;overflow:hidden;background:#bfe6ff center/cover no-repeat;box-shadow:var(--shadow);}
   #home{overflow:hidden;}
   #home .room::after{content:"";position:absolute;inset:0;border-radius:24px;pointer-events:none;box-shadow:inset 0 -50px 70px rgba(60,40,20,.18), inset 0 0 0 5px #fff;}
-  .placed{position:absolute;cursor:pointer;touch-action:none;filter:drop-shadow(0 7px 5px rgba(0,0,0,.28));z-index:2;transition:transform .1s;}
+  .placed{position:absolute;cursor:grab;touch-action:none;filter:drop-shadow(0 7px 5px rgba(0,0,0,.28));z-index:2;transition:transform .1s;}
+  .placed.dragging{cursor:grabbing;animation:none!important;z-index:99999!important;transform:scale(1.12);filter:drop-shadow(0 13px 10px rgba(0,0,0,.4));}
   .cwrap{display:inline-block;will-change:transform;}
   .cwrap.react{animation:react .5s ease;}
   @keyframes react{0%{transform:scale(1) rotate(0)}30%{transform:scale(1.22) rotate(-8deg)}60%{transform:scale(1.14) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
@@ -2099,7 +2100,18 @@ function homeIdle(){ const home=document.getElementById('home'); const room=$("#
   b.style.left=(el.offsetLeft+(el.offsetWidth/2))+'px'; b.style.top=(el.offsetTop-8)+'px'; room.appendChild(b); setTimeout(()=>b.remove(),2200);
   if(Math.random()<0.5){ const before=Object.keys(S.homeNeeds||{}).length; ensureNeeds(homeGridIds()); if(Object.keys(S.homeNeeds).length>before) applyNeedBubbles(room); } } // keep care needs flowing
 // left/top are PERCENT of the room (robust against clientHeight races); centered via negative margins
-function mkFriend(room,c,leftPct,topPct,size,z,cls){ if(!room||!c)return null; const el=document.createElement("div"); el.className="placed "+(cls||"floaty"); el.style.left=leftPct+"%"; el.style.top=topPct+"%"; el.style.width=size+"px"; el.style.marginLeft=(-size/2)+"px"; el.style.marginTop=(-size/2)+"px"; el.style.zIndex=z; el.dataset.cid=c.id; el.innerHTML=`<div class="cwrap">${creatureMarkup(c,size)}</div>`; el.onclick=()=>petHome(el,c.id); room.appendChild(el); return el; }
+function mkFriend(room,c,leftPct,topPct,size,z,cls){ if(!room||!c)return null; const el=document.createElement("div"); el.className="placed "+(cls||"floaty"); el.style.left=leftPct+"%"; el.style.top=topPct+"%"; el.style.width=size+"px"; el.style.marginLeft=(-size/2)+"px"; el.style.marginTop=(-size/2)+"px"; el.style.zIndex=z; el.dataset.cid=c.id; el.innerHTML=`<div class="cwrap">${creatureMarkup(c,size)}</div>`; room.appendChild(el); return el; }
+/* drag any Home item (friend or decoration) to arrange it; tap a friend = care */
+let _pd=null;
+function startPlaceDrag(ev,el,key,isCreature){ if(_dragTool) return; _pd={el,key,isCreature,sx:ev.clientX,sy:ev.clientY,moved:false,x:0,y:0}; try{el.setPointerCapture&&el.setPointerCapture(ev.pointerId);}catch(e){}
+  el.addEventListener('pointermove',_pdMove); el.addEventListener('pointerup',_pdUp,{once:true}); el.addEventListener('pointercancel',_pdUp,{once:true}); }
+function _pdMove(ev){ if(!_pd) return; if(!_pd.moved && Math.abs(ev.clientX-_pd.sx)+Math.abs(ev.clientY-_pd.sy)<7) return; _pd.moved=true; const el2=_pd.el; el2.classList.add('dragging');
+  const room=$("#room"); if(!room) return; const rb=room.getBoundingClientRect(); let x=((ev.clientX-rb.left)/rb.width)*100, y=((ev.clientY-rb.top)/rb.height)*100; x=Math.max(8,Math.min(92,x)); y=Math.max(34,Math.min(92,y));
+  _pd.x=x; _pd.y=y; el2.style.left=x+'%'; el2.style.top=y+'%'; el2.style.zIndex=Math.round(y*4)+(_pd.isCreature?200:0); }
+function _pdUp(ev){ if(!_pd) return; const pd=_pd; _pd=null; pd.el.removeEventListener('pointermove',_pdMove); pd.el.classList.remove('dragging');
+  if(pd.moved){ S.homePos=S.homePos||{}; (S.homePos[S.currentWorld]=S.homePos[S.currentWorld]||{})[pd.key]={x:pd.x,y:pd.y}; save(); try{SFX.tap&&SFX.tap();}catch(e){} }
+  else if(pd.isCreature){ const id=pd.el.dataset.cid; if(id) petHome(pd.el,id); } }
+function homePos(key){ return S.homePos&&S.homePos[S.currentWorld]&&S.homePos[S.currentWorld][key]; }
 function homeToday(){ try{ return new Date().toDateString(); }catch(e){ return 'day'; } }
 function ensureGuest(){ if(S.lastGuestDay===homeToday()) return; S.lastGuestDay=homeToday();
   const pool=DATA.creatures.filter(c=>!c.legend); const notOwned=pool.filter(c=>!S.owned[c.id]); const list=notOwned.length?notOwned:pool;
@@ -2134,8 +2146,8 @@ function renderHome(){
   // --- decorations: small back row along the lawn horizon, evenly spread (percent positions)
   const dn=decor.length;
   decor.forEach((it,i)=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); if(!d)return;
-    const size=dn>5?42:50, leftPct=((i+1)/(dn+1))*100, topPct=66+(i%2)*4; // sit ON the grass (not floating in the sky), spread evenly, slight stagger
-    const de=document.createElement("div"); de.className="placed grounded"; de.style.left=leftPct+"%"; de.style.top=topPct+"%"; de.style.width=size+"px"; de.style.marginLeft=(-size/2)+"px"; de.style.marginTop=(-size/2)+"px"; de.style.zIndex=Math.round(topPct*4); de.innerHTML=decoMarkup(d,size); room.appendChild(de); });
+    const size=dn>5?42:50, pp=homePos('d:'+d.id); const leftPct=pp?pp.x:((i+1)/(dn+1))*100, topPct=pp?pp.y:(66+(i%2)*4); // saved position, else on the grass
+    const de=document.createElement("div"); de.className="placed grounded"; de.style.left=leftPct+"%"; de.style.top=topPct+"%"; de.style.width=size+"px"; de.style.marginLeft=(-size/2)+"px"; de.style.marginTop=(-size/2)+"px"; de.style.zIndex=Math.round(topPct*4); de.innerHTML=decoMarkup(d,size); de.addEventListener('pointerdown',ev=>startPlaceDrag(ev,de,'d:'+d.id,false)); room.appendChild(de); });
   // --- friends: tidy grid across the floor (capped & scaled so they never pile up or hide behind UI)
   const n=gridFriends.length; // gridFriends defined above (your chosen 5, else auto)
   if(n){ const rh=room.clientHeight||Math.round(rw*1.25);
@@ -2143,8 +2155,8 @@ function renderHome(){
     const bandTop=60, bandBot=88, bandH=bandBot-bandTop; // ON the grass (not floating in the sky), clear of the room edge
     const size=Math.max(44,Math.min(66,Math.min(Math.floor(rw*0.78/cols), Math.floor(rh*(bandH/100)/rows)))); // fit width AND height -> no overlap
     gridFriends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols), inRow=Math.min(cols,n-rr*cols);
-      const leftPct=((cc+1)/(inRow+1))*100, topPct=rows<=1?72:(bandTop+bandH*(rr/(rows-1)));
-      mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'floaty grounded'); });
+      const pp=homePos(c.id); const leftPct=pp?pp.x:((cc+1)/(inRow+1))*100, topPct=pp?pp.y:(rows<=1?72:(bandTop+bandH*(rr/(rows-1))));
+      const el=mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'floaty grounded'); if(el) el.addEventListener('pointerdown',ev=>startPlaceDrag(ev,el,c.id,true)); });
   }
   if(friendsAll.length){ const cbn=document.createElement('button'); cbn.className='choosebtn'; cbn.innerHTML=`👥 ${S.locale==='id'?'Pilih 5':'Choose 5'}`; cbn.onclick=openHomePicker; room.appendChild(cbn); } // pick which friends live here
   // daily visiting guest (stands to the side with a ribbon)

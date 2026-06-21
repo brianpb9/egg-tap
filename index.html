@@ -1556,7 +1556,7 @@ function tierFor(s){ return (S.skillProgress[s]?.tier)||1; }
 function recordAttempt(s,ok){
   const sp=S.skillProgress[s]||(S.skillProgress[s]={tier:1,last5:[]});
   sp.last5.push(ok?1:0); if(sp.last5.length>5) sp.last5.shift();
-  if(sp.last5.length>=5){ const r=sp.last5.reduce((a,b)=>a+b,0)/5; if(r>=0.8&&sp.tier<4)sp.tier++; else if(r<=0.4&&sp.tier>1)sp.tier--; }
+  if(sp.last5.length>=5){ const r=sp.last5.reduce((a,b)=>a+b,0)/5; const floor=(S.ageBand>=5?3:1); if(r>=0.8&&sp.tier<4)sp.tier++; else if(r<=0.4&&sp.tier>floor)sp.tier--; } // age 5 never drops to easy tiers
   S.stats.attempts=(S.stats.attempts||0)+1;
   if(ok){ S.stats.correct++; missionProgress('correct'); if(!(S.stats.weekSkills||(S.stats.weekSkills=[])).includes(s)) S.stats.weekSkills.push(s); }
 }
@@ -1568,10 +1568,11 @@ function pickChallenge(){
   const flav=WORLD_FLAVOR[S.currentWorld]; // each world leans toward a learning theme (subtle identity + variety)
   if(flav && Math.random()<0.45){ const fs=DATA.skills.filter(s=>s.pillar===flav).map(s=>s.id); if(fs.length) skills=fs; }
   const sk=skills[Math.floor(Math.random()*skills.length)]; // random skill each time → less repetitive
-  const tier=tierFor(sk);
+  const minTier=(S.ageBand>=5?3:1); // age 5: never serve easy (tier 1-2) challenges
+  const tier=Math.max(minTier,tierFor(sk));
   let pool=DATA.challenges.filter(c=>c.skill===sk&&c.tier===tier);
-  if(!pool.length) pool=DATA.challenges.filter(c=>c.skill===sk);
-  if(!pool.length) pool=DATA.challenges.filter(c=>c.tier===tier);
+  if(!pool.length) pool=DATA.challenges.filter(c=>c.skill===sk&&c.tier>=minTier);
+  if(!pool.length) pool=DATA.challenges.filter(c=>c.tier>=minTier);
   if(!pool.length) pool=DATA.challenges;
   let cand=pool.filter(c=>!_recentCh.includes(c.id)); if(!cand.length) cand=pool; // no immediate repeats
   const pick=cand[Math.floor(Math.random()*cand.length)];

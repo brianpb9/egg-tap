@@ -462,6 +462,13 @@
   .carebar .clabel{font-size:9px;font-weight:800;color:#9a5577;}
   .carebar button{touch-action:none;}
   .dragghost{position:fixed;font-size:36px;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 5px rgba(0,0,0,.35));}
+  .choosebtn{position:absolute;top:8px;right:8px;z-index:40;border:2px solid #fff;background:linear-gradient(180deg,#ffffff,#ffe3f1);color:#b85a92;font-weight:800;font-size:11.5px;padding:6px 11px;border-radius:999px;box-shadow:0 3px 0 #e58cbf,0 4px 7px rgba(120,40,90,.22);cursor:pointer;}
+  .choosebtn:active{transform:translateY(2px);box-shadow:0 1px 0 #e58cbf;}
+  .pickgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:54vh;overflow-y:auto;padding:6px 2px;}
+  .pickcell{position:relative;border:3px solid #f0e6d6;background:#fff7ee;border-radius:16px;padding:5px 2px 3px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;}
+  .pickcell.on{border-color:var(--good);background:#eaffe0;}
+  .pickcell .pickname{font-size:9px;font-weight:800;color:#6a5a3a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .pickcell .pickchk{position:absolute;top:-6px;right:-6px;background:var(--good);color:#fff;font-weight:900;font-size:12px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.25);}
   .carebar button.sel{background:linear-gradient(180deg,#c3f0a4,#8add5f);border-color:#fff;box-shadow:0 3px 0 #5fb83e;transform:translateY(-3px) scale(1.06);}
   .carebar button:active{transform:translateY(1px);}
   .needbubble{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:20px;background:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.22);z-index:30;animation:needbob 1s ease-in-out infinite;pointer-events:none;}
@@ -2021,10 +2028,20 @@ function openCardZoom(c){ const en=S.locale!=='id'; const dup=S.owned[c.id]||1;
 function closeCardZoom(){ const ov=document.getElementById('cardZoom'); if(ov) ov.classList.remove('active'); }
 function toggleFavorite(id){ S.favorite=(S.favorite===id?null:id); save(); try{SFX.star&&SFX.star();}catch(e){} const c=creature(id); toast(S.favorite?(S.locale==='id'?'★ '+nm(c.name)+' jadi favoritmu!':'★ '+nm(c.name)+' is your favorite!'):(S.locale==='id'?'Favorit dihapus':'Favorite cleared')); const cc=creature(id); if(cc) openCardZoom(cc); }
 function isHomePick(c){ return c?(((S.homePicks&&S.homePicks[c.world])||[]).includes(c.id)):false; }
-function toggleHomePick(id){ const c=creature(id); if(!c) return; S.homePicks=S.homePicks||{}; const arr=S.homePicks[c.world]=S.homePicks[c.world]||[]; const i=arr.indexOf(id);
-  if(i>=0){ arr.splice(i,1); toast(S.locale==='id'?nm(c.name)+' keluar dari Rumah':nm(c.name)+' left Home'); }
-  else { if(arr.length>=5){ try{SFX.oops&&SFX.oops();}catch(e){} toast(S.locale==='id'?'Rumah penuh (maks 5) — lepas satu dulu':'Home is full (max 5) — remove one first'); return; } arr.push(id); try{SFX.tap&&SFX.tap();}catch(e){} toast(S.locale==='id'?'🏡 '+nm(c.name)+' pindah ke Rumah!':'🏡 '+nm(c.name)+' moved to Home!'); }
-  save(); openCardZoom(c); }
+function setHomePick(id){ const c=creature(id); if(!c) return false; S.homePicks=S.homePicks||{}; const arr=S.homePicks[c.world]=S.homePicks[c.world]||[]; const i=arr.indexOf(id);
+  if(i>=0){ arr.splice(i,1); try{SFX.tap&&SFX.tap();}catch(e){} }
+  else { if(arr.length>=5){ try{SFX.oops&&SFX.oops();}catch(e){} toast(S.locale==='id'?'Maks 5 teman — lepas satu dulu':'Max 5 friends — remove one first'); return false; } arr.push(id); try{SFX.tap&&SFX.tap();}catch(e){} haptic(10); }
+  save(); return true; }
+function toggleHomePick(id){ setHomePick(id); const c=creature(id); if(c) openCardZoom(c); } // from the Album card
+function openHomePicker(){ const en=S.locale!=='id'; const owned=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);
+  let ov=document.getElementById('homePicker'); if(!ov){ ov=document.createElement('div'); ov.id='homePicker'; ov.className='overlay'; ov.addEventListener('click',e=>{ if(e.target===ov) closeHomePicker(); }); $("#device").appendChild(ov); }
+  const picks=(S.homePicks&&S.homePicks[S.currentWorld])||[];
+  const grid=owned.map(c=>`<button class="pickcell ${picks.includes(c.id)?'on':''}" onclick="setHomePick('${c.id}');openHomePicker()">${creatureMarkup(c,56)}<span class="pickname">${nm(c.name)}</span>${picks.includes(c.id)?'<span class="pickchk">✓</span>':''}</button>`).join('');
+  ov.innerHTML=`<div class="sheet"><div class="setbar"><span>${en?'Choose friends for Home':'Pilih teman untuk Rumah'} · ${picks.length}/5</span></div>`
+    +(owned.length?`<div class="pickgrid">${grid}</div>`:`<div class="muted" style="padding:18px">${en?'Hatch some friends first! 🥚':'Tetaskan teman dulu! 🥚'}</div>`)
+    +`<button class="big mini" onclick="closeHomePicker()">${en?'Done 🏡':'Selesai 🏡'}</button></div>`;
+  ov.classList.add('active'); }
+function closeHomePicker(){ const ov=document.getElementById('homePicker'); if(ov) ov.classList.remove('active'); const h=document.getElementById('home'); if(h&&h.classList.contains('active')) renderHome(); }
 
 /* ===================== HOME ===================== */
 const HOME_LEVELS={1:{id:"Kamar",en:"Cozy Room"},2:{id:"Taman",en:"Garden"},3:{id:"Taman Main",en:"Playground"},4:{id:"Rumah Pohon",en:"Treehouse"},5:{id:"Istana",en:"Castle"}};
@@ -2128,6 +2145,7 @@ function renderHome(){
       const leftPct=((cc+1)/(inRow+1))*100, topPct=rows<=1?72:(bandTop+bandH*(rr/(rows-1)));
       mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'floaty grounded'); });
   }
+  if(friendsAll.length){ const cbn=document.createElement('button'); cbn.className='choosebtn'; cbn.innerHTML=`👥 ${S.locale==='id'?'Pilih 5':'Choose 5'}`; cbn.onclick=openHomePicker; room.appendChild(cbn); } // pick which friends live here
   // daily visiting guest (stands to the side with a ribbon)
   ensureGuest();
   if(S.guest){ const gc=creature(S.guest); if(gc){ const ge=mkFriend(room,gc,87,40,50,9000,'guest grounded');

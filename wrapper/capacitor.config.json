@@ -1,0 +1,8 @@
+{
+  "appId": "com.wonderegg.world",
+  "appName": "Wonder Egg World",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#bfe6ff"
+  }
+}

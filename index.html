@@ -1485,6 +1485,7 @@ function tapEgg(){
   else if(LOOP.crack>=LOOP.egg.crackStates-1){ const st=$("#hatch .stage"); if(st) st.classList.add("prehatch"); }
 }
 function rollCreature(egg){
+  if((S.stats.hatches||0)===0 && !egg.king){ const star=creature('crt_bubu'); if(star) return star; } // first-ever hatch = meet Bubu, the mascot you saw on the title (instant bond)
   if(egg.king){ const legs=DATA.creatures.filter(c=>c.legend); return legs[Math.floor(Math.random()*legs.length)]||DATA.creatures[0]; } // King Egg -> guaranteed Legend
   const dt=DATA.dropTables[egg.dropTableId]; const w=world(S.currentWorld);
   const pool=creaturesOf(w.sets).filter(c=>!c.legend); // legendaries only via set completion

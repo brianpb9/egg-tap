@@ -2154,8 +2154,8 @@ function renderHome(){
   const n=gridFriends.length; // gridFriends defined above (your chosen 5, else auto)
   if(n){ const rh=room.clientHeight||Math.round(rw*1.25);
     const cols=Math.min(3,Math.max(2,Math.ceil(n/2))), rows=Math.ceil(n/cols); // up to 3 across -> 1-2 tidy rows
-    const bandTop=60, bandBot=88, bandH=bandBot-bandTop; // ON the grass (not floating in the sky), clear of the room edge
-    const size=Math.max(44,Math.min(66,Math.min(Math.floor(rw*0.78/cols), Math.floor(rh*(bandH/100)/rows)))); // fit width AND height -> no overlap
+    const bandTop=56, bandBot=86, bandH=bandBot-bandTop; // feet on the grass
+    const size=Math.max(52,Math.min(64,Math.floor(rh*0.24))); // CONSISTENT big size (depends on room height, NOT how many friends)
     gridFriends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols), inRow=Math.min(cols,n-rr*cols);
       const pp=homePos(c.id); const leftPct=pp?pp.x:((cc+1)/(inRow+1))*100, topPct=pp?pp.y:(rows<=1?72:(bandTop+bandH*(rr/(rows-1))));
       const el=mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'floaty grounded'); if(el) el.addEventListener('pointerdown',ev=>startPlaceDrag(ev,el,c.id,true)); });

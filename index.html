@@ -463,7 +463,7 @@
   .carebar .clabel{font-size:9px;font-weight:800;color:#9a5577;}
   .carebar button{touch-action:none;}
   .dragghost{position:fixed;font-size:36px;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 5px rgba(0,0,0,.35));}
-  .choosebtn{position:absolute;top:10px;right:10px;z-index:40;border:3px solid #fff;background:linear-gradient(180deg,#ffd25a,#ff9b3d);color:#fff;font-weight:900;font-size:14px;padding:10px 16px;border-radius:999px;box-shadow:0 4px 0 #e07c1e,0 7px 12px rgba(120,60,10,.32);cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.22);animation:choosepulse 1.8s ease-in-out infinite;}
+  .choosebtn{position:absolute;top:64px;right:10px;z-index:40;border:3px solid #fff;background:linear-gradient(180deg,#ffd25a,#ff9b3d);color:#fff;font-weight:900;font-size:14px;padding:10px 16px;border-radius:999px;box-shadow:0 4px 0 #e07c1e,0 7px 12px rgba(120,60,10,.32);cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.22);animation:choosepulse 1.8s ease-in-out infinite;}
   .choosebtn:active{transform:translateY(3px) scale(.97);box-shadow:0 1px 0 #e07c1e;animation:none;}
   @keyframes choosepulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
   .pickgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:54vh;overflow-y:auto;padding:6px 2px;}
@@ -2071,14 +2071,16 @@ function floatEmote(el,ch,dx){ const room=$("#room"); if(!room||!el)return; cons
 const CARE_NEEDS=['feed','wash','play','sleep']; const CARE_GOAL=6;
 function homeGridIds(){ const picks=((S.homePicks&&S.homePicks[S.currentWorld])||[]).map(creature).filter(c=>c&&S.owned[c.id]&&c.world===S.currentWorld); const all=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld); return (picks.length?picks:all).slice(0,5).map(c=>c.id); }
 function ensureNeeds(ids){ S.homeNeeds=S.homeNeeds||{}; Object.keys(S.homeNeeds).forEach(k=>{ if(!ids.includes(k)) delete S.homeNeeds[k]; });
-  let active=Object.keys(S.homeNeeds).length; const cap=Math.min(3,ids.length); const free=ids.filter(id=>!S.homeNeeds[id]);
+  let active=Object.keys(S.homeNeeds).length; const cap=Math.min(2,ids.length); const free=ids.filter(id=>!S.homeNeeds[id]);
   while(active<cap && free.length){ const id=free.splice(Math.floor(Math.random()*free.length),1)[0]; S.homeNeeds[id]=CARE_NEEDS[Math.floor(Math.random()*CARE_NEEDS.length)]; active++; } save(); }
 function applyNeedBubbles(room){ if(!room||!S.homeNeeds) return; Object.entries(S.homeNeeds).forEach(([id,need])=>{ let el; try{ el=room.querySelector('.placed[data-cid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]'); }catch(e){} if(el && !el.querySelector('.needbubble')){ const b=document.createElement('div'); b.className='needbubble'; b.textContent=(CARE[need]||{}).emo||'❓'; el.appendChild(b); } }); }
 function careProgress(){ S.careMeter=(S.careMeter||0)+1; S.currencies.coins+=1;
   const fill=$("#caremeterFill"); if(fill) fill.style.width=Math.min(100,Math.round(S.careMeter/CARE_GOAL*100))+'%';
   const hc=$("#hm_coins"); if(hc) hc.textContent=S.currencies.coins; if(typeof syncWallet==='function') syncWallet();
-  if(S.careMeter>=CARE_GOAL){ S.careMeter=0; S.currencies.coins+=10; try{SFX.fanfare&&SFX.fanfare('rare');}catch(e){} try{burst&&burst(22,$("#room"),true);}catch(e){}
-    toast((S.locale==='id'?'🎉 Semua teman bahagia!':'🎉 All friends are happy!')+' +10 🪙');
+  if(S.careMeter>=CARE_GOAL){ S.careMeter=0; S.careLevel=(S.careLevel||1)+1; const rew=8+S.careLevel*2; S.currencies.coins+=rew;
+    try{SFX.fanfare&&SFX.fanfare('legend');}catch(e){} try{burst&&burst(34,$("#room"),true);}catch(e){} try{haptic([0,40,50,90]);}catch(e){}
+    toast('🎉 '+(S.locale==='id'?'Naik ke Level Rawat':'Care Level')+' '+S.careLevel+'! +'+rew+' 🪙');
+    const lbl=$("#careLbl"); if(lbl) lbl.textContent='💗 '+(S.locale==='id'?'Rawat Lv':'Care Lv')+S.careLevel;
     if(fill) setTimeout(()=>{fill.style.width='0%';},450); if(hc) hc.textContent=S.currencies.coins; if(typeof syncWallet==='function') syncWallet();
     setTimeout(()=>{ const home=document.getElementById('home'); const room=$("#room"); if(home&&home.classList.contains('active')&&room){ ensureNeeds(homeGridIds()); applyNeedBubbles(room); } },500); }
   save(); }
@@ -2098,7 +2100,7 @@ function homeIdle(){ const home=document.getElementById('home'); const room=$("#
   const els=[...room.querySelectorAll('.placed.floaty')]; if(!els.length) return;
   const el=els[Math.floor(Math.random()*els.length)]; const b=document.createElement('span'); b.className='moodbubble'; b.textContent=['💗','🎵','✨','😴','💤'][Math.floor(Math.random()*5)];
   b.style.left=(el.offsetLeft+(el.offsetWidth/2))+'px'; b.style.top=(el.offsetTop-8)+'px'; room.appendChild(b); setTimeout(()=>b.remove(),2200);
-  if(Math.random()<0.5){ const before=Object.keys(S.homeNeeds||{}).length; ensureNeeds(homeGridIds()); if(Object.keys(S.homeNeeds).length>before) applyNeedBubbles(room); } } // keep care needs flowing
+  if(Math.random()<0.18){ const before=Object.keys(S.homeNeeds||{}).length; ensureNeeds(homeGridIds()); if(Object.keys(S.homeNeeds).length>before) applyNeedBubbles(room); } } // needs appear gently, not constantly
 // left/top are PERCENT of the room (robust against clientHeight races); centered via negative margins
 function mkFriend(room,c,leftPct,topPct,size,z,cls){ if(!room||!c)return null; const el=document.createElement("div"); el.className="placed "+(cls||"floaty"); el.style.left=leftPct+"%"; el.style.top=topPct+"%"; el.style.width=size+"px"; el.style.marginLeft=(-size/2)+"px"; el.style.marginTop=(-size/2)+"px"; el.style.zIndex=z; el.dataset.cid=c.id; el.innerHTML=`<div class="cwrap">${creatureMarkup(c,size)}</div>`; room.appendChild(el); return el; }
 /* drag any Home item (friend or decoration) to arrange it; tap a friend = care */
@@ -2166,7 +2168,7 @@ function renderHome(){
   // --- care loop: needs + happiness meter (in room) + tool bar (own strip below the room, so it never covers friends)
   const careWrap=$("#careWrap");
   if(gridFriends.length){ ensureNeeds(gridFriends.map(c=>c.id)); applyNeedBubbles(room);
-    const meter=document.createElement('div'); meter.className='caremeter'; meter.innerHTML=`<i id="caremeterFill" style="width:${Math.min(100,Math.round((S.careMeter||0)/CARE_GOAL*100))}%"></i><span>💗 ${S.locale==='id'?'Bahagia':'Happy'}</span>`; room.appendChild(meter);
+    const meter=document.createElement('div'); meter.className='caremeter'; meter.innerHTML=`<i id="caremeterFill" style="width:${Math.min(100,Math.round((S.careMeter||0)/CARE_GOAL*100))}%"></i><span id="careLbl">💗 ${S.locale==='id'?'Rawat Lv':'Care Lv'}${S.careLevel||1}</span>`; room.appendChild(meter);
     if(careWrap) careWrap.innerHTML=`<div class="carehint">${S.locale==='id'?'Pilih / seret alat ke teman sesuai gelembungnya 💗':'Tap or drag a tool onto a friend with the matching bubble 💗'}</div><div class="carebar">`+HOME_TOOLS.map(([tool,emo])=>`<button data-tool="${tool}" class="${tool===HOMETOOL?'sel':''}" onpointerdown="startToolDrag(event,'${tool}')" onclick="setHomeTool('${tool}')" aria-label="${tool}"><span class="cemoji">${emo}</span><span class="clabel">${nm(TOOL_LABEL[tool])}</span></button>`).join('')+`</div>`;
   } else if(careWrap){ careWrap.innerHTML=''; }
   // tray: decoration shop — buying decor invites more friends to hang out

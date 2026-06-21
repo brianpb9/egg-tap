@@ -1477,10 +1477,12 @@ function showSoftStop(){ $("#ss_sub").innerHTML = S.locale==='id'
     : `You hatched <b>${SESSION_HATCH}</b> eggs & have <b>${ownedCount()}</b> creatures. Time for a little break! 💛`;
   openModal("softStop"); }
 function buyBonusEgg(){ if(S.currencies.stardust<BONUS_COST||LOOP.creature) return;
-  S.currencies.stardust-=BONUS_COST; SFX.coin(); LOOP.crack=0; LOOP.egg=DATA.eggs.find(e=>e.id==="egg_magic");
+  S.currencies.stardust-=BONUS_COST; SFX.coin(); LOOP.crack=0;
+  const ww=world(S.currentWorld); const eid=(ww.eggIds||[]).find(id=>id&&id.indexOf('begg_epic_')===0); // use this world's ornate EPIC egg art (premium), not the plain magic egg
+  LOOP.egg=(eid&&DATA.eggs.find(x=>x.id===eid))||DATA.eggs.find(e=>e.id==="egg_magic"); LOOP.egg=Object.assign({},LOOP.egg,{epic:true});
   $("#eggwrap").innerHTML=eggMarkup(LOOP.egg); updateDots(); toast(S.locale==='id'?'✨ Telur Ajaib!':'✨ Magic Egg!'); syncWallet(); }
 function updateBonusBtn(){ const b=$("#bonusEgg"); if(!b) return;
-  const ok = S.currencies.stardust>=BONUS_COST && LOOP && !LOOP.creature && LOOP.crack===0 && LOOP.egg && LOOP.egg.id!=="egg_magic";
+  const ok = S.currencies.stardust>=BONUS_COST && LOOP && !LOOP.creature && LOOP.crack===0 && LOOP.egg && !LOOP.egg.epic;
   b.style.display=ok?"inline-block":"none";
   b.textContent=(S.locale==='id'?'✨ Telur Ajaib':'✨ Magic Egg')+` (${BONUS_COST}✨)`; }
 function syncWallet(){

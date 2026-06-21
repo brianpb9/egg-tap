@@ -1136,8 +1136,20 @@ function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; const anyO
 function setAudioPref(key){ S.settings=S.settings||{music:true,sfx:true}; S.settings[key]=(S.settings[key]===false); save(); // granular toggle (Parent Zone)
   if(key==='music'){ if(S.settings.music) startBGM(); else stopBGM(); } updateMusicIcon(); try{if(S.settings.sfx!==false)SFX.tap&&SFX.tap();}catch(e){} if(typeof renderParent==='function') renderParent(); }
 function haptic(p){ try{ if(navigator.vibrate && !(S.settings&&S.settings.sfx===false)) navigator.vibrate(p); }catch(e){} }
-function speak(text){ try{ if(S.settings&&S.settings.sfx===false)return; if(!window.speechSynthesis)return; const u=new SpeechSynthesisUtterance(text);
-  u.lang=S.locale==="id"?"id-ID":"en-US"; u.rate=0.85; u.pitch=1.25; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
+let _enVoice=null;
+function pickEnVoice(){ try{ const vs=speechSynthesis.getVoices(); if(!vs.length) return null; const en=vs.filter(v=>/^en/i.test(v.lang||''));
+  if(!en.length) return null;
+  const pref=['Google US English','Microsoft Aria Online (Natural) - English (United States)','Microsoft Jenny','Samantha','Google UK English Female','Karen','Tessa','Moira','Microsoft Zira'];
+  for(const name of pref){ const m=en.find(v=>v.name===name)||en.find(v=>(v.name||'').indexOf(name)>=0); if(m) return m; }
+  return en.find(v=>/natural|google|female|aria|jenny|samantha/i.test(v.name||'')) || en.find(v=>v.default) || en[0];
+}catch(e){ return null; } }
+if(window.speechSynthesis){ try{ speechSynthesis.onvoiceschanged=()=>{ _enVoice=pickEnVoice(); }; _enVoice=pickEnVoice(); }catch(e){} }
+function speak(text){ try{ if(S.settings&&S.settings.sfx===false)return; if(!window.speechSynthesis)return; const en=S.locale!=='id';
+  if(en && !_enVoice) _enVoice=pickEnVoice();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang=en?"en-US":"id-ID"; if(en && _enVoice) u.voice=_enVoice; // pick a clear, natural English voice instead of the device default
+  u.rate=0.86; u.pitch=1.1; // a touch slow + warm (not squeaky) for toddler clarity
+  speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
 function sayPrompt(ch){ if(!ch) return; if(!(PROMPTVO[ch.id]&&vo(PROMPTVO[ch.id]))) speak(nm(ch.prompt)); } // speak the question (VO if available, else TTS)
 function replayPrompt(){ try{SFX.tap&&SFX.tap();}catch(e){} sayPrompt(LOOP&&LOOP.challenge); } // tap 🔊 to hear the question again
 

@@ -287,8 +287,10 @@
   .biglogo .lg-egg{color:#f2c64a;} .biglogo .lg-tap{color:#7cc35f;}
   .biglogo .lg-wonder{display:block;font-size:.62em;color:#f6a93c;letter-spacing:1px;margin-bottom:2px;}
   .biglogo small{display:block;font-size:16px;font-weight:800;color:#5a8f3a;-webkit-text-stroke:0;letter-spacing:.3px;margin-top:14px;text-shadow:0 1px 2px rgba(255,255,255,.8);}
-  .title-mascot{position:absolute;left:50%;bottom:23%;transform:translateX(-50%);width:min(48%,220px);z-index:2;filter:drop-shadow(0 10px 14px rgba(0,0,0,.22));animation:mascotbob 3s ease-in-out infinite;pointer-events:none;}
+  .title-mascot{position:absolute;left:50%;bottom:23%;transform:translateX(-50%);width:min(48%,220px);z-index:2;filter:drop-shadow(0 10px 14px rgba(0,0,0,.22));animation:mascotbob 3s ease-in-out infinite;cursor:pointer;}
   @keyframes mascotbob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-12px)}}
+  .title-mascot.boing{animation:mascotboing .42s ease;}
+  @keyframes mascotboing{0%{transform:translateX(-50%) scale(1)}30%{transform:translateX(-50%) scale(1.16,.86)}60%{transform:translateX(-50%) scale(.94,1.08)}100%{transform:translateX(-50%) scale(1)}}
   .play-btn{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);border:none;border-radius:999px;font-family:inherit;font-weight:800;font-size:30px;color:#fff;background:linear-gradient(180deg,#8be36b,#5fb83e);box-shadow:0 7px 0 #3f8f24,0 12px 20px rgba(0,0,0,.28);padding:16px 76px;cursor:pointer;z-index:3;animation:playpulse 1.4s ease-in-out infinite;}
   @keyframes playpulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
   .play-btn:active{transform:translateX(-50%) translateY(4px);box-shadow:0 3px 0 #3f8f24;}
@@ -407,7 +409,7 @@
     <div class="title-scene"></div>
     <div class="title-fx" id="titleFx"></div>
     <div class="title-logo"><div class="inner"><div class="biglogo"><span class="lg-wonder">Wonder</span><span class="lg-egg">Egg</span> <span class="lg-tap">World</span><small id="title_tag">Your friends are waiting! 💛</small></div></div></div>
-    <img class="title-mascot" src="assets/bubu/mascot.png" alt="" />
+    <img class="title-mascot" src="assets/bubu/mascot.png" alt="" onclick="titleMascotTap(this)" />
     <button class="play-btn" id="playBtn" onclick="startPlay()">▶ Play</button>
     <button class="play-mini" id="titleParent" title="Parent" onclick="openGate()"></button>
   </section>
@@ -2047,6 +2049,7 @@ function populateTitle(){
     for(let i=0;i<6;i++) h+=`<span class="tspark" style="left:${14+i*14}%;top:${18+(i%3)*10}%;animation-delay:${(i*0.5).toFixed(1)}s">✦</span>`;
     fx.innerHTML=h; } }
 function startPlay(){ try{SFX.tap();}catch(e){} if(S.onboarded){ show("hatch"); maybeDaily(); newEgg(); } else { show("onboard"); } }
+function titleMascotTap(el){ try{SFX.signature&&SFX.signature('crt_bubu');}catch(e){} try{haptic(12);}catch(e){} el.classList.remove('boing'); void el.offsetWidth; el.classList.add('boing'); setTimeout(()=>el.classList.remove('boing'),440); }
 /* ===================== BUBU FRIENDS roster (overrides legacy creatures) ===================== */
 (function(){
   const DEF={

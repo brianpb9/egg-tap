@@ -188,6 +188,7 @@
   .sd{width:34px;height:34px;border-radius:10px;background:#eee;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;}
   .sd.done{background:var(--good);color:#fff;}
   .sd.today{outline:3px solid var(--btn);}
+  .sd svg{width:20px;height:24px;}
 
   .gateNums{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
   .gateNums button{min-height:60px;border-radius:18px;border:none;background:#fff7ee;font-family:inherit;font-weight:800;font-size:26px;box-shadow:var(--shadow);cursor:pointer;}
@@ -268,14 +269,15 @@
   .nav{padding-bottom:max(14px,env(safe-area-inset-bottom));}
   .bonusbtn{margin-top:12px;border:none;border-radius:999px;font-family:inherit;font-weight:800;font-size:15px;color:#fff;background:linear-gradient(180deg,#7ad7ff,#48cae4);box-shadow:0 4px 0 #2a9ec0,var(--shadow);padding:11px 20px;cursor:pointer;z-index:3;}
   .bonusbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #2a9ec0;}
-  .mission{display:flex;align-items:center;gap:10px;background:#fff7ee;border-radius:14px;padding:9px 12px;margin:6px 0;text-align:left;}
-  .mission .mi{font-size:24px;}
-  .mission .ml{flex:1;font-weight:800;font-size:13px;}
-  .mission .mbar{height:8px;border-radius:999px;background:#eadfce;overflow:hidden;margin-top:4px;}
-  .mission .mbar>i{display:block;height:100%;background:var(--good);transition:width .3s;}
-  .mission .mr{font-weight:800;font-size:12px;color:var(--btn);white-space:nowrap;}
-  .mission.done{opacity:.6;}
-  .mission.done .mr{color:var(--good);}
+  .mission{display:flex;align-items:center;gap:11px;background:linear-gradient(180deg,#fffdf8,#fff4e6);border:2px solid #ffe6c8;border-radius:18px;padding:10px 12px;margin:8px 0;text-align:left;box-shadow:0 2px 6px rgba(0,0,0,.05);}
+  .mission .mi{width:42px;height:42px;flex:0 0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:inset 0 -2px 5px rgba(0,0,0,.07);}
+  .mission .mi svg{width:24px;height:28px;}
+  .mission .ml{flex:1;font-weight:800;font-size:13.5px;color:#5a4a2a;}
+  .mission .mbar{height:9px;border-radius:999px;background:#ece2cf;overflow:hidden;margin-top:5px;box-shadow:inset 0 1px 2px rgba(0,0,0,.12);}
+  .mission .mbar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#8be36b,#5fb83e);transition:width .4s;}
+  .mission .mr{font-weight:800;font-size:12px;color:#b87a1e;white-space:nowrap;background:#fff3d6;border:1.5px solid #ffe0a8;border-radius:999px;padding:4px 9px;}
+  .mission.done{background:linear-gradient(180deg,#f1ffe8,#e8ffdc);border-color:#bfe8a0;}
+  .mission.done .mr{color:#4f8f24;background:#e3ffd2;border-color:#bfe8a0;}
   #rotate{display:none;}
   @media (orientation:landscape) and (max-height:500px){
     #rotate{display:flex;position:fixed;inset:0;z-index:999;background:var(--bg2);align-items:center;justify-content:center;text-align:center;font-weight:800;font-size:20px;color:var(--ink);padding:24px;}
@@ -1517,9 +1519,12 @@ function missionProgress(id,n){ ensureMissions(); const m=MISSIONS.find(x=>x.id=
   S.missions.prog[id]=(S.missions.prog[id]||0)+(n||1);
   if(S.missions.prog[id]>=m.goal){ S.missions.done[id]=true; S.currencies.coins+=m.reward; SFX.coin(); toast(`🎯 ${nm(m.label)} ✓ +${m.reward}🪙`); syncWallet(); }
   save(); }
+const EGG_SVG='<svg viewBox="0 0 24 28"><ellipse cx="12" cy="16" rx="9.5" ry="11.5" fill="#ffdcec" stroke="#f49bc4" stroke-width="1.6"/><ellipse cx="11" cy="12.5" rx="6" ry="6.5" fill="#fff2f8" opacity=".6"/><path d="M7.5 10c1.5-2.6 7.5-2.6 9 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".85"/></svg>'; // cute pastel egg (replaces the chicken-egg emoji)
+const MISSION_ICON={hatch:{html:EGG_SVG,bg:'#ffe1ec'},correct:{html:'✅',bg:'#e3f6d8'},find:{html:'⭐',bg:'#fff2cf'}};
 function renderMissions(){ ensureMissions(); const el=$("#missionList"); if(!el) return;
   el.innerHTML=MISSIONS.map(m=>{ const p=Math.min(S.missions.prog[m.id]||0,m.goal); const done=!!S.missions.done[m.id];
-    return `<div class="mission ${done?'done':''}"><div class="mi">${m.emoji}</div>
+    const ic=MISSION_ICON[m.id]||{html:m.emoji,bg:'#f3ece0'};
+    return `<div class="mission ${done?'done':''}"><div class="mi" style="background:${ic.bg}">${ic.html}</div>
       <div class="ml">${nm(m.label)}<div class="mbar"><i style="width:${Math.round(p/m.goal*100)}%"></i></div></div>
       <div class="mr">${done?'✓':p+'/'+m.goal} +${m.reward}🪙</div></div>`; }).join(""); }
 function showSoftStop(){ $("#ss_sub").innerHTML = S.locale==='id'
@@ -2117,7 +2122,7 @@ function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth(
 function ensureDailyEgg(){ const d=todayStr(); if(S.dailyEggDay!==d){ S.dailyEggDay=d; S.dailyEggReady=true; save(); } } // once/day: a guaranteed-new "Daily Surprise" egg
 function maybeDaily(){ ensureMissions(); ensureDailyEgg(); if(S.daily.lastClaim===todayStr()) return; renderStreak(); renderMissions(); openModal("dailyModal"); }
 function renderStreak(){ const cur=S.daily.streak%7; $("#streakStrip").innerHTML=[1,2,3,4,5,6,7].map(d=>{
-  const done=d<=cur, today=d===cur+1, gift=d===3?'🥚':d===7?'✨':''; return `<div class="sd ${done?'done':''} ${today?'today':''}">${gift||d}</div>`; }).join(""); }
+  const done=d<=cur, today=d===cur+1, gift=d===3?EGG_SVG:d===7?'✨':''; return `<div class="sd ${done?'done':''} ${today?'today':''}">${gift||d}</div>`; }).join(""); }
 function claimDaily(){ S.daily.lastClaim=todayStr(); S.daily.streak++; S.currencies.coins+=20; SFX.coin();
   if(S.daily.streak%7===0) S.currencies.stardust+=30; else if(S.daily.streak%3===0) S.currencies.coins+=30;
   save(); closeModal("dailyModal"); toast("🎁 +20🪙"); syncWallet(); }

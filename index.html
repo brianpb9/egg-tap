@@ -46,7 +46,8 @@
   .screen{position:absolute;inset:0;display:none;flex-direction:column;}
   .screen.active{display:flex;}
   .pad{padding:16px;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;background:url('assets/ui/topbar_bg.png') center/100% 100% no-repeat;}
+  .topbar .title{text-shadow:0 1px 2px rgba(255,255,255,.7),0 0 6px rgba(255,255,255,.5);}
   .wallet{display:flex;gap:8px;}
   .coin{display:flex;align-items:center;gap:5px;background:#fff;border-radius:999px;padding:5px 12px;font-weight:800;box-shadow:var(--shadow);font-size:15px;}
   .title{font-weight:800;font-size:20px;}
@@ -128,15 +129,16 @@
 
   /* wooden cozy-game bottom nav (chunky tiles on a plank bar) */
   .nav{display:flex;gap:7px;align-items:stretch;justify-content:space-around;width:100%;align-self:stretch;margin-top:auto;padding:11px 8px 12px;
-    background:linear-gradient(#7cc14e 0 7px,rgba(0,0,0,0) 7px), repeating-linear-gradient(90deg,#a9743f 0 24px,#9b6835 24px 48px);
-    background-color:#9b6835;border-top:4px solid #6e4a24;box-shadow:inset 0 7px 10px rgba(0,0,0,.18);}
-  .nav button{flex:1;max-width:98px;border:3px solid #8a5a2b;border-radius:16px;background:linear-gradient(180deg,#fff6e2,#f1d8a6);
-    padding:7px 4px 6px;font-family:inherit;font-weight:800;color:#7a572b;font-size:12px;cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 4px 0 #815227,0 6px 8px rgba(0,0,0,.25);transition:transform .12s ease,box-shadow .12s ease;}
+    background:url('assets/ui/navbar_bottom.png') center/100% 100% no-repeat;background-color:#f4a6d2;
+    border-top:4px solid rgba(255,255,255,.55);box-shadow:inset 0 6px 12px rgba(120,40,90,.18);}
+  .nav button{flex:1;max-width:98px;border:3px solid #fff;border-radius:18px;background:linear-gradient(180deg,#ffffff,#ffe3f1);
+    padding:7px 4px 6px;font-family:inherit;font-weight:800;color:#b85a92;font-size:12px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 4px 0 #e58cbf,0 6px 8px rgba(120,40,90,.25);transition:transform .12s ease,box-shadow .12s ease;}
   .nav button .ic{font-size:0;line-height:1;}
-  .nav button:active{transform:translateY(3px);box-shadow:0 1px 0 #815227,0 2px 4px rgba(0,0,0,.25);}
-  .nav button.sel{background:linear-gradient(180deg,#a8e46c,#77c640);border-color:#4f8f24;color:#fff;box-shadow:0 4px 0 #4f8f24,0 6px 8px rgba(0,0,0,.3);text-shadow:0 1px 1px rgba(0,0,0,.25);}
-  .nav button.sel .ic{filter:drop-shadow(0 2px 2px rgba(0,0,0,.22));}
+  .nav button .ic img{filter:drop-shadow(0 2px 2px rgba(0,0,0,.18));}
+  .nav button:active{transform:translateY(3px);box-shadow:0 1px 0 #e58cbf,0 2px 4px rgba(120,40,90,.25);}
+  .nav button.sel{background:linear-gradient(180deg,#c3f0a4,#8add5f);border-color:#fff;color:#3c7a1e;box-shadow:0 4px 0 #5fb83e,0 6px 8px rgba(40,90,30,.3);text-shadow:0 1px 1px rgba(255,255,255,.45);}
+  .nav button.sel .ic img{filter:drop-shadow(0 2px 3px rgba(0,0,0,.28));}
 
   .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px;}
@@ -1438,10 +1440,10 @@ function resumeHatch(){
   if(!LOOP.egg || LOOP.creature) newEgg();
 }
 const ICON={
-  hatch:`<svg viewBox="0 0 24 24"><path d="M12 2.5C8.4 2.5 6.3 9 6.3 13.6a5.7 5.7 0 0 0 11.4 0C17.7 9 15.6 2.5 12 2.5Z" fill="#f6b94a" stroke="#cf8a2c" stroke-width="1.6"/><ellipse cx="9.7" cy="9" rx="1.5" ry="2.3" fill="#fff" opacity=".55"/></svg>`,
-  album:`<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="12" height="15" rx="2.5" fill="#8fd96a" stroke="#4f8f30" stroke-width="1.6"/><rect x="8.5" y="4" width="12" height="15" rx="2.5" fill="#5fc6e6" stroke="#2c8aa8" stroke-width="1.6"/></svg>`,
-  home:`<svg viewBox="0 0 24 24"><path d="M5 10.6 12 5l7 5.6" fill="none" stroke="#cf8a2c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.6 9.9V19h10.8V9.9" fill="#ffd591" stroke="#cf8a2c" stroke-width="1.6" stroke-linejoin="round"/><rect x="10" y="13.6" width="4" height="5.4" rx="1" fill="#cf8a2c"/></svg>`,
-  world:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2" fill="#7ec8e3" stroke="#2c8aa8" stroke-width="1.6"/><path d="M3.8 12h16.4M12 3.8c2.8 2.6 2.8 13.8 0 16.4M12 3.8c-2.8 2.6-2.8 13.8 0 16.4" fill="none" stroke="#2c8aa8" stroke-width="1.2"/></svg>`,
+  hatch:`<img src="assets/ui/nav_hatch.png" alt="" width="34" height="34" draggable="false">`,
+  album:`<img src="assets/ui/nav_album.png" alt="" width="34" height="34" draggable="false">`,
+  home:`<img src="assets/ui/nav_home.png" alt="" width="34" height="34" draggable="false">`,
+  world:`<img src="assets/ui/nav_world.png" alt="" width="34" height="34" draggable="false">`,
   star:`<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 6L12 16.9 6.6 19.2l1.3-6-4.5-4 6-.6z" fill="#FFC83D" stroke="#d99a12" stroke-width="1.2" stroke-linejoin="round"/></svg>`,
   coin:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4" fill="#F4C430" stroke="#b88a12" stroke-width="1.6"/><circle cx="12" cy="12" r="5" fill="none" stroke="#b88a12" stroke-width="1.3"/></svg>`,
   dust:`<svg viewBox="0 0 24 24"><path d="M12 2.5l1.9 6.6 6.6 1.9-6.6 1.9L12 19.5l-1.9-6.6L3.5 11l6.6-1.9z" fill="#C77DFF" stroke="#8a3dd0" stroke-width="1"/></svg>`,

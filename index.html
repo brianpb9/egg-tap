@@ -176,6 +176,8 @@
   .trayitem img{display:block;}
   .trayitem:active{transform:scale(.93);}
   .trayitem.cantafford{opacity:.45;}
+  .trayitem.owned{border-color:var(--good);background:#eaffe0;}
+  .trayitem.owned .muted{color:#4f8f24;}
   .traytag{flex:0 0 auto;width:46px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--soft);}
 
   .worldrow{display:flex;align-items:center;gap:14px;background:#fff;border-radius:22px;padding:14px;margin:10px 16px;box-shadow:var(--shadow);}
@@ -2070,7 +2072,7 @@ function renderHome(){
   const friendsAll=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);
   const decor=S.home.filter(it=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); return d&&d.world===S.currentWorld; }); // only THIS world's decor — no clutter from other worlds
   const visitorPool=Object.keys(S.owned).map(creature).filter(c=>c&&c.world!==S.currentWorld);
-  const visitors=visitorPool.slice(0, decor.length*2); // each decoration invites 2 friends from other worlds to visit
+  const visitors=visitorPool.slice(0, Math.min(4, decor.length*2)); // decorations invite a few visiting friends — capped at 4 so it never gets crowded
   const showFriends=friendsAll.concat(visitors); // owned-world friends ALWAYS show; visitors are a bonus
   const lvl=homeLevel(friendsAll.length+decor.length);
   $("#t_home").textContent=`${t("home")} · ${nm(world(S.currentWorld).name)} · Lv${lvl}`;
@@ -2091,10 +2093,12 @@ function renderHome(){
     const de=document.createElement("div"); de.className="placed grounded"; de.style.left=leftPct+"%"; de.style.top=topPct+"%"; de.style.width=size+"px"; de.style.marginLeft=(-size/2)+"px"; de.style.marginTop=(-size/2)+"px"; de.style.zIndex=Math.round(topPct*4); de.innerHTML=decoMarkup(d,size); room.appendChild(de); });
   // --- friends: spread wide across the front floor, fewer rows + staggered + scaled so they never pile up
   const n=showFriends.length;
-  if(n){ const cols=Math.min(4,Math.max(2,Math.ceil(n/2))), rows=Math.ceil(n/cols);
-    const size=Math.max(40,Math.min(60,Math.floor(rw*0.70/cols)));
+  if(n){ const rh=room.clientHeight||Math.round(rw*1.25);
+    const cols=Math.min(4,Math.max(2,Math.ceil(n/3))), rows=Math.ceil(n/cols); // aim for ~3 tidy rows
+    const bandTop=52, bandBot=92, bandH=bandBot-bandTop; // vertical band for friends
+    const size=Math.max(38,Math.min(64,Math.min(Math.floor(rw*0.76/cols), Math.floor(rh*(bandH/100)/rows)))); // fit width AND height so rows never overlap
     showFriends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols), inRow=Math.min(cols,n-rr*cols);
-      const half=50/(inRow+1), leftPct=((cc+1)/(inRow+1))*100+(rr%2?half:0), topPct=rows<=1?78:(64+26*(rr/(rows-1)));
+      const leftPct=((cc+1)/(inRow+1))*100, topPct=rows<=1?80:(bandTop+bandH*(rr/(rows-1)));
       mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'floaty grounded'); });
   }
   // daily visiting guest (stands to the side with a ribbon)
@@ -2109,13 +2113,14 @@ function renderHome(){
   // tray: decoration shop — buying decor invites more friends to hang out
   const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);
   let html=`<div class="traytag">🎁<div>${S.locale==='id'?'Undang':'Invite'}</div></div>`;
-  html+= decos.length ? decos.map(d=>{ const af=S.currencies.coins>=d.cost, have=decor.filter(h=>h.decoId===d.id).length;
-      return `<div class="trayitem ${af?'':'cantafford'}" onclick="buyPlaceDeco('${d.id}')">${decoMarkup(d,40)}${nm(d.label)}<div class="muted">${have?'×'+have+' ':''}🪙${d.cost}</div></div>`; }).join("")
+  html+= decos.length ? decos.map(d=>{ const owned=decor.some(h=>h.decoId===d.id), af=S.currencies.coins>=d.cost; const cls=owned?'owned':(af?'':'cantafford');
+      return `<div class="trayitem ${cls}" onclick="buyPlaceDeco('${d.id}')">${decoMarkup(d,40)}${nm(d.label)}<div class="muted">${owned?(S.locale==='id'?'✓ dipasang':'✓ placed'):'🪙'+d.cost}</div></div>`; }).join("")
     : `<div class="trayitem cantafford" style="cursor:default">—</div>`;
   $("#tray").innerHTML=html;
 }
 function placeSpot(){ const r=$("#room"); const W=r.clientWidth||300, H=r.clientHeight||420; return {x:Math.round(24+Math.random()*(W-130)), y:Math.round(H*0.42+Math.random()*(H*0.34))}; }
 function buyPlaceDeco(id){ const d=DATA.decorations.find(x=>x.id===id); if(!d) return;
+  if(S.home.some(it=>it.decoId===id)){ try{SFX.tap&&SFX.tap();}catch(e){} toast(S.locale==='id'?'Sudah dipasang ✓':'Already placed ✓'); return; } // one of each — no spam
   if(S.currencies.coins<d.cost){ SFX.oops(); toast(t("afford")); return; }
   const cnt=()=>Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld).length + S.home.filter(it=>it.decoId).length;
   const before=homeLevel(cnt());

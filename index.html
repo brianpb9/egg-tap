@@ -161,6 +161,7 @@
 
   #home .room{flex:1 1 0;min-height:0;position:relative;margin:10px 12px;border-radius:24px;overflow:hidden;background:#bfe6ff center/cover no-repeat;box-shadow:var(--shadow);}
   #home{overflow:hidden;}
+  #hatch{overflow:hidden;} /* clip the wide legend-celebration so it never causes horizontal scroll */
   #home .room::after{content:"";position:absolute;inset:0;border-radius:24px;pointer-events:none;box-shadow:inset 0 -50px 70px rgba(60,40,20,.18), inset 0 0 0 5px #fff;}
   .placed{position:absolute;cursor:grab;touch-action:none;filter:drop-shadow(0 7px 5px rgba(0,0,0,.28));z-index:2;transition:transform .1s;}
   .placed.dragging{cursor:grabbing;animation:none!important;z-index:99999!important;transform:scale(1.12);filter:drop-shadow(0 13px 10px rgba(0,0,0,.4));}
@@ -474,6 +475,9 @@
   .carebar button.sel{background:linear-gradient(180deg,#c3f0a4,#8add5f);border-color:#fff;box-shadow:0 3px 0 #5fb83e;transform:translateY(-3px) scale(1.06);}
   .carebar button:active{transform:translateY(1px);}
   .needbubble{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:20px;background:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.22);z-index:30;animation:needbob 1s ease-in-out infinite;pointer-events:none;}
+  .needbubble img{width:26px;height:26px;display:block;}
+  .dragghost img{width:40px;height:40px;display:block;}
+  .carebar .cemoji img{width:28px;height:28px;display:block;}
   .needbubble::after{content:"";position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#fff;}
   @keyframes needbob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-5px)}}
   .caremeter{position:absolute;top:42px;left:50%;transform:translateX(-50%);width:160px;height:14px;background:rgba(255,255,255,.7);border-radius:999px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.18);z-index:30;}
@@ -2053,6 +2057,9 @@ function homeLevel(n){ let l=1; for(let i=0;i<HOME_THRESHOLDS.length;i++) if(n>=
 let HOMETOOL='pat';
 const HOME_TOOLS=[['pat','💗'],['feed','🍓'],['wash','🧼'],['play','🎵'],['sleep','😴']];
 const CARE={pat:{emo:'💗'},feed:{emo:'🍓',extra:'😋'},wash:{emo:'🧼',extra:'✨'},play:{emo:'🎵',extra:'🎉'},sleep:{emo:'😴',extra:'💤'}};
+/* glossy 3D-candy care icons (match the nav UI) -> used on tool buttons, need bubbles & drag ghost so the play field is one visual language (no raw emoji) */
+const CARE_ICON={pat:'assets/ui/care_love.png',feed:'assets/ui/care_feed.png',wash:'assets/ui/care_bath.png',play:'assets/ui/care_play.png',sleep:'assets/ui/care_sleep.png'};
+function careIco(tool,sz){ const u=CARE_ICON[tool]; const emo=(CARE[tool]||{}).emo||'💗'; return u?`<img src="${u}" alt="" width="${sz||30}" height="${sz||30}" onerror="this.replaceWith(document.createTextNode('${emo}'))">`:emo; }
 const TOOL_LABEL={pat:{en:'Love',id:'Belai'},feed:{en:'Feed',id:'Makan'},wash:{en:'Bath',id:'Mandi'},play:{en:'Play',id:'Main'},sleep:{en:'Sleep',id:'Tidur'}};
 function setHomeTool(tool){ HOMETOOL=tool; document.querySelectorAll('.carebar button').forEach(b=>b.classList.toggle('sel',b.dataset.tool===tool)); try{SFX.tap&&SFX.tap();}catch(e){} }
 /* drag a care item onto a friend (tap-to-select still works) */
@@ -2060,7 +2067,7 @@ let _dragTool=null,_dragGhost=null,_dragMoved=false,_dragStart=[0,0];
 function startToolDrag(ev,tool){ try{ev.preventDefault();}catch(e){} setHomeTool(tool); _dragTool=tool; _dragMoved=false; _dragStart=[ev.clientX||0,ev.clientY||0];
   window.addEventListener('pointermove',_dragMove); window.addEventListener('pointerup',_dragEnd,{once:true}); }
 function _dragMove(ev){ if(!_dragTool) return; if(!_dragMoved && Math.abs(ev.clientX-_dragStart[0])+Math.abs(ev.clientY-_dragStart[1])<8) return; _dragMoved=true;
-  if(!_dragGhost){ _dragGhost=document.createElement('div'); _dragGhost.className='dragghost'; _dragGhost.textContent=(CARE[_dragTool]||{}).emo||'💗'; document.body.appendChild(_dragGhost); }
+  if(!_dragGhost){ _dragGhost=document.createElement('div'); _dragGhost.className='dragghost'; _dragGhost.innerHTML=careIco(_dragTool,40); document.body.appendChild(_dragGhost); }
   _dragGhost.style.left=ev.clientX+'px'; _dragGhost.style.top=ev.clientY+'px'; }
 function _dragEnd(ev){ window.removeEventListener('pointermove',_dragMove); if(_dragGhost){ _dragGhost.remove(); _dragGhost=null; }
   if(_dragMoved && _dragTool){ const el=document.elementFromPoint(ev.clientX,ev.clientY); const friend=el&&el.closest&&el.closest('.placed[data-cid]'); if(friend){ HOMETOOL=_dragTool; petHome(friend,friend.dataset.cid); } }
@@ -2073,7 +2080,7 @@ function homeGridIds(){ const picks=((S.homePicks&&S.homePicks[S.currentWorld])|
 function ensureNeeds(ids){ S.homeNeeds=S.homeNeeds||{}; Object.keys(S.homeNeeds).forEach(k=>{ if(!ids.includes(k)) delete S.homeNeeds[k]; });
   let active=Object.keys(S.homeNeeds).length; const cap=Math.min(2,ids.length); const free=ids.filter(id=>!S.homeNeeds[id]);
   while(active<cap && free.length){ const id=free.splice(Math.floor(Math.random()*free.length),1)[0]; S.homeNeeds[id]=CARE_NEEDS[Math.floor(Math.random()*CARE_NEEDS.length)]; active++; } save(); }
-function applyNeedBubbles(room){ if(!room||!S.homeNeeds) return; Object.entries(S.homeNeeds).forEach(([id,need])=>{ let el; try{ el=room.querySelector('.placed[data-cid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]'); }catch(e){} if(el && !el.querySelector('.needbubble')){ const b=document.createElement('div'); b.className='needbubble'; b.textContent=(CARE[need]||{}).emo||'❓'; el.appendChild(b); } }); }
+function applyNeedBubbles(room){ if(!room||!S.homeNeeds) return; Object.entries(S.homeNeeds).forEach(([id,need])=>{ let el; try{ el=room.querySelector('.placed[data-cid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]'); }catch(e){} if(el && !el.querySelector('.needbubble')){ const b=document.createElement('div'); b.className='needbubble'; b.innerHTML=careIco(need,30); el.appendChild(b); } }); }
 function careProgress(){ S.careMeter=(S.careMeter||0)+1; S.currencies.coins+=1;
   const fill=$("#caremeterFill"); if(fill) fill.style.width=Math.min(100,Math.round(S.careMeter/CARE_GOAL*100))+'%';
   const hc=$("#hm_coins"); if(hc) hc.textContent=S.currencies.coins; if(typeof syncWallet==='function') syncWallet();
@@ -2169,7 +2176,7 @@ function renderHome(){
   const careWrap=$("#careWrap");
   if(gridFriends.length){ ensureNeeds(gridFriends.map(c=>c.id)); applyNeedBubbles(room);
     const meter=document.createElement('div'); meter.className='caremeter'; meter.innerHTML=`<i id="caremeterFill" style="width:${Math.min(100,Math.round((S.careMeter||0)/CARE_GOAL*100))}%"></i><span id="careLbl">💗 ${S.locale==='id'?'Rawat Lv':'Care Lv'}${S.careLevel||1}</span>`; room.appendChild(meter);
-    if(careWrap) careWrap.innerHTML=`<div class="carehint">${S.locale==='id'?'Pilih / seret alat ke teman sesuai gelembungnya 💗':'Tap or drag a tool onto a friend with the matching bubble 💗'}</div><div class="carebar">`+HOME_TOOLS.map(([tool,emo])=>`<button data-tool="${tool}" class="${tool===HOMETOOL?'sel':''}" onpointerdown="startToolDrag(event,'${tool}')" onclick="setHomeTool('${tool}')" aria-label="${tool}"><span class="cemoji">${emo}</span><span class="clabel">${nm(TOOL_LABEL[tool])}</span></button>`).join('')+`</div>`;
+    if(careWrap) careWrap.innerHTML=`<div class="carehint">${S.locale==='id'?'Pilih / seret alat ke teman sesuai gelembungnya 💗':'Tap or drag a tool onto a friend with the matching bubble 💗'}</div><div class="carebar">`+HOME_TOOLS.map(([tool,emo])=>`<button data-tool="${tool}" class="${tool===HOMETOOL?'sel':''}" onpointerdown="startToolDrag(event,'${tool}')" onclick="setHomeTool('${tool}')" aria-label="${tool}"><span class="cemoji">${careIco(tool,28)}</span><span class="clabel">${nm(TOOL_LABEL[tool])}</span></button>`).join('')+`</div>`;
   } else if(careWrap){ careWrap.innerHTML=''; }
   // tray: decoration shop — buying decor invites more friends to hang out
   const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);

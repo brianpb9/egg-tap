@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -196,6 +196,17 @@
   .dots5 i{width:12px;height:12px;border-radius:50%;background:#ddd;}
   .dots5 i.ok{background:var(--good);}
   .dots5 i.no{background:#ff9a8a;}
+  .skrow{padding:9px 16px;border-bottom:1px solid #f0e6d6;}
+  .sk-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;}
+  .sk-name{font-weight:800;color:#5a4a2a;font-size:13.5px;display:flex;align-items:center;gap:7px;}
+  .sk-chip{font-weight:800;border-radius:999px;padding:2px 11px;color:#fff;font-size:11px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.15);}
+  .sk-bar{height:10px;background:#ece2cf;border-radius:99px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.12);}
+  .sk-bar i{display:block;height:100%;border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1);}
+  .sk-dots{display:flex;gap:4px;margin-top:6px;}
+  .sk-dots i{width:9px;height:9px;border-radius:50%;background:#e0d6c4;}
+  .sk-dots i.ok{background:var(--good);}
+  .sk-dots i.no{background:#ff9a8a;}
+  .skrow.exp{background:linear-gradient(90deg,#fff7e6,#fffdf6);}
   .note{font-size:13px;color:var(--soft);line-height:1.4;}
   .lang{display:flex;gap:8px;}
   .lang button{flex:1;border-radius:14px;border:3px solid #eee;background:#fff;padding:10px;font-weight:800;font-family:inherit;cursor:pointer;}
@@ -419,7 +430,7 @@
 </style>
 </head>
 <body>
-<div id="rotate">📱 Putar ke posisi tegak ya!</div>
+<div id="rotate">📱 Please hold your device upright!</div>
 <div id="device">
   <!-- S0/S1 ONBOARDING -->
   <!-- S0 TITLE — branded animated landing -->
@@ -438,7 +449,7 @@
     <div class="ob-content">
       <div class="ob-hero">
         <img class="ob-egg" src="assets/bubu/mascot.png" alt="" />
-        <div class="logo">Wonder Egg World <small id="ob_tag">Tetaskan · Belajar · Koleksi</small></div>
+        <div class="logo">Wonder Egg World <small id="ob_tag">Hatch · Learn · Collect</small></div>
       </div>
       <div class="ob-sell" id="ob_sell">✨ Tetaskan 50+ makhluk lucu & belajar sambil bermain!</div>
       <div class="prof" style="background:rgba(255,255,255,.92)"><div style="width:60px;flex:0 0 auto" id="prof_av"></div>
@@ -503,7 +514,7 @@
 
   <!-- S5 ALBUM -->
   <section id="album" class="screen">
-    <div class="topbar"><div class="title" id="t_album">Album Makhluk</div>
+    <div class="topbar"><div class="title" id="t_album">Creature Album</div>
       <div class="coin">📚 <span id="ab_count">0</span>/<span id="ab_total">0</span><span id="ab_legend" style="margin-left:6px;color:#F4A300"></span></div></div>
     <div class="scroll" id="albumScroll"></div>
     <div class="nav"></div>
@@ -551,11 +562,11 @@
   <div class="modal" id="softStop">
     <div class="modalbox">
       <div style="font-size:54px">🌟</div>
-      <h2 id="ss_title">Hebat hari ini!</h2>
+      <h2 id="ss_title">Great job today!</h2>
       <p class="note" id="ss_sub"></p>
       <div class="rwbtns">
-        <button class="big mini" id="ss_again" onclick="closeModal('softStop'); newEgg();">Main lagi 🥚</button>
-        <button class="big mini ghost" id="ss_home" onclick="closeModal('softStop'); show('home');">Lihat Rumah 🏡</button>
+        <button class="big mini" id="ss_again" onclick="closeModal('softStop'); newEgg();">Play again 🥚</button>
+        <button class="big mini ghost" id="ss_home" onclick="closeModal('softStop'); show('home');">See Home 🏡</button>
       </div>
     </div>
   </div>
@@ -563,7 +574,7 @@
   <!-- PARENT GATE -->
   <div class="modal" id="gateModal">
     <div class="modalbox">
-      <h2 id="g_title">Zona Orang Tua</h2>
+      <h2 id="g_title">Parent Zone</h2>
       <p class="note" id="g_sub"></p>
       <div class="gateNums" id="gateNums"></div>
       <button class="ghost big" style="margin-top:14px;width:100%" onclick="closeModal('gateModal')" id="g_cancel">Batal</button>
@@ -583,7 +594,7 @@
 
   <!-- PARENT ZONE -->
   <section id="parent" class="screen">
-    <div class="topbar"><div class="title" id="t_parent">Zona Orang Tua</div>
+    <div class="topbar"><div class="title" id="t_parent">Parent Zone</div>
       <button class="corner" style="position:static" aria-label="Close" onclick="show('hatch')">✕</button></div>
     <div class="scroll">
       <div class="pad">
@@ -1587,15 +1598,17 @@ let _recentCh=[];
 const WORLD_FLAVOR={green_forest:'colors',sunny_beach:'numbers',candy_land:'shapes',dino_valley:'logic',ocean_kingdom:'animals',rainbow_meadow:'letters'}; // each world leans toward one learning theme
 function pickChallenge(){
   let skills=DATA.skills.map(s=>s.id);
-  if(S.ageBand>=5){ const num=DATA.skills.filter(s=>s.pillar==='numbers').map(s=>s.id); skills=skills.concat(num,num); } // age 5: extra math
+  if(S.ageBand>=5){ const HARD5=['numbers','logic','letters','memory']; skills=skills.filter(id=>{const sk=DATA.skills.find(s=>s.id===id); return sk&&HARD5.includes(sk.pillar);}); if(!skills.length) skills=DATA.skills.map(s=>s.id); const num=DATA.skills.filter(s=>s.pillar==='numbers').map(s=>s.id); skills=skills.concat(num); } // age 5: only challenging areas — drop basic colour/shape/animal/feeling recognition; extra math
   const flav=WORLD_FLAVOR[S.currentWorld]; // each world leans toward a learning theme (subtle identity + variety)
-  if(flav && Math.random()<0.45){ const fs=DATA.skills.filter(s=>s.pillar===flav).map(s=>s.id); if(fs.length) skills=fs; }
+  if(flav && Math.random()<0.45){ let fs=DATA.skills.filter(s=>s.pillar===flav).map(s=>s.id); if(S.ageBand>=5) fs=fs.filter(id=>skills.includes(id)); if(fs.length) skills=fs; }
   const sk=skills[Math.floor(Math.random()*skills.length)]; // random skill each time → less repetitive
   const minTier=(S.ageBand>=5?3:1); // age 5: never serve easy (tier 1-2) challenges
   const tier=Math.max(minTier,tierFor(sk));
+  const okP=(c)=>{ if(S.ageBand<5) return true; const sk2=DATA.skills.find(s=>s.id===c.skill); return sk2 && ['numbers','logic','letters','memory'].includes(sk2.pillar); }; // age 5: keep fallbacks out of easy pillars
   let pool=DATA.challenges.filter(c=>c.skill===sk&&c.tier===tier);
   if(!pool.length) pool=DATA.challenges.filter(c=>c.skill===sk&&c.tier>=minTier);
-  if(!pool.length) pool=DATA.challenges.filter(c=>c.tier>=minTier);
+  if(!pool.length) pool=DATA.challenges.filter(c=>c.tier>=minTier&&okP(c));
+  if(!pool.length) pool=DATA.challenges.filter(okP);
   if(!pool.length) pool=DATA.challenges;
   let cand=pool.filter(c=>!_recentCh.includes(c.id)); if(!cand.length) cand=pool; // no immediate repeats
   const pick=cand[Math.floor(Math.random()*cand.length)];
@@ -2080,9 +2093,12 @@ function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newS
   $("#skillList").innerHTML=ageRow+audioRow+learnRow+adsRow
     +`<div class="setbar"><span>${en?'Mastery by area':'Penguasaan per bidang'}</span></div>`+pillHtml+callout
     +`<div class="setbar"><span>${en?'Skill detail':'Detail keterampilan'}</span></div>`
-    +DATA.skills.map(sk=>{ const sp=S.skillProgress[sk.id]||{tier:1,last5:[]};
-      const dots=Array.from({length:5},(_,i)=>{ const v=sp.last5[i]; return `<i class="${v===1?'ok':v===0?'no':''}"></i>`; }).join("");
-      return `<div class="skillrow"><div class="lab">${nm(sk.label)}</div><div class="dots5">${dots}</div><div class="tiertag">${nm(TIER_NAMES[sp.tier]||{id:'T'+sp.tier,en:'T'+sp.tier})}</div></div>`; }).join("");
+    +(function(){ const PILLEMO={colors:'🎨',shapes:'🔷',animals:'🐾',numbers:'🔢',letters:'🔤',emotions:'😊',logic:'🧩',memory:'🧠',observation:'👀'};
+      return DATA.skills.map(sk=>{ const sp=S.skillProgress[sk.id]||{tier:1,last5:[]}; const t=sp.tier||1;
+        const col=t>=4?'#F4A300':t>=3?'#9b59f0':t>=2?'#4d9be0':'#7BC950'; const pct=Math.round(t/4*100);
+        const dots=Array.from({length:5},(_,i)=>{ const v=sp.last5[i]; return `<i class="${v===1?'ok':v===0?'no':''}"></i>`; }).join("");
+        const emo=PILLEMO[sk.pillar]||'⭐';
+        return `<div class="skrow${t>=4?' exp':''}"><div class="sk-top"><span class="sk-name">${emo} ${nm(sk.label)}</span><span class="sk-chip" style="background:${col}">${t>=4?'⭐ ':''}${nm(TIER_NAMES[t]||{id:'T'+t,en:'T'+t})}</span></div><div class="sk-bar"><i style="width:${pct}%;background:linear-gradient(90deg,${col}bb,${col})"></i></div><div class="sk-dots">${dots}</div></div>`; }).join(""); })();
   $("#lang_id").classList.toggle("on",S.locale==="id"); $("#lang_en").classList.toggle("on",S.locale==="en");
 }
 function setAgeBand(a){ S.ageBand=a; save(); try{SFX.tap();}catch(e){} renderParent(); toast((S.locale==='id'?'Umur diatur ke ':'Age set to ')+a+' 🎯'); }

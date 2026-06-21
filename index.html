@@ -1552,9 +1552,12 @@ function recordAttempt(s,ok){
   if(ok){ S.stats.correct++; missionProgress('correct'); if(!(S.stats.weekSkills||(S.stats.weekSkills=[])).includes(s)) S.stats.weekSkills.push(s); }
 }
 let _recentCh=[];
+const WORLD_FLAVOR={green_forest:'colors',sunny_beach:'numbers',candy_land:'shapes',dino_valley:'logic',ocean_kingdom:'animals',rainbow_meadow:'letters'}; // each world leans toward one learning theme
 function pickChallenge(){
   let skills=DATA.skills.map(s=>s.id);
   if(S.ageBand>=5){ const num=DATA.skills.filter(s=>s.pillar==='numbers').map(s=>s.id); skills=skills.concat(num,num); } // age 5: extra math
+  const flav=WORLD_FLAVOR[S.currentWorld]; // each world leans toward a learning theme (subtle identity + variety)
+  if(flav && Math.random()<0.45){ const fs=DATA.skills.filter(s=>s.pillar===flav).map(s=>s.id); if(fs.length) skills=fs; }
   const sk=skills[Math.floor(Math.random()*skills.length)]; // random skill each time → less repetitive
   const tier=tierFor(sk);
   let pool=DATA.challenges.filter(c=>c.skill===sk&&c.tier===tier);

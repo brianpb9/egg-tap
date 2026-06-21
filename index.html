@@ -1446,7 +1446,7 @@ function newEgg(){
   $("#eggwrap").innerHTML='<div class="eggglow" id="eggGlow"></div>'+eggMarkup(LOOP.egg)+CRACKFX;
   $("#eggwrap").classList.remove("jolt"); $("#eggwrap").classList.toggle("kingegg",!!egg.king);
   setCue(egg.king?(S.locale==='id'?'👑 TELUR RAJA! Ketuk 10×!':'👑 KING EGG! Tap 10×!'):t("tap_cue")); updateDots(); syncWallet();
-  if(egg.king) toast(S.locale==='id'?'👑 Telur Raja! Ada Legenda di dalam!':'👑 King Egg! A Legend awaits!');
+  if(egg.king){ haptic([0,30,40,80]); toast(S.locale==='id'?'👑 Telur Raja! Ada Legenda di dalam!':'👑 King Egg! A Legend awaits!'); }
   else if(egg.wish) toast(S.locale==='id'?'⭐ Permintaan terkabul! Telur spesial gratis! ✨':'⭐ Wish granted! A free special egg! ✨');
   else if(egg.epic) toast(S.locale==='id'?'✨ Telur Spesial! Peluang langka lebih besar':'✨ Special Egg! Better odds for rare friends');
   { const th=$("#tapHint"); if(th){ th.textContent=S.locale==='id'?'👆 Ketuk!':'👆 Tap!'; th.style.display=S.tutDone?"none":"block"; } }
@@ -1508,6 +1508,7 @@ function revealCreature(c){
   const big=c.rarity==="legend", epicish=c.rarity==="epic"||c.rarity==="magic";
   const n = big?80 : epicish?60 : c.rarity==="rare"?36 : 24;
   burst(n,$("#fx"),true);
+  haptic(big?[0,40,60,40,90]:epicish?[0,30,40,70]:c.rarity==="rare"?[0,25,40]:20); // celebratory buzz scaled to rarity
   SFX.fanfare(c.rarity); if(big) legendaryCelebration();
   setTimeout(()=>SFX.signature(c.id),250);
   $("#eggwrap").innerHTML=`<div class="reveal" id="revealCr">${creatureMarkup(c,210)}</div>`;
@@ -1593,7 +1594,7 @@ function answer(el){
     burst(24,$("#fx"),true); const p=DATA.praise[S.locale][Math.floor(Math.random()*DATA.praise[S.locale].length)];
     if(!voPraise()) speak(p); setCue(p); awardBadges(); LOOP.answered=true;
     setTimeout(finishChallenge,700);
-  } else { SFX.oops(); el.classList.add("wrong","dim"); LOOP.wrongs++; recordAttempt(ch.skill,false);
+  } else { SFX.oops(); haptic(8); el.classList.add("wrong","dim"); LOOP.wrongs++; recordAttempt(ch.skill,false);
     if(!vo("oops")) speak(DATA.oops[S.locale][Math.floor(Math.random()*DATA.oops[S.locale].length)]); escalateHint(); }
 }
 function answerSeq(el){
@@ -1699,7 +1700,7 @@ function celebrateComplete(){ const en=S.locale!=='id';
     <div class="wc-title">${en?'COLLECTION COMPLETE!':'KOLEKSI LENGKAP!'}</div>
     <div class="wc-world">${en?'You found all 60 friends!':'Semua 60 teman terkumpul!'}</div>
     <button class="wc-go" onclick="closeWorldCelebrate()">${en?'Yay! 🎉':'Hore! 🎉'}</button></div>`;
-  ov.classList.add('active'); try{ burst(70,ov,true); SFX.fanfare&&SFX.fanfare('legend'); if(typeof legendaryCelebration==='function') legendaryCelebration(); }catch(e){} }
+  ov.classList.add('active'); try{ burst(70,ov,true); SFX.fanfare&&SFX.fanfare('legend'); haptic([0,50,60,50,70,50,100]); if(typeof legendaryCelebration==='function') legendaryCelebration(); }catch(e){} }
 function celebrateWorld(id){ const w=world(id); if(!w) return; const en=S.locale!=='id'; const mascot=creaturesOf(w.sets).find(c=>!c.legend);
   let ov=document.getElementById('worldCelebrate');
   if(!ov){ ov=document.createElement('div'); ov.id='worldCelebrate'; ov.className='overlay'; $("#device").appendChild(ov); }
@@ -1710,7 +1711,7 @@ function celebrateWorld(id){ const w=world(id); if(!w) return; const en=S.locale
     <div class="wc-world">${w.emoji||'🗺️'} ${nm(w.name)}</div>
     <button class="wc-go" onclick="gotoNewWorld('${id}')">${en?'Explore now →':'Jelajahi →'}</button>
     <button class="wc-later" onclick="closeWorldCelebrate()">${en?'Later':'Nanti'}</button></div>`;
-  ov.classList.add('active'); try{ burst(40,ov,true); SFX.fanfare&&SFX.fanfare('legend'); }catch(e){}
+  ov.classList.add('active'); try{ burst(40,ov,true); SFX.fanfare&&SFX.fanfare('legend'); haptic([0,40,60,40,90]); }catch(e){}
 }
 function closeWorldCelebrate(){ const ov=document.getElementById('worldCelebrate'); if(ov) ov.classList.remove('active'); }
 function gotoNewWorld(id){ closeWorldCelebrate(); try{SFX.tap&&SFX.tap();}catch(e){} S.currentWorld=id; save(); refreshBGM(); show('hatch'); newEgg(); }

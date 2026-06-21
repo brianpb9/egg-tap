@@ -704,9 +704,9 @@ const DATA = {
   ],
 
   dropTables: {
-    drop_common_default:{ pity:5, dupCurrency:"coins",    dupAmount:10, entries:[{rarity:"common",weight:72},{rarity:"rare",weight:23},{rarity:"magic",weight:5}] },
-    drop_rare_default:  { pity:3, dupCurrency:"stardust", dupAmount:15, entries:[{rarity:"rare",weight:78},{rarity:"magic",weight:22}] },
-    drop_magic_default: { pity:3, dupCurrency:"stardust", dupAmount:25, entries:[{rarity:"rare",weight:40},{rarity:"magic",weight:60}] },
+    drop_common_default:{ pity:5, dupCurrency:"coins",    dupAmount:10, entries:[{rarity:"common",weight:70},{rarity:"rare",weight:20},{rarity:"epic",weight:7.5},{rarity:"legend",weight:2.5}] }, // ladder: common easiest -> legend 2.5%
+    drop_rare_default:  { pity:3, dupCurrency:"stardust", dupAmount:15, entries:[{rarity:"rare",weight:55},{rarity:"epic",weight:35},{rarity:"legend",weight:10}] }, // EPIC/special eggs: much better odds
+    drop_magic_default: { pity:3, dupCurrency:"stardust", dupAmount:25, entries:[{rarity:"rare",weight:35},{rarity:"epic",weight:55},{rarity:"legend",weight:10}] },
     drop_legend_default:{ pity:1, dupCurrency:"stardust", dupAmount:50, entries:[{rarity:"legend",weight:100}] },
   },
 
@@ -1567,13 +1567,14 @@ function rollCreature(egg){
   if(egg.daily){ S.dailyEggReady=false; const un=creaturesOf(world(S.currentWorld).sets).filter(c=>!c.legend&&!S.owned[c.id]); if(un.length) return un[Math.floor(Math.random()*un.length)]; } // Daily Surprise = a friend you don't have yet
   if(egg.king){ const legs=DATA.creatures.filter(c=>c.legend); return legs[Math.floor(Math.random()*legs.length)]||DATA.creatures[0]; } // King Egg -> guaranteed Legend
   const dt=DATA.dropTables[egg.dropTableId]; const w=world(S.currentWorld);
-  const pool=creaturesOf(w.sets).filter(c=>!c.legend); // legendaries only via set completion
+  const all=creaturesOf(w.sets); const pool=all.filter(c=>!c.legend); // pity + non-legend rolls use the non-legend pool
   S.pity[egg.dropTableId]=(S.pity[egg.dropTableId]||0)+1;
   const unowned=pool.filter(c=>!S.owned[c.id]);
-  if(unowned.length && S.pity[egg.dropTableId]>=dt.pity){ S.pity[egg.dropTableId]=0; return unowned[Math.floor(Math.random()*unowned.length)]; }
+  if(unowned.length && S.pity[egg.dropTableId]>=dt.pity){ S.pity[egg.dropTableId]=0; return unowned[Math.floor(Math.random()*unowned.length)]; } // pity gives a NEW non-legend (never shortcuts the 2.5% legend)
   const total=dt.entries.reduce((s,e)=>s+e.weight,0); let r=Math.random()*total, picked=dt.entries[0];
   for(const e of dt.entries){ r-=e.weight; if(r<=0){ picked=e; break; } }
-  let cand=pool.filter(c=>c.rarity===picked.rarity); if(!cand.length) cand=pool;
+  let cand = picked.rarity==='legend' ? all.filter(c=>c.legend) : pool.filter(c=>c.rarity===picked.rarity); // legend roll -> this world's legendary
+  if(!cand.length) cand=pool;
   const chosen=cand[Math.floor(Math.random()*cand.length)];
   if(!S.owned[chosen.id]) S.pity[egg.dropTableId]=0;
   return chosen;

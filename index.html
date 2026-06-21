@@ -1060,7 +1060,8 @@ const SFX={
 let _bgmTimer=null, _bgmStep=0, _bgmAudio=null;
 // Real-music slot: fill these once mp3/ogg loops are added under assets/audio/bgm/.
 // While empty, the layered WebAudio synth plays instead (offline-first, no files needed).
-const BGMFILE={ /* green_forest:'assets/audio/bgm/forest.mp3', sunny_beach:'assets/audio/bgm/beach.mp3', candy_land:'assets/audio/bgm/candy.mp3', dino_valley:'assets/audio/bgm/dino.mp3', ocean_kingdom:'assets/audio/bgm/ocean.mp3', rainbow_meadow:'assets/audio/bgm/meadow.mp3' */ };
+const BGMFILE={ green_forest:'assets/audio/bgm/forest.mp3', sunny_beach:'assets/audio/bgm/beach.mp3', candy_land:'assets/audio/bgm/candy.mp3', dino_valley:'assets/audio/bgm/dino.mp3', ocean_kingdom:'assets/audio/bgm/ocean.mp3', rainbow_meadow:'assets/audio/bgm/meadow.mp3' };
+const BGMTITLE='assets/audio/bgm/title.mp3';
 const BGM_SCALE=[392.00,440.00,523.25,587.33,659.25,783.99];
 // each world gets its own gentle musical mood
 const WORLD_BGM={
@@ -1081,13 +1082,14 @@ function bgmStep(){ if(!AC||(S.settings&&S.settings.music===false)) return;
   if(_bgmStep%4===0) musicNote(sc[0]/2,1.8,0.03,"sine",520);                          // gentle bass
   if(_bgmStep%8===3) musicNote(sc[5]*2,0.55,0.014,"sine",2200);                       // airy shimmer
   _bgmStep++; }
+function curTrack(){ const t=document.getElementById('title'); if(t&&t.classList.contains('active')&&BGMTITLE) return BGMTITLE; return BGMFILE[S.currentWorld]; }
 function startBGM(){ if(S.settings&&S.settings.music===false) return;
-  const f=BGMFILE[S.currentWorld];
-  if(f){ if(_bgmTimer){clearInterval(_bgmTimer);_bgmTimer=null;} // real music file for this world
-    try{ if(!_bgmAudio){ _bgmAudio=new Audio(); _bgmAudio.loop=true; _bgmAudio.volume=0.55; } if(!_bgmAudio.src||_bgmAudio.src.indexOf(f)<0){ _bgmAudio.src=f; } _bgmAudio.play().catch(()=>{}); }catch(e){} return; }
+  const f=curTrack();
+  if(f){ if(!AUDIO_READY) return; if(_bgmTimer){clearInterval(_bgmTimer);_bgmTimer=null;} // real music file — only load after a user gesture (no wasteful preload, autoplay blocked anyway)
+    try{ if(!_bgmAudio){ _bgmAudio=new Audio(); _bgmAudio.loop=true; _bgmAudio.volume=0.5; _bgmAudio.preload='none'; } if(_bgmAudio.getAttribute('src')!==f){ _bgmAudio.setAttribute('src',f); _bgmAudio.load(); } _bgmAudio.play().catch(()=>{}); }catch(e){} return; }
   if(_bgmTimer) return; _bgmTimer=setInterval(bgmStep,720); } // fall back to layered synth
 function stopBGM(){ if(_bgmTimer){clearInterval(_bgmTimer);_bgmTimer=null;} if(_bgmAudio){ try{_bgmAudio.pause();}catch(e){} } }
-function refreshBGM(){ if(!Object.keys(BGMFILE).length) return; stopBGM(); startBGM(); } // switch track when world changes (file mode)
+function refreshBGM(){ const f=curTrack(); if(_bgmAudio && _bgmAudio.getAttribute('src')===f && !_bgmAudio.paused) return; startBGM(); } // switch track when world/screen changes
 function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; S.settings.music=!S.settings.music; save();
   if(S.settings.music) startBGM(); else stopBGM(); const b=$("#musicBtn"); if(b) b.innerHTML=S.settings.music?ICON.music:ICON.muted; }
 function haptic(p){ try{ if(navigator.vibrate && !(S.settings&&S.settings.sfx===false)) navigator.vibrate(p); }catch(e){} }
@@ -1329,6 +1331,7 @@ function show(id){
   if(id==="parent")renderParent();
   if(id==="hatch"){ syncWallet(); resumeHatch(); }
   $$(".nav button").forEach(b=>b.classList.toggle("sel", b.dataset.scr===id));
+  if(typeof refreshBGM==='function') refreshBGM(); // music follows the screen (title theme vs world track)
 }
 // Anti-softlock: returning to Hatch must always leave a tappable egg unless mid-challenge/reward.
 function resumeHatch(){

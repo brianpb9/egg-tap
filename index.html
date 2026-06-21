@@ -413,6 +413,8 @@
   .zoomclose{position:absolute;top:-16px;right:-12px;z-index:6;width:38px;height:38px;border-radius:50%;border:none;background:#fff;font-weight:800;font-size:17px;color:#7a572b;box-shadow:var(--shadow);cursor:pointer;}
   .zoomfav{position:relative;z-index:2;margin-top:10px;border:2px solid #ffcf5c;background:#fff;color:#7a5a2e;font-weight:800;font-size:14px;padding:7px 18px;border-radius:999px;cursor:pointer;}
   .zoomfav.on{background:linear-gradient(180deg,#ffe08a,#ffcf5c);color:#6a4a10;}
+  .zoombtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px;}
+  .zoombtns .zoomfav{margin-top:0;font-size:13px;padding:7px 14px;}
   /* new-world celebration */
   .wc-card{background:radial-gradient(circle at 50% 30%,#fffdf6,#fff0d0);border:4px solid #ffcf5c;border-radius:28px;padding:18px 26px 22px;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.3),0 0 30px rgba(244,163,0,.5);max-width:80%;animation:zoompop .35s cubic-bezier(.2,.8,.3,1.2);position:relative;}
   .wc-burst{font-size:30px;}
@@ -456,6 +458,8 @@
   .carebar button{width:54px;border-radius:15px;border:3px solid #fff;background:linear-gradient(180deg,#ffffff,#ffe9f4);cursor:pointer;box-shadow:0 3px 0 #e58cbf;transition:transform .12s;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px 4px;}
   .carebar .cemoji{font-size:22px;line-height:1;}
   .carebar .clabel{font-size:9px;font-weight:800;color:#9a5577;}
+  .carebar button{touch-action:none;}
+  .dragghost{position:fixed;font-size:36px;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 5px rgba(0,0,0,.35));}
   .carebar button.sel{background:linear-gradient(180deg,#c3f0a4,#8add5f);border-color:#fff;box-shadow:0 3px 0 #5fb83e;transform:translateY(-3px) scale(1.06);}
   .carebar button:active{transform:translateY(1px);}
   .needbubble{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:20px;background:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.22);z-index:30;animation:needbob 1s ease-in-out infinite;pointer-events:none;}
@@ -2006,13 +2010,19 @@ function openCardZoom(c){ const en=S.locale!=='id'; const dup=S.owned[c.id]||1;
     <div class="zoomchar">${creatureMarkup(c,190)}</div>
     <div class="zoomname">${nm(c.name)}</div>
     <div class="zoommeta">${world(c.world)?nm(world(c.world).name):''} · ${en?'collected':'punya'} ×${dup}</div>
-    <button class="zoomfav ${S.favorite===c.id?'on':''}" onclick="toggleFavorite('${c.id}')">${S.favorite===c.id?(en?'★ Favorite':'★ Favorit'):(en?'☆ Make favorite':'☆ Jadikan favorit')}</button>
+    <div class="zoombtns"><button class="zoomfav ${S.favorite===c.id?'on':''}" onclick="toggleFavorite('${c.id}')">${S.favorite===c.id?(en?'★ Favorite':'★ Favorit'):(en?'☆ Favorite':'☆ Favorit')}</button>
+    ${S.owned[c.id]?`<button class="zoomfav ${isHomePick(c)?'on':''}" onclick="toggleHomePick('${c.id}')">${isHomePick(c)?(en?'🏡 In Home ✓':'🏡 Di Rumah ✓'):(en?'🏡 Show in Home':'🏡 Ke Rumah')}</button>`:''}</div>
     <button class="zoomclose" onclick="closeCardZoom()" aria-label="close">✕</button></div>`;
   ov.classList.add('active');
   try{ burst(c.rarity==='legend'?30:c.rarity==='epic'||c.rarity==='magic'?20:12, ov, true); }catch(e){}
 }
 function closeCardZoom(){ const ov=document.getElementById('cardZoom'); if(ov) ov.classList.remove('active'); }
 function toggleFavorite(id){ S.favorite=(S.favorite===id?null:id); save(); try{SFX.star&&SFX.star();}catch(e){} const c=creature(id); toast(S.favorite?(S.locale==='id'?'★ '+nm(c.name)+' jadi favoritmu!':'★ '+nm(c.name)+' is your favorite!'):(S.locale==='id'?'Favorit dihapus':'Favorite cleared')); const cc=creature(id); if(cc) openCardZoom(cc); }
+function isHomePick(c){ return c?(((S.homePicks&&S.homePicks[c.world])||[]).includes(c.id)):false; }
+function toggleHomePick(id){ const c=creature(id); if(!c) return; S.homePicks=S.homePicks||{}; const arr=S.homePicks[c.world]=S.homePicks[c.world]||[]; const i=arr.indexOf(id);
+  if(i>=0){ arr.splice(i,1); toast(S.locale==='id'?nm(c.name)+' keluar dari Rumah':nm(c.name)+' left Home'); }
+  else { if(arr.length>=5){ try{SFX.oops&&SFX.oops();}catch(e){} toast(S.locale==='id'?'Rumah penuh (maks 5) — lepas satu dulu':'Home is full (max 5) — remove one first'); return; } arr.push(id); try{SFX.tap&&SFX.tap();}catch(e){} toast(S.locale==='id'?'🏡 '+nm(c.name)+' pindah ke Rumah!':'🏡 '+nm(c.name)+' moved to Home!'); }
+  save(); openCardZoom(c); }
 
 /* ===================== HOME ===================== */
 const HOME_LEVELS={1:{id:"Kamar",en:"Cozy Room"},2:{id:"Taman",en:"Garden"},3:{id:"Taman Main",en:"Playground"},4:{id:"Rumah Pohon",en:"Treehouse"},5:{id:"Istana",en:"Castle"}};
@@ -2024,10 +2034,21 @@ const HOME_TOOLS=[['pat','💗'],['feed','🍓'],['wash','🧼'],['play','🎵']
 const CARE={pat:{emo:'💗'},feed:{emo:'🍓',extra:'😋'},wash:{emo:'🧼',extra:'✨'},play:{emo:'🎵',extra:'🎉'},sleep:{emo:'😴',extra:'💤'}};
 const TOOL_LABEL={pat:{en:'Love',id:'Belai'},feed:{en:'Feed',id:'Makan'},wash:{en:'Bath',id:'Mandi'},play:{en:'Play',id:'Main'},sleep:{en:'Sleep',id:'Tidur'}};
 function setHomeTool(tool){ HOMETOOL=tool; document.querySelectorAll('.carebar button').forEach(b=>b.classList.toggle('sel',b.dataset.tool===tool)); try{SFX.tap&&SFX.tap();}catch(e){} }
+/* drag a care item onto a friend (tap-to-select still works) */
+let _dragTool=null,_dragGhost=null,_dragMoved=false,_dragStart=[0,0];
+function startToolDrag(ev,tool){ try{ev.preventDefault();}catch(e){} setHomeTool(tool); _dragTool=tool; _dragMoved=false; _dragStart=[ev.clientX||0,ev.clientY||0];
+  window.addEventListener('pointermove',_dragMove); window.addEventListener('pointerup',_dragEnd,{once:true}); }
+function _dragMove(ev){ if(!_dragTool) return; if(!_dragMoved && Math.abs(ev.clientX-_dragStart[0])+Math.abs(ev.clientY-_dragStart[1])<8) return; _dragMoved=true;
+  if(!_dragGhost){ _dragGhost=document.createElement('div'); _dragGhost.className='dragghost'; _dragGhost.textContent=(CARE[_dragTool]||{}).emo||'💗'; document.body.appendChild(_dragGhost); }
+  _dragGhost.style.left=ev.clientX+'px'; _dragGhost.style.top=ev.clientY+'px'; }
+function _dragEnd(ev){ window.removeEventListener('pointermove',_dragMove); if(_dragGhost){ _dragGhost.remove(); _dragGhost=null; }
+  if(_dragMoved && _dragTool){ const el=document.elementFromPoint(ev.clientX,ev.clientY); const friend=el&&el.closest&&el.closest('.placed[data-cid]'); if(friend){ HOMETOOL=_dragTool; petHome(friend,friend.dataset.cid); } }
+  _dragTool=null; _dragMoved=false; }
 function floatEmote(el,ch,dx){ const room=$("#room"); if(!room||!el)return; const s=document.createElement('span'); s.className='floatemote'; s.textContent=ch;
   const x=el.offsetLeft+(el.offsetWidth/2)+(dx||0), y=el.offsetTop-4;
   s.style.left=(x-12)+'px'; s.style.top=y+'px'; room.appendChild(s); setTimeout(()=>s.remove(),1000); }
 const CARE_NEEDS=['feed','wash','play','sleep']; const CARE_GOAL=6;
+function homeGridIds(){ const picks=((S.homePicks&&S.homePicks[S.currentWorld])||[]).map(creature).filter(c=>c&&S.owned[c.id]&&c.world===S.currentWorld); const all=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld); return (picks.length?picks:all).slice(0,5).map(c=>c.id); }
 function ensureNeeds(ids){ S.homeNeeds=S.homeNeeds||{}; Object.keys(S.homeNeeds).forEach(k=>{ if(!ids.includes(k)) delete S.homeNeeds[k]; });
   let active=Object.keys(S.homeNeeds).length; const cap=Math.min(3,ids.length); const free=ids.filter(id=>!S.homeNeeds[id]);
   while(active<cap && free.length){ const id=free.splice(Math.floor(Math.random()*free.length),1)[0]; S.homeNeeds[id]=CARE_NEEDS[Math.floor(Math.random()*CARE_NEEDS.length)]; active++; } save(); }
@@ -2038,7 +2059,7 @@ function careProgress(){ S.careMeter=(S.careMeter||0)+1; S.currencies.coins+=1;
   if(S.careMeter>=CARE_GOAL){ S.careMeter=0; S.currencies.coins+=10; try{SFX.fanfare&&SFX.fanfare('rare');}catch(e){} try{burst&&burst(22,$("#room"),true);}catch(e){}
     toast((S.locale==='id'?'🎉 Semua teman bahagia!':'🎉 All friends are happy!')+' +10 🪙');
     if(fill) setTimeout(()=>{fill.style.width='0%';},450); if(hc) hc.textContent=S.currencies.coins; if(typeof syncWallet==='function') syncWallet();
-    setTimeout(()=>{ const home=document.getElementById('home'); const room=$("#room"); if(home&&home.classList.contains('active')&&room){ ensureNeeds(Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld).map(c=>c.id)); applyNeedBubbles(room); } },500); }
+    setTimeout(()=>{ const home=document.getElementById('home'); const room=$("#room"); if(home&&home.classList.contains('active')&&room){ ensureNeeds(homeGridIds()); applyNeedBubbles(room); } },500); }
   save(); }
 function petHome(el,id){ const cw=el.querySelector('.cwrap'); const react=()=>{ if(cw){ cw.classList.remove('react'); void cw.offsetWidth; cw.classList.add('react'); } }; haptic(12);
   const need=S.homeNeeds&&S.homeNeeds[id];
@@ -2056,7 +2077,7 @@ function homeIdle(){ const home=document.getElementById('home'); const room=$("#
   const els=[...room.querySelectorAll('.placed.floaty')]; if(!els.length) return;
   const el=els[Math.floor(Math.random()*els.length)]; const b=document.createElement('span'); b.className='moodbubble'; b.textContent=['💗','🎵','✨','😴','💤'][Math.floor(Math.random()*5)];
   b.style.left=(el.offsetLeft+(el.offsetWidth/2))+'px'; b.style.top=(el.offsetTop-8)+'px'; room.appendChild(b); setTimeout(()=>b.remove(),2200);
-  if(Math.random()<0.5){ const ids=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld).map(c=>c.id); const before=Object.keys(S.homeNeeds||{}).length; ensureNeeds(ids); if(Object.keys(S.homeNeeds).length>before) applyNeedBubbles(room); } } // keep care needs flowing
+  if(Math.random()<0.5){ const before=Object.keys(S.homeNeeds||{}).length; ensureNeeds(homeGridIds()); if(Object.keys(S.homeNeeds).length>before) applyNeedBubbles(room); } } // keep care needs flowing
 // left/top are PERCENT of the room (robust against clientHeight races); centered via negative margins
 function mkFriend(room,c,leftPct,topPct,size,z,cls){ if(!room||!c)return null; const el=document.createElement("div"); el.className="placed "+(cls||"floaty"); el.style.left=leftPct+"%"; el.style.top=topPct+"%"; el.style.width=size+"px"; el.style.marginLeft=(-size/2)+"px"; el.style.marginTop=(-size/2)+"px"; el.style.zIndex=z; el.dataset.cid=c.id; el.innerHTML=`<div class="cwrap">${creatureMarkup(c,size)}</div>`; el.onclick=()=>petHome(el,c.id); room.appendChild(el); return el; }
 function homeToday(){ try{ return new Date().toDateString(); }catch(e){ return 'day'; } }
@@ -2078,18 +2099,16 @@ function renderHome(){
   const w=world(S.currentWorld), room=$("#room");
   const friendsAll=Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld);
   const decor=S.home.filter(it=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); return d&&d.world===S.currentWorld; }); // only THIS world's decor — no clutter from other worlds
-  const visitorPool=Object.keys(S.owned).map(creature).filter(c=>c&&c.world!==S.currentWorld);
-  const visitors=visitorPool.slice(0, Math.min(4, decor.length*2)); // decorations invite a few visiting friends — capped at 4 so it never gets crowded
-  const showFriends=friendsAll.concat(visitors); // owned-world friends ALWAYS show; visitors are a bonus
+  const picks=((S.homePicks&&S.homePicks[S.currentWorld])||[]).map(creature).filter(c=>c&&S.owned[c.id]&&c.world===S.currentWorld);
+  const gridFriends=(picks.length?picks:friendsAll).slice(0,5); // your chosen 5 (pick in the Album), else auto-show the first owned
   const lvl=homeLevel(friendsAll.length+decor.length);
   $("#t_home").textContent=`${t("home")} · ${nm(world(S.currentWorld).name)} · Lv${lvl}`;
   room.style.background=`url('${HOMEFLAT[S.currentWorld]||HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`;
   const wtotal=creaturesOf(w.sets).length;
-  const canInvite=visitorPool.length>visitors.length;
   const chip = !friendsAll.length ? (S.locale==='id'?'Tetaskan teman dulu! 🥚':'Hatch some friends first! 🥚')
     : `🐾 ${friendsAll.length}/${wtotal} `+(S.locale==='id'?'terkumpul':'collected')
       +(friendsAll.length<wtotal?` · ${S.locale==='id'?'tetaskan lagi!':'hatch more!'}`:` 🏆 ${S.locale==='id'?'lengkap!':'complete!'}`)
-      +(visitors.length?` · +${visitors.length} ${S.locale==='id'?'tamu':'visiting'}`:'');
+      +(friendsAll.length>5?` · ${picks.length?(S.locale==='id'?'pilihanmu':'your picks'):(S.locale==='id'?'pilih di Album':'pick in Album')}`:'');
   room.innerHTML=`<div class="ground"></div><div class="floatlabel">${chip}</div>`;
   const rw=room.clientWidth||340;
   // --- decorations: small back row along the lawn horizon, evenly spread (percent positions)
@@ -2098,8 +2117,7 @@ function renderHome(){
     const size=dn>5?42:50, leftPct=((i+1)/(dn+1))*100, topPct=66+(i%2)*4; // sit ON the grass (not floating in the sky), spread evenly, slight stagger
     const de=document.createElement("div"); de.className="placed grounded"; de.style.left=leftPct+"%"; de.style.top=topPct+"%"; de.style.width=size+"px"; de.style.marginLeft=(-size/2)+"px"; de.style.marginTop=(-size/2)+"px"; de.style.zIndex=Math.round(topPct*4); de.innerHTML=decoMarkup(d,size); room.appendChild(de); });
   // --- friends: tidy grid across the floor (capped & scaled so they never pile up or hide behind UI)
-  const gridFriends=showFriends.slice(0,5); // habitat snapshot — at most 5 so they stay big & tidy (full roster lives in the Album)
-  const n=gridFriends.length;
+  const n=gridFriends.length; // gridFriends defined above (your chosen 5, else auto)
   if(n){ const rh=room.clientHeight||Math.round(rw*1.25);
     const cols=Math.min(3,Math.max(2,Math.ceil(n/2))), rows=Math.ceil(n/cols); // up to 3 across -> 1-2 tidy rows
     const bandTop=60, bandBot=88, bandH=bandBot-bandTop; // ON the grass (not floating in the sky), clear of the room edge
@@ -2114,9 +2132,9 @@ function renderHome(){
     if(ge){ ge.onclick=()=>tapGuest(ge); const tag=document.createElement('div'); tag.className='guesttag'; tag.textContent=(S.locale==='id'?'✨ Tamu!':'✨ Guest!'); ge.appendChild(tag); } } }
   // --- care loop: needs + happiness meter (in room) + tool bar (own strip below the room, so it never covers friends)
   const careWrap=$("#careWrap");
-  if(friendsAll.length){ ensureNeeds(friendsAll.map(c=>c.id)); applyNeedBubbles(room);
+  if(gridFriends.length){ ensureNeeds(gridFriends.map(c=>c.id)); applyNeedBubbles(room);
     const meter=document.createElement('div'); meter.className='caremeter'; meter.innerHTML=`<i id="caremeterFill" style="width:${Math.min(100,Math.round((S.careMeter||0)/CARE_GOAL*100))}%"></i><span>💗 ${S.locale==='id'?'Bahagia':'Happy'}</span>`; room.appendChild(meter);
-    if(careWrap) careWrap.innerHTML=`<div class="carehint">${S.locale==='id'?'Pilih alat → ketuk teman sesuai gelembungnya 💗':'Pick a tool → tap a friend with the matching bubble 💗'}</div><div class="carebar">`+HOME_TOOLS.map(([tool,emo])=>`<button data-tool="${tool}" class="${tool===HOMETOOL?'sel':''}" onclick="setHomeTool('${tool}')" aria-label="${tool}"><span class="cemoji">${emo}</span><span class="clabel">${nm(TOOL_LABEL[tool])}</span></button>`).join('')+`</div>`;
+    if(careWrap) careWrap.innerHTML=`<div class="carehint">${S.locale==='id'?'Pilih / seret alat ke teman sesuai gelembungnya 💗':'Tap or drag a tool onto a friend with the matching bubble 💗'}</div><div class="carebar">`+HOME_TOOLS.map(([tool,emo])=>`<button data-tool="${tool}" class="${tool===HOMETOOL?'sel':''}" onpointerdown="startToolDrag(event,'${tool}')" onclick="setHomeTool('${tool}')" aria-label="${tool}"><span class="cemoji">${emo}</span><span class="clabel">${nm(TOOL_LABEL[tool])}</span></button>`).join('')+`</div>`;
   } else if(careWrap){ careWrap.innerHTML=''; }
   // tray: decoration shop — buying decor invites more friends to hang out
   const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);

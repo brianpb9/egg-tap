@@ -1039,7 +1039,7 @@ function nm(o){ return o[S.locale] ?? o.en ?? o.id; }
 let AC=null, AUDIO_READY=false;
 function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
 function tone(freq,dur=0.12,type="sine",vol=0.2,when=0){
-  if(S.settings&&S.settings.music===false) return; // master mute (speaker toggle silences SFX too)
+  if(S.settings&&S.settings.sfx===false) return; // sound-effects toggle
   const c=ac(); if(!c) return; const o=c.createOscillator(),g=c.createGain();
   o.type=type;o.frequency.value=freq;o.connect(g);g.connect(c.destination);
   const tt=c.currentTime+when; g.gain.setValueAtTime(0,tt); g.gain.linearRampToValueAtTime(vol,tt+0.01);
@@ -1097,10 +1097,13 @@ function startBGM(){ if(S.settings&&S.settings.music===false) return;
   if(_bgmTimer) return; _bgmTimer=setInterval(bgmStep,720); } // fall back to layered synth
 function stopBGM(){ if(_bgmTimer){clearInterval(_bgmTimer);_bgmTimer=null;} if(_bgmAudio){ try{_bgmAudio.pause();}catch(e){} } }
 function refreshBGM(){ const f=curTrack(); if(_bgmAudio && _bgmAudio.getAttribute('src')===f && !_bgmAudio.paused) return; startBGM(); } // switch track when world/screen changes
-function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; S.settings.music=!S.settings.music; save();
-  if(S.settings.music) startBGM(); else stopBGM(); const b=$("#musicBtn"); if(b) b.innerHTML=S.settings.music?ICON.music:ICON.muted; }
+function updateMusicIcon(){ const b=$("#musicBtn"); if(b) b.innerHTML=((S.settings&&S.settings.music===false)&&(S.settings&&S.settings.sfx===false))?ICON.muted:ICON.music; }
+function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; const anyOn=(S.settings.music!==false)||(S.settings.sfx!==false); const t=!anyOn; S.settings.music=t; S.settings.sfx=t; save(); // master mute: all off / all on
+  if(t) startBGM(); else stopBGM(); updateMusicIcon(); }
+function setAudioPref(key){ S.settings=S.settings||{music:true,sfx:true}; S.settings[key]=(S.settings[key]===false); save(); // granular toggle (Parent Zone)
+  if(key==='music'){ if(S.settings.music) startBGM(); else stopBGM(); } updateMusicIcon(); try{if(S.settings.sfx!==false)SFX.tap&&SFX.tap();}catch(e){} if(typeof renderParent==='function') renderParent(); }
 function haptic(p){ try{ if(navigator.vibrate && !(S.settings&&S.settings.sfx===false)) navigator.vibrate(p); }catch(e){} }
-function speak(text){ try{ if(S.settings&&S.settings.music===false)return; if(!window.speechSynthesis)return; const u=new SpeechSynthesisUtterance(text);
+function speak(text){ try{ if(S.settings&&S.settings.sfx===false)return; if(!window.speechSynthesis)return; const u=new SpeechSynthesisUtterance(text);
   u.lang=S.locale==="id"?"id-ID":"en-US"; u.rate=0.95; u.pitch=1.25; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
 
 /* ===================== HELPERS ===================== */
@@ -1189,8 +1192,8 @@ function playSrc(p){ try{ const a=_voCache[p]||(_voCache[p]=new Audio(p)); a.cur
 const VOICE_EN={ tap:"assets/audio/vo_en_tap.mp3", oops:"assets/audio/vo_en_oops.mp3", remember:"assets/audio/vo_en_remember.mp3",
   find_red:"assets/audio/vo_en_red.mp3", blue:"assets/audio/vo_en_blue.mp3", cat:"assets/audio/vo_en_cat.mp3", next:"assets/audio/vo_en_next.mp3" };
 const PRAISE_VO_EN=["assets/audio/vo_en_praise1.mp3","assets/audio/vo_en_praise2.mp3","assets/audio/vo_en_praise3.mp3"];
-function vo(key){ if(S.settings&&S.settings.music===false) return false; const set = S.locale==="id"?VOICE : S.locale==="en"?VOICE_EN : null; if(!set) return false; const p=set[key]; return p?playSrc(p):false; }
-function voPraise(){ if(S.settings&&S.settings.music===false) return false; const set = S.locale==="id"?PRAISE_VO : S.locale==="en"?PRAISE_VO_EN : null; if(!set) return false; return playSrc(set[Math.floor(Math.random()*set.length)]); }
+function vo(key){ if(S.settings&&S.settings.sfx===false) return false; const set = S.locale==="id"?VOICE : S.locale==="en"?VOICE_EN : null; if(!set) return false; const p=set[key]; return p?playSrc(p):false; }
+function voPraise(){ if(S.settings&&S.settings.sfx===false) return false; const set = S.locale==="id"?PRAISE_VO : S.locale==="en"?PRAISE_VO_EN : null; if(!set) return false; return playSrc(set[Math.floor(Math.random()*set.length)]); }
 function creatureMarkup(c,size){ const p=c&&IMG[c.id];
   if(!p) return creatureSVG(c,size);
   const src = size<=120 ? p.replace("assets/","assets/thumbs/") : p; // small displays use 256px thumbs (perf)
@@ -2012,7 +2015,9 @@ function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newS
   const btn=a=>`<button onclick="setAgeBand(${a})" style="width:42px;height:42px;border-radius:50%;border:3px solid ${S.ageBand===a?'#4f8f24':'#ffd591'};background:${S.ageBand===a?'#a8e46c':'#fff'};font-weight:800;font-size:17px;cursor:pointer;color:#5a4a2a">${a}</button>`;
   const ageRow=`<div class="skillrow" style="gap:10px;align-items:center"><div class="lab">${en?'Child age':'Umur anak'}</div>${btn(3)}${btn(4)}${btn(5)}</div>`
     +`<div class="note" style="margin:2px 2px 6px;color:#7a6a4a">${S.ageBand>=5?(en?'⚡ Age 5: real challenges + extra math — wrong answers are NOT auto-solved.':'⚡ Umur 5: tantangan nyata + lebih banyak matematika — jawaban salah TIDAK dibantu.'):(en?'🌿 Ages 3–4: gentle no-fail mode (always succeeds).':'🌿 Umur 3–4: mode lembut tanpa gagal (selalu berhasil).')}</div>`;
-  $("#skillList").innerHTML=ageRow
+  const atog=(key,lab)=>`<button onclick="setAudioPref('${key}')" style="border:2px solid ${S.settings&&S.settings[key]!==false?'#4f8f24':'#ffd591'};background:${S.settings&&S.settings[key]!==false?'#a8e46c':'#fff'};color:#5a4a2a;font-weight:800;font-size:12px;padding:6px 14px;border-radius:999px;cursor:pointer">${lab}: ${S.settings&&S.settings[key]!==false?'ON':'OFF'}</button>`;
+  const audioRow=`<div class="setbar"><span>${en?'Sound':'Suara'}</span></div><div class="skillrow" style="gap:10px;align-items:center;justify-content:flex-start">${atog('music',en?'🎵 Music':'🎵 Musik')} ${atog('sfx',en?'🔊 Effects':'🔊 Efek')}</div>`;
+  $("#skillList").innerHTML=ageRow+audioRow
     +`<div class="setbar"><span>${en?'Mastery by area':'Penguasaan per bidang'}</span></div>`+pillHtml+callout
     +`<div class="setbar"><span>${en?'Skill detail':'Detail keterampilan'}</span></div>`
     +DATA.skills.map(sk=>{ const sp=S.skillProgress[sk.id]||{tier:1,last5:[]};
@@ -2116,7 +2121,7 @@ function boot(){
   S.stats=Object.assign({hatches:0,challengesPassed:0,correct:0,playSeconds:0,attempts:0,weekSkills:[]}, S.stats||{}); if(!Array.isArray(S.stats.weekSkills)) S.stats.weekSkills=[]; // robust against old/partial saves
   setInterval(()=>{ S.stats.playSeconds++; if(S.stats.playSeconds%20===0) save(); },1000);
   window.addEventListener("pointerdown",()=>{ ac(); if(AC&&AC.state==="suspended") AC.resume(); AUDIO_READY=true; startBGM(); },{once:true});
-  { const b=$("#musicBtn"); if(b) b.innerHTML=(S.settings&&S.settings.music===false)?ICON.muted:ICON.music; }
+  updateMusicIcon();
   renderNav($("#nav"));
   // anti-softlock safety: if a challenge was answered but the reward didn't appear, a tap on the stage recovers it
   $("#hatch .stage").addEventListener("click",()=>{

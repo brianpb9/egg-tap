@@ -1150,7 +1150,8 @@ function speakable(txt){ try{ return String(txt)
   .replace(/(\d)\s*[×x]\s*(\d)/g,'$1 times $2')
   .replace(/\s*=\s*\?/g,'?')                          // drop "= ?" so it ends as a question
   .replace(/\s*=\s*/g,' equals ')
-  .replace(/[−–—]/g,' minus ')
+  .replace(/_+/g,' blank ')                            // "A _ C" -> "A blank C" (missing-letter puzzles)
+  .replace(/\s*[—–]\s*/g,', ')                         // em/en dash = separator -> short pause, NOT "minus"
   .replace(/\s{2,}/g,' ').trim(); }catch(e){ return txt; } }
 function speak(text){ try{ if(S.settings&&S.settings.sfx===false)return; if(!window.speechSynthesis)return; const en=S.locale!=='id';
   if(en && !_enVoice) _enVoice=pickEnVoice();

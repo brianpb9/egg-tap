@@ -1601,14 +1601,17 @@ function renderOptions(ch){
         <span class="em" style="transform:scale(${o.scale||1})">${o.v}</span></div>`).join("");
   }
 }
+let _combo=0;
+function bumpCombo(){ _combo++; if(_combo>=3 && (_combo===3||_combo===5||_combo===8||(_combo>8&&_combo%4===0))){ const bonus=_combo>=8?5:3; S.currencies.coins+=bonus; try{SFX.coin&&SFX.coin();}catch(e){} haptic([0,18,28,40]); try{burst(16,$("#fx")||$("#device"),true);}catch(e){} toast(`🔥 ${S.locale==='id'?'Beruntun':'Combo'} ×${_combo}! +${bonus}🪙`); if(typeof syncWallet==='function') syncWallet(); } }
+function resetCombo(){ _combo=0; }
 function answer(el){
   if(LOOP.resolved || el.classList.contains("dim")||el.classList.contains("right")) return;
   const correct=el.dataset.correct==="true"; const ch=LOOP.challenge;
-  if(correct){ LOOP.resolved=true; clearTimeout(LOOP._auto); SFX.correct(); haptic(25); el.classList.add("right"); recordAttempt(ch.skill,true); S.stats.challengesPassed++;
+  if(correct){ LOOP.resolved=true; clearTimeout(LOOP._auto); SFX.correct(); haptic(25); el.classList.add("right"); recordAttempt(ch.skill,true); S.stats.challengesPassed++; bumpCombo();
     burst(24,$("#fx"),true); const p=DATA.praise[S.locale][Math.floor(Math.random()*DATA.praise[S.locale].length)];
     if(!voPraise()) speak(p); setCue(p); awardBadges(); LOOP.answered=true;
     setTimeout(finishChallenge,700);
-  } else { SFX.oops(); haptic(8); el.classList.add("wrong","dim"); LOOP.wrongs++; recordAttempt(ch.skill,false);
+  } else { SFX.oops(); haptic(8); resetCombo(); el.classList.add("wrong","dim"); LOOP.wrongs++; recordAttempt(ch.skill,false);
     if(!vo("oops")) speak(DATA.oops[S.locale][Math.floor(Math.random()*DATA.oops[S.locale].length)]); escalateHint(); }
 }
 function answerSeq(el){
@@ -1616,10 +1619,10 @@ function answerSeq(el){
   const ord=parseInt(el.dataset.order,10); const ch=LOOP.challenge;
   if(el.classList.contains("picked")) return;
   if(ord===SEQ.expect){ SFX.star(); el.classList.add("picked"); el.insertAdjacentHTML("beforeend",`<span class="seqnum">${ord}</span>`); SEQ.expect++;
-    if(SEQ.expect>SEQ.total){ LOOP.resolved=true; SFX.correct(); recordAttempt(ch.skill,true); S.stats.challengesPassed++; burst(24,$("#fx"),true);
+    if(SEQ.expect>SEQ.total){ LOOP.resolved=true; SFX.correct(); recordAttempt(ch.skill,true); S.stats.challengesPassed++; bumpCombo(); burst(24,$("#fx"),true);
       const p=DATA.praise[S.locale][0]; if(!voPraise()) speak(p); setCue(p); awardBadges(); LOOP.answered=true;
       setTimeout(finishChallenge,700); }
-  } else { SFX.oops(); el.classList.add("wrong"); LOOP.wrongs++;
+  } else { SFX.oops(); resetCombo(); el.classList.add("wrong"); LOOP.wrongs++;
     if(!vo("oops")) speak(DATA.oops[S.locale][0]);
     if(S.ageBand>=5){ // assessment: no win-assist — after 2 misses, skip (not recorded as a win)
       if(LOOP.wrongs>=2){ LOOP.resolved=true; LOOP.answered=true; recordAttempt(ch.skill,false);

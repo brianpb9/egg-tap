@@ -46,7 +46,7 @@
   .screen{position:absolute;inset:0;display:none;flex-direction:column;}
   .screen.active{display:flex;}
   .pad{padding:16px;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;background:url('assets/ui/topbar_bg.png') center/100% 100% no-repeat;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;gap:14px;background:url('assets/ui/topbar_bg.png') center/100% 100% no-repeat;}
   .topbar .title{text-shadow:0 1px 2px rgba(255,255,255,.7),0 0 6px rgba(255,255,255,.5);}
   .wallet{display:flex;gap:8px;}
   .coin{display:flex;align-items:center;gap:5px;background:linear-gradient(180deg,#ffffff,#f6e9f3);border:2px solid #fff;border-radius:999px;padding:6px 13px;font-weight:800;color:#6b4a5e;box-shadow:0 3px 0 rgba(206,150,182,.55),0 5px 9px rgba(120,40,90,.18);font-size:15px;}
@@ -265,7 +265,7 @@
   /* ===== Medium improvements ===== */
   /* ===== Mobile safe-area header (V3.2) ===== */
   .topbar{padding-top:calc(env(safe-area-inset-top,0px) + 22px);padding-bottom:16px;}
-  #hatch .topbar{padding-left:14px;padding-right:14px;} /* corner buttons sit BELOW the header now, so no horizontal reserve needed */
+  #hatch .topbar{padding-left:20px;padding-right:16px;} /* breathing room for the world name + gap to the wallet */
   .topbar .title{min-width:0;flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .wallet{flex:0 0 auto;}
   @media(max-width:459px){

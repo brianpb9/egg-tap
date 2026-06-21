@@ -73,6 +73,8 @@
   @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
   .floaty{animation:floaty 3s ease-in-out infinite;}
   @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+  .alive{animation:breathe 3.4s ease-in-out infinite;transform-origin:50% 92%;} /* grounded "alive" idle: breathes from the feet, never leaves the ground (no flying) */
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
   .cue{margin-top:6px;font-weight:800;font-size:20px;color:var(--soft);min-height:28px;text-align:center;padding:0 16px;}
   .tapdots{display:flex;gap:10px;margin-top:8px;}
   .tapdots i{width:16px;height:16px;border-radius:50%;background:#e8cda0;display:block;}
@@ -2106,7 +2108,7 @@ function petHome(el,id){ const cw=el.querySelector('.cwrap'); const react=()=>{ 
   if(S.homeHappy%10===0){ S.currencies.coins+=1; try{SFX.coin&&SFX.coin();}catch(e){} toast((S.locale==='id'?'💗 Temanmu bahagia!':'💗 Your friends are happy!')+' +1 🪙'); if(typeof syncWallet==='function') syncWallet(); const hc=$("#hm_coins"); if(hc) hc.textContent=S.currencies.coins; }
   save(); }
 function homeIdle(){ const home=document.getElementById('home'); const room=$("#room"); if(!room||!home||!home.classList.contains('active')) return;
-  const els=[...room.querySelectorAll('.placed.floaty')]; if(!els.length) return;
+  const els=[...room.querySelectorAll('.placed.alive')]; if(!els.length) return;
   const el=els[Math.floor(Math.random()*els.length)]; const b=document.createElement('span'); b.className='moodbubble'; b.innerHTML=careIco(['pat','play','sleep'][Math.floor(Math.random()*3)],22);
   b.style.left=(el.offsetLeft+(el.offsetWidth/2))+'px'; b.style.top=(el.offsetTop-8)+'px'; room.appendChild(b); setTimeout(()=>b.remove(),2200);
   if(Math.random()<0.18){ const before=Object.keys(S.homeNeeds||{}).length; ensureNeeds(homeGridIds()); if(Object.keys(S.homeNeeds).length>before) applyNeedBubbles(room); } } // needs appear gently, not constantly
@@ -2167,12 +2169,12 @@ function renderHome(){
     const size=Math.max(52,Math.min(64,Math.floor(rh*0.24))); // CONSISTENT big size (depends on room height, NOT how many friends)
     gridFriends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols), inRow=Math.min(cols,n-rr*cols);
       const pp=homePos(c.id); const leftPct=pp?pp.x:((cc+1)/(inRow+1))*100, topPct=pp?pp.y:(rows<=1?72:(bandTop+bandH*(rr/(rows-1))));
-      const el=mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'floaty grounded'); if(el) el.addEventListener('pointerdown',ev=>startPlaceDrag(ev,el,c.id,true)); });
+      const el=mkFriend(room,c,leftPct,topPct,size,Math.round(topPct*4)+200,'alive grounded'); if(el) el.addEventListener('pointerdown',ev=>startPlaceDrag(ev,el,c.id,true)); });
   }
   if(friendsAll.length){ const cbn=document.createElement('button'); cbn.className='choosebtn'; cbn.innerHTML=`👥 ${S.locale==='id'?'Pilih 5':'Choose 5'}`; cbn.onclick=openHomePicker; room.appendChild(cbn); } // pick which friends live here
   // daily visiting guest (stands to the side with a ribbon)
   ensureGuest();
-  if(S.guest){ const gc=creature(S.guest); if(gc){ const ge=mkFriend(room,gc,87,40,50,9000,'guest grounded');
+  if(S.guest){ const gc=creature(S.guest); if(gc){ const ge=mkFriend(room,gc,87,70,52,9000,'guest grounded');
     if(ge){ ge.onclick=()=>tapGuest(ge); const tag=document.createElement('div'); tag.className='guesttag'; tag.textContent=(S.locale==='id'?'✨ Tamu!':'✨ Guest!'); ge.appendChild(tag); } } }
   // --- care loop: needs + happiness meter (in room) + tool bar (own strip below the room, so it never covers friends)
   const careWrap=$("#careWrap");

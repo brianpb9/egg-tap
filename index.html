@@ -1159,7 +1159,11 @@ function speak(text){ try{ if(S.settings&&S.settings.sfx===false)return; if(!win
   u.lang=en?"en-US":"id-ID"; if(en && _enVoice) u.voice=_enVoice; // pick a clear, natural English voice instead of the device default
   u.rate=0.72; u.pitch=1.05; // extra slow & calm — the voice guides pre-readers (ages 3-5)
   speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
-function sayPrompt(ch){ if(!ch) return; if(!(PROMPTVO[ch.id]&&vo(PROMPTVO[ch.id]))) speak(nm(ch.prompt)); } // speak the question (VO if available, else TTS)
+function sayPrompt(ch){ if(!ch) return;
+  if(PROMPTVO[ch.id] && vo(PROMPTVO[ch.id])) return;                                   // curated per-challenge VO
+  if(S.locale!=='id' && !(S.settings&&S.settings.sfx===false)){                         // recorded Maya VO for common prompts
+    const slug=PROMPT_VO_EN[nm(ch.prompt)]; if(slug && playSrc('assets/audio/vo/'+slug+'.mp3')) return; }
+  speak(nm(ch.prompt)); }                                                               // fallback: TTS (with speakable())
 function replayPrompt(){ try{SFX.tap&&SFX.tap();}catch(e){} sayPrompt(LOOP&&LOOP.challenge); } // tap 🔊 to hear the question again
 
 /* ===================== HELPERS ===================== */
@@ -1247,6 +1251,13 @@ function playSrc(p){ try{ const a=_voCache[p]||(_voCache[p]=new Audio(p)); a.cur
 // English VO (Maya). Locales without a clip fall back to Web Speech in that language.
 const VOICE_EN={ tap:"assets/audio/vo_en_tap.mp3", oops:"assets/audio/vo_en_oops.mp3", remember:"assets/audio/vo_en_remember.mp3",
   find_red:"assets/audio/vo_en_red.mp3", blue:"assets/audio/vo_en_blue.mp3", cat:"assets/audio/vo_en_cat.mp3", next:"assets/audio/vo_en_next.mp3" };
+// Recorded English VO (voice "Maya") for the most common question prompts -> clear, warm guidance for pre-readers. Keyed by the exact English prompt text.
+const PROMPT_VO_EN={
+  "Which one is different?":"which_different","Which number is bigger?":"which_bigger","What comes next?":"what_next","What number comes next?":"what_number_next",
+  "Find the red one!":"find_red","Find the blue one!":"find_blue","Find the yellow one!":"find_yellow","Find the green one!":"find_green","Find the purple one!":"find_purple","Find the orange one!":"find_orange",
+  "Find the circle!":"find_circle","Find the square!":"find_square","Find the triangle!":"find_triangle","Find the star!":"find_star","Find the heart!":"find_heart",
+  "Which one did you see?":"which_saw","Match the same!":"match_same","Find the SAME one!":"find_same","Find the cat!":"find_cat","Find the letter A!":"find_letter_a",
+  "Find the food!":"find_food","Which is a fruit?":"which_fruit","Find the happy face!":"find_happy","Who is sad?":"who_sad" };
 const PRAISE_VO_EN=["assets/audio/vo_en_praise1.mp3","assets/audio/vo_en_praise2.mp3","assets/audio/vo_en_praise3.mp3"];
 function vo(key){ if(S.settings&&S.settings.sfx===false) return false; const set = S.locale==="id"?VOICE : S.locale==="en"?VOICE_EN : null; if(!set) return false; const p=set[key]; return p?playSrc(p):false; }
 function voPraise(){ if(S.settings&&S.settings.sfx===false) return false; const set = S.locale==="id"?PRAISE_VO : S.locale==="en"?PRAISE_VO_EN : null; if(!set) return false; return playSrc(set[Math.floor(Math.random()*set.length)]); }

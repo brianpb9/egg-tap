@@ -7,7 +7,8 @@
 <link rel="icon" type="image/png" href="assets/store/icon_180.png" />
 <link rel="apple-touch-icon" href="assets/store/icon_180.png" />
 <meta name="theme-color" content="#bfe6ff" />
-<meta name="description" content="Wonder Egg World — a cozy, no-fail learning game for ages 3-6. Tap eggs to hatch 60 adorable friends and learn colors, numbers, letters & more. No ads, no chat." />
+<meta name="description" content="Wonder Egg World — a cozy, no-fail learning game for ages 3-6. Tap eggs to hatch 60 adorable friends and learn colors, numbers, letters & more." />
+<link rel="manifest" href="manifest.json" />
 <style>
   /* ============================================================
      EGG TAP — playable vertical slice (v2: cute visuals + depth)
@@ -1412,6 +1413,28 @@ function setAge(a){ SFX.tap(); S.ageBand=a; S.onboarded=true;
 /* ===================== CORE LOOP ===================== */
 let LOOP={crack:0,egg:null,creature:null,challenge:null,wrongs:0,isNew:false};
 let SESSION_HATCH=0; const SOFT_STOP_EVERY=8; const BONUS_COST=40; const STAR_WISH=50;
+/* ===================== ADS / MONETIZATION (AdMob via Capacitor; no-op on web) ===================== */
+// Fill these with your real AdMob IDs before the Android build (see ADMOB_SETUP.md).
+const ADMOB={ appId:'ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX', interstitial:'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX', testMode:true };
+const AD_EVERY=2; // show an interstitial after every N hatches (when ads not removed)
+const ADS={
+  _ready:false,
+  plugin(){ return (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.AdMob) || null; },
+  removed(){ return !!S.adsRemoved; },
+  async init(){ const p=this.plugin(); if(!p||this._ready) return; this._ready=true;
+    try{ await p.initialize({ initializeForTesting: ADMOB.testMode, tagForChildDirectedTreatment:true, tagForUnderAgeOfConsent:true, maxAdContentRating:'G' }); }catch(e){} },
+  due(){ return !this.removed() && SESSION_HATCH>0 && (SESSION_HATCH%AD_EVERY===0); },
+  interstitial(cb){ cb=cb||function(){}; const p=this.plugin(); if(this.removed()||!p){ cb(); return; }
+    (async()=>{ try{ await this.init(); await p.prepareInterstitial({ adId:ADMOB.interstitial, isTesting:ADMOB.testMode, npa:true }); await p.showInterstitial(); }catch(e){} cb(); })(); }
+};
+function removeAds(){ // "Remove Ads" purchase (parent-gated). Native: trigger Play Billing; web: no real ads to remove.
+  const bill=(window.Capacitor&&Capacitor.Plugins&&(Capacitor.Plugins.Purchases||Capacitor.Plugins.InAppPurchase))||null;
+  if(bill && typeof onRemoveAdsPurchase==='function'){ try{ onRemoveAdsPurchase(); }catch(e){} return; }
+  if(!ADS.plugin()){ toast(S.locale==='id'?'Bebas-iklan tersedia di aplikasi Play Store 💛':'Ad-free is available in the Play Store app 💛'); return; }
+  grantAdFree();
+}
+function grantAdFree(){ S.adsRemoved=true; save(); try{SFX.coin&&SFX.coin();}catch(e){} toast(S.locale==='id'?'✨ Bebas iklan selamanya! Terima kasih 💛':'✨ Ad-free forever! Thank you 💛'); if(typeof renderParent==='function') renderParent(); }
+function restorePurchases(){ /* native: query Play Billing for owned remove-ads entitlement -> grantAdFree() */ toast(S.locale==='id'?'Memeriksa pembelian…':'Checking purchases…'); }
 const MISSIONS=[
   {id:"hatch", goal:5, reward:30, emoji:"🥚", label:{id:"Tetaskan 5 telur",en:"Hatch 5 eggs"}},
   {id:"correct", goal:5, reward:30, emoji:"✅", label:{id:"Jawab 5 benar",en:"Answer 5 right"}},
@@ -1713,7 +1736,9 @@ function reward(){
 function nextEgg(){ SFX.tap(); $("#rewardOverlay").classList.remove("active");
   if(S.pendingFinale){ S.pendingFinale=null; S.pendingNewWorld=null; save(); newEgg(); celebrateComplete(); return; } // 100% collection finale
   if(S.pendingNewWorld){ const nw=S.pendingNewWorld; S.pendingNewWorld=null; save(); newEgg(); celebrateWorld(nw); return; } // celebrate + nudge to the freshly unlocked world
-  if(SESSION_HATCH>0 && SESSION_HATCH%SOFT_STOP_EVERY===0) showSoftStop(); else newEgg(); }
+  if(SESSION_HATCH>0 && SESSION_HATCH%SOFT_STOP_EVERY===0){ showSoftStop(); return; }
+  if(ADS.due()){ ADS.interstitial(()=>newEgg()); return; } // interstitial every few hatches (free tier); no-op if ad-free / on web
+  newEgg(); }
 
 function worldComplete(w){ const base=creaturesOf(w.sets).filter(c=>!c.legend); return base.length>0 && base.every(c=>S.owned[c.id]); }
 function checkUnlocks(){
@@ -2049,7 +2074,10 @@ function renderParent(){ applyStaticI18n(); const owned=ownedCount(); const newS
   const lf=(S.settings&&S.settings.learnFreq)||'normal';
   const lbtn=(k,lab)=>`<button onclick="setLearnFreq('${k}')" style="border:2px solid ${lf===k?'#4f8f24':'#ffd591'};background:${lf===k?'#a8e46c':'#fff'};color:#5a4a2a;font-weight:800;font-size:12px;padding:6px 13px;border-radius:999px;cursor:pointer">${lab}</button>`;
   const learnRow=`<div class="setbar"><span>${en?'Learning frequency':'Frekuensi belajar'}</span></div><div class="skillrow" style="gap:8px;align-items:center;justify-content:flex-start">${lbtn('chill',en?'Chill':'Santai')}${lbtn('normal',en?'Normal':'Normal')}${lbtn('often',en?'Often':'Sering')}</div>`;
-  $("#skillList").innerHTML=ageRow+audioRow+learnRow
+  const adsRow=`<div class="setbar"><span>${en?'Ads':'Iklan'}</span></div><div class="skillrow" style="gap:10px;align-items:center;justify-content:flex-start">`+(S.adsRemoved
+      ?`<div class="lab" style="color:#4f8f24;font-weight:800">${en?'✓ Ad-free — thank you! 💛':'✓ Bebas iklan — terima kasih! 💛'}</div>`
+      :`<button onclick="removeAds()" style="border:none;background:linear-gradient(180deg,#8be36b,#5fb83e);color:#fff;font-weight:800;font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer">${en?'✨ Remove Ads':'✨ Hilangkan Iklan'}</button><button onclick="restorePurchases()" style="border:2px solid #ffd591;background:#fff;color:#7a5a2e;font-weight:800;font-size:12px;padding:7px 12px;border-radius:999px;cursor:pointer">${en?'Restore':'Pulihkan'}</button>`)+`</div>`;
+  $("#skillList").innerHTML=ageRow+audioRow+learnRow+adsRow
     +`<div class="setbar"><span>${en?'Mastery by area':'Penguasaan per bidang'}</span></div>`+pillHtml+callout
     +`<div class="setbar"><span>${en?'Skill detail':'Detail keterampilan'}</span></div>`
     +DATA.skills.map(sk=>{ const sp=S.skillProgress[sk.id]||{tier:1,last5:[]};

@@ -1,0 +1,18 @@
+{
+  "name": "Wonder Egg World",
+  "short_name": "Wonder Egg",
+  "description": "Tap eggs, hatch 60 adorable friends, and learn colors, numbers, letters & more — a cozy, no-fail game for ages 3-6.",
+  "lang": "en",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#bfe6ff",
+  "theme_color": "#bfe6ff",
+  "categories": ["education", "kids", "games"],
+  "icons": [
+    { "src": "assets/store/icon_180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "assets/store/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/store/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

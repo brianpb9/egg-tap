@@ -10,7 +10,7 @@
 Tap eggs, hatch 100+ cute creatures, and learn colors, numbers & more!
 
 ## Promo text
-No ads. No chat. Just adorable surprises and gentle, no-fail learning for ages 3–6.
+Free to play, no chat, no random loot — gentle, no-fail learning for ages 3–6. Family-friendly ads, or go Ad-Free forever with one tap.
 
 ## Long description
 Wonder Egg World is a cozy, no-fail learning game for little ones aged 3–6.
@@ -25,19 +25,22 @@ Wonder Egg World is a cozy, no-fail learning game for little ones aged 3–6.
 
 👨‍👩‍👧 **Made for parents** — a Parent Zone (behind a kid-safe gate) shows what your child is learning each week. Gentle session wind-downs encourage healthy screen time.
 
-✅ No ads · No third-party tracking · No in-app chat · No random paid loot. Safe, calm, and joyful.
+✨ **Ad-Free option** — a single, parent-gated one-time purchase removes all ads forever.
+
+✅ Family-friendly (child-directed, non-personalized) ads only · No in-app chat · No random paid loot · No behavioral tracking. Safe, calm, and joyful.
 
 ## Keywords
-toddler game, preschool learning, kids educational, hatch eggs, collect creatures, colors numbers letters, no ads kids, ages 3 4 5
+toddler game, preschool learning, kids educational, hatch eggs, collect creatures, colors numbers letters, ad-free option, ages 3 4 5
 
 ## Category
 Education / Kids (Ages 5 & Under)
 
 ## Privacy summary (for store data-safety form)
 - No personal data collected from children (no name, email, location, contacts).
-- No ads, no third-party advertising SDKs, no behavioral tracking, no IDFA/Ad ID.
+- Ads: AdMob, families-self-certified, **child-directed + non-personalized only** (no behavioral tracking). Interstitials show only between hatches, never during a learning task.
+- One-time "Remove Ads" purchase (non-consumable), behind a parental gate.
 - All progress stored locally on device (offline-first).
-- Purchases (if enabled) are deterministic and behind a parental gate — no money-tied randomness.
+- Purchases are deterministic and parent-gated — no money-tied randomness / loot boxes.
 
 ## Assets
 - App icon: `assets/store/icon.png` (1024×1024)

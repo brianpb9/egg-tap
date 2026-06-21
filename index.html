@@ -435,10 +435,8 @@
   @keyframes taphint{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-16px)}}
   /* Home: ground band so placed items sit on a floor (depth) */
   #home .room .ground{position:absolute;left:0;right:0;bottom:0;height:32%;background:linear-gradient(180deg,transparent,rgba(90,60,25,.16));pointer-events:none;z-index:1;}
-  /* living habitat: care bar + floating emotes */
-  .carebar{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:7px;z-index:6;background:rgba(255,255,255,.85);border-radius:999px;padding:5px 8px;box-shadow:var(--shadow);}
-  .carebar button{width:44px;height:44px;border-radius:50%;border:2px solid #ffd591;background:#fff;font-size:21px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;transition:transform .1s;padding:0;}
-  .carebar button.sel{background:#a8e46c;border-color:#4f8f24;transform:scale(1.13);}
+  /* living habitat: floating emotes (care bar styled in the Home care-loop block below) */
+  .carebar button.sel{background:linear-gradient(180deg,#c3f0a4,#8add5f)!important;border-color:#4f8f24!important;transform:translateY(-2px) scale(1.05);}
   .floatemote{position:absolute;font-size:24px;pointer-events:none;z-index:20;animation:floatemote 1s ease-out forwards;}
   @keyframes floatemote{0%{opacity:0;transform:translateY(0) scale(.5)}25%{opacity:1;transform:translateY(-16px) scale(1.15)}100%{opacity:0;transform:translateY(-50px) scale(1)}}
   .placed.atdecor{animation:atdecor 2.4s ease-in-out infinite;}
@@ -2104,7 +2102,7 @@ function renderHome(){
   const n=gridFriends.length;
   if(n){ const rh=room.clientHeight||Math.round(rw*1.25);
     const cols=Math.min(3,Math.max(2,Math.ceil(n/2))), rows=Math.ceil(n/cols); // up to 3 across -> 1-2 tidy rows
-    const bandTop=42, bandBot=85, bandH=bandBot-bandTop; // keep the bottom row clear of the room edge
+    const bandTop=60, bandBot=88, bandH=bandBot-bandTop; // ON the grass (not floating in the sky), clear of the room edge
     const size=Math.max(44,Math.min(66,Math.min(Math.floor(rw*0.78/cols), Math.floor(rh*(bandH/100)/rows)))); // fit width AND height -> no overlap
     gridFriends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols), inRow=Math.min(cols,n-rr*cols);
       const leftPct=((cc+1)/(inRow+1))*100, topPct=rows<=1?72:(bandTop+bandH*(rr/(rows-1)));

@@ -167,9 +167,9 @@
   #home .room::after{content:"";position:absolute;inset:0;border-radius:24px;pointer-events:none;box-shadow:inset 0 -50px 70px rgba(60,40,20,.18), inset 0 0 0 5px #fff;}
   .placed{position:absolute;cursor:grab;touch-action:none;filter:drop-shadow(0 7px 5px rgba(0,0,0,.28));z-index:2;transition:transform .1s;}
   .placed.dragging{cursor:grabbing;animation:none!important;z-index:99999!important;transform:scale(1.12);filter:drop-shadow(0 13px 10px rgba(0,0,0,.4));}
-  .cwrap{display:inline-block;will-change:transform;}
+  .cwrap{display:inline-block;will-change:transform;transform-origin:50% 100%;}
   .cwrap.react{animation:react .5s ease;}
-  @keyframes react{0%{transform:scale(1) rotate(0)}30%{transform:scale(1.22) rotate(-8deg)}60%{transform:scale(1.14) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+  @keyframes react{0%{transform:scale(1,1)}18%{transform:scale(1.18,.84)}40%{transform:scale(.88,1.18) rotate(-3deg)}62%{transform:scale(1.08,.95) rotate(3deg)}82%{transform:scale(.98,1.03)}100%{transform:scale(1,1)}}
   /* rare KING EGG — big & glowing with a crown */
   #eggwrap.kingegg{position:relative;}
   #eggwrap.kingegg .egg{transform:scale(1.36);filter:drop-shadow(0 7px 5px rgba(0,0,0,.3)) drop-shadow(0 0 22px rgba(244,163,0,.95));animation:kingpulse 1.8s ease-in-out infinite;}
@@ -445,6 +445,8 @@
   #home .room .ground{position:absolute;left:0;right:0;bottom:0;height:32%;background:linear-gradient(180deg,transparent,rgba(90,60,25,.16));pointer-events:none;z-index:1;}
   #home .room::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;box-shadow:inset 0 0 50px rgba(20,30,60,.10),inset 0 -46px 46px rgba(60,40,15,.18),inset 0 22px 30px rgba(255,255,255,.10);} /* depth: soft vignette + grounded foreground so the scene reads as a place, not a flat backdrop */
   .moodbubble img{width:22px;height:22px;display:block;}
+  #home .room .roomfg{position:absolute;left:0;right:0;bottom:-1%;height:100%;background:bottom center/102% auto no-repeat;z-index:1;pointer-events:none;} /* per-world foreground props anchored to the floor -> creatures stand among them (depth) */
+  .tico{width:1.05em;height:1.05em;vertical-align:-.18em;display:inline-block;} /* inline candy icon to replace standalone text emoji */
   /* living habitat: floating emotes (care bar styled in the Home care-loop block below) */
   .carebar button.sel{background:linear-gradient(180deg,#c3f0a4,#8add5f)!important;border-color:#4f8f24!important;transform:translateY(-2px) scale(1.05);}
   .floatemote{position:absolute;font-size:24px;pointer-events:none;z-index:20;animation:floatemote 1s ease-out forwards;}
@@ -2150,11 +2152,13 @@ function renderHome(){
   $("#t_home").textContent=`${t("home")} · ${nm(world(S.currentWorld).name)} · Lv${lvl}`;
   room.style.background=`url('${HOMEFLAT[S.currentWorld]||HOMEBG[lvl]||BG[w.id]}') center/cover no-repeat`;
   const wtotal=creaturesOf(w.sets).length;
-  const chip = !friendsAll.length ? (S.locale==='id'?'Tetaskan teman dulu! 🥚':'Hatch some friends first! 🥚')
-    : `🐾 ${friendsAll.length}/${wtotal} `+(S.locale==='id'?'terkumpul':'collected')
+  const eggI=`<img class="tico" src="assets/ui/nav_hatch.png" alt="">`;
+  const chip = !friendsAll.length ? (S.locale==='id'?'Tetaskan teman dulu! '+eggI:'Hatch some friends first! '+eggI)
+    : `<img class="tico" src="assets/ui/nav_album.png" alt=""> ${friendsAll.length}/${wtotal} `+(S.locale==='id'?'terkumpul':'collected')
       +(friendsAll.length<wtotal?` · ${S.locale==='id'?'tetaskan lagi!':'hatch more!'}`:` 🏆 ${S.locale==='id'?'lengkap!':'complete!'}`)
       +(friendsAll.length>5?` · ${picks.length?(S.locale==='id'?'pilihanmu':'your picks'):(S.locale==='id'?'pilih di Album':'pick in Album')}`:'');
-  room.innerHTML=`<div class="ground"></div><div class="floatlabel">${chip}</div>`;
+  const fgKey=(w.sets&&w.sets[0])||'forest'; // per-world foreground props -> scene depth
+  room.innerHTML=`<div class="ground"></div><div class="roomfg" style="background-image:url('assets/home/fg/${fgKey}.png')"></div><div class="floatlabel">${chip}</div>`;
   const rw=room.clientWidth||340;
   // --- decorations: small back row along the lawn horizon, evenly spread (percent positions)
   const dn=decor.length;

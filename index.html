@@ -451,10 +451,13 @@
   .moodbubble{position:absolute;font-size:18px;pointer-events:none;z-index:19;animation:moodbubble 2.2s ease-in-out;}
   @keyframes moodbubble{0%{opacity:0;transform:translateY(4px) scale(.6)}20%{opacity:1;transform:translateY(-6px) scale(1)}80%{opacity:1;transform:translateY(-12px)}100%{opacity:0;transform:translateY(-20px)}}
   /* ---- Home care loop: tool bar, need bubbles, happiness meter ---- */
-  .carewrap{flex:0 0 auto;display:flex;justify-content:center;padding:7px 6px 8px;background:linear-gradient(180deg,rgba(255,247,230,.55),rgba(255,247,230,.95));}
+  .carewrap{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 6px 8px;background:linear-gradient(180deg,rgba(255,247,230,.55),rgba(255,247,230,.95));}
   .carewrap:empty{display:none;}
-  .carebar{display:flex;gap:8px;background:rgba(255,255,255,.85);padding:6px 10px;border-radius:999px;box-shadow:0 3px 8px rgba(0,0,0,.15);}
-  .carebar button{width:48px;height:48px;border-radius:50%;border:3px solid #fff;background:linear-gradient(180deg,#ffffff,#ffe9f4);font-size:23px;cursor:pointer;box-shadow:0 3px 0 #e58cbf;transition:transform .12s;}
+  .carehint{font-size:11px;font-weight:700;color:#7a6a4a;text-align:center;}
+  .carebar{display:flex;gap:6px;background:rgba(255,255,255,.85);padding:6px 8px;border-radius:22px;box-shadow:0 3px 8px rgba(0,0,0,.15);}
+  .carebar button{width:54px;border-radius:15px;border:3px solid #fff;background:linear-gradient(180deg,#ffffff,#ffe9f4);cursor:pointer;box-shadow:0 3px 0 #e58cbf;transition:transform .12s;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px 4px;}
+  .carebar .cemoji{font-size:22px;line-height:1;}
+  .carebar .clabel{font-size:9px;font-weight:800;color:#9a5577;}
   .carebar button.sel{background:linear-gradient(180deg,#c3f0a4,#8add5f);border-color:#fff;box-shadow:0 3px 0 #5fb83e;transform:translateY(-3px) scale(1.06);}
   .carebar button:active{transform:translateY(1px);}
   .needbubble{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:20px;background:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.22);z-index:30;animation:needbob 1s ease-in-out infinite;pointer-events:none;}
@@ -2019,8 +2022,9 @@ const HOME_THRESHOLDS=[0,4,9,15,22]; // distinct creatures needed for Lv1..5 (sl
 function homeLevel(n){ let l=1; for(let i=0;i<HOME_THRESHOLDS.length;i++) if(n>=HOME_THRESHOLDS[i]) l=i+1; return Math.min(5,l); }
 /* ---- Living habitat: pet-care interactions ---- */
 let HOMETOOL='pat';
-const HOME_TOOLS=[['pat','💗'],['feed','🍓'],['wash','🫧'],['play','🎵'],['sleep','😴']];
-const CARE={pat:{emo:'💗'},feed:{emo:'🍓',extra:'😋'},wash:{emo:'🫧',extra:'✨'},play:{emo:'🎵',extra:'🎉'},sleep:{emo:'😴',extra:'💤'}};
+const HOME_TOOLS=[['pat','💗'],['feed','🍓'],['wash','🧼'],['play','🎵'],['sleep','😴']];
+const CARE={pat:{emo:'💗'},feed:{emo:'🍓',extra:'😋'},wash:{emo:'🧼',extra:'✨'},play:{emo:'🎵',extra:'🎉'},sleep:{emo:'😴',extra:'💤'}};
+const TOOL_LABEL={pat:{en:'Love',id:'Belai'},feed:{en:'Feed',id:'Makan'},wash:{en:'Bath',id:'Mandi'},play:{en:'Play',id:'Main'},sleep:{en:'Sleep',id:'Tidur'}};
 function setHomeTool(tool){ HOMETOOL=tool; document.querySelectorAll('.carebar button').forEach(b=>b.classList.toggle('sel',b.dataset.tool===tool)); try{SFX.tap&&SFX.tap();}catch(e){} }
 function floatEmote(el,ch,dx){ const room=$("#room"); if(!room||!el)return; const s=document.createElement('span'); s.className='floatemote'; s.textContent=ch;
   const x=el.offsetLeft+(el.offsetWidth/2)+(dx||0), y=el.offsetTop-4;
@@ -2091,16 +2095,15 @@ function renderHome(){
   room.innerHTML=`<div class="ground"></div><div class="floatlabel">${chip}</div>`;
   const rw=room.clientWidth||340;
   // --- decorations: small back row along the lawn horizon, evenly spread (percent positions)
-  const dn=decor.length, dcols=Math.min(4,Math.max(1,dn)), drows=Math.ceil(dn/dcols);
+  const dn=decor.length;
   decor.forEach((it,i)=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); if(!d)return;
-    const cc=i%dcols, rr=Math.floor(i/dcols), inRow=Math.min(dcols,dn-rr*dcols);
-    const size=dn>6?44:52, leftPct=((cc+1)/(inRow+1))*100, topPct=(drows<=1?52:48+9*(rr/(drows-1)))+(cc%2)*2;
+    const size=dn>5?42:50, leftPct=((i+1)/(dn+1))*100, topPct=66+(i%2)*4; // sit ON the grass (not floating in the sky), spread evenly, slight stagger
     const de=document.createElement("div"); de.className="placed grounded"; de.style.left=leftPct+"%"; de.style.top=topPct+"%"; de.style.width=size+"px"; de.style.marginLeft=(-size/2)+"px"; de.style.marginTop=(-size/2)+"px"; de.style.zIndex=Math.round(topPct*4); de.innerHTML=decoMarkup(d,size); room.appendChild(de); });
   // --- friends: tidy grid across the floor (capped & scaled so they never pile up or hide behind UI)
-  const gridFriends=showFriends.slice(0,10); // habitat snapshot — keep it tidy (full roster lives in the Album)
+  const gridFriends=showFriends.slice(0,5); // habitat snapshot — at most 5 so they stay big & tidy (full roster lives in the Album)
   const n=gridFriends.length;
   if(n){ const rh=room.clientHeight||Math.round(rw*1.25);
-    const cols=Math.min(4,Math.max(2,Math.ceil(n/2.6))), rows=Math.ceil(n/cols); // wider rows -> fewer rows
+    const cols=Math.min(3,Math.max(2,Math.ceil(n/2))), rows=Math.ceil(n/cols); // up to 3 across -> 1-2 tidy rows
     const bandTop=42, bandBot=85, bandH=bandBot-bandTop; // keep the bottom row clear of the room edge
     const size=Math.max(44,Math.min(66,Math.min(Math.floor(rw*0.78/cols), Math.floor(rh*(bandH/100)/rows)))); // fit width AND height -> no overlap
     gridFriends.forEach((c,idx)=>{ const cc=idx%cols, rr=Math.floor(idx/cols), inRow=Math.min(cols,n-rr*cols);
@@ -2115,7 +2118,7 @@ function renderHome(){
   const careWrap=$("#careWrap");
   if(friendsAll.length){ ensureNeeds(friendsAll.map(c=>c.id)); applyNeedBubbles(room);
     const meter=document.createElement('div'); meter.className='caremeter'; meter.innerHTML=`<i id="caremeterFill" style="width:${Math.min(100,Math.round((S.careMeter||0)/CARE_GOAL*100))}%"></i><span>💗 ${S.locale==='id'?'Bahagia':'Happy'}</span>`; room.appendChild(meter);
-    if(careWrap) careWrap.innerHTML=`<div class="carebar">`+HOME_TOOLS.map(([tool,emo])=>`<button data-tool="${tool}" class="${tool===HOMETOOL?'sel':''}" onclick="setHomeTool('${tool}')" aria-label="${tool}">${emo}</button>`).join('')+`</div>`;
+    if(careWrap) careWrap.innerHTML=`<div class="carehint">${S.locale==='id'?'Pilih alat → ketuk teman sesuai gelembungnya 💗':'Pick a tool → tap a friend with the matching bubble 💗'}</div><div class="carebar">`+HOME_TOOLS.map(([tool,emo])=>`<button data-tool="${tool}" class="${tool===HOMETOOL?'sel':''}" onclick="setHomeTool('${tool}')" aria-label="${tool}"><span class="cemoji">${emo}</span><span class="clabel">${nm(TOOL_LABEL[tool])}</span></button>`).join('')+`</div>`;
   } else if(careWrap){ careWrap.innerHTML=''; }
   // tray: decoration shop — buying decor invites more friends to hang out
   const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);

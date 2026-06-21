@@ -363,9 +363,14 @@
   @keyframes flashgo{0%{opacity:0;transform:scale(.5)}25%{opacity:1}100%{opacity:0;transform:scale(1.7)}}
   .reveal{animation:revealpop .7s cubic-bezier(.2,1.6,.4,1);}
   @keyframes revealpop{0%{transform:scale(0) rotate(-25deg);opacity:0}50%{transform:scale(1.28) rotate(12deg);opacity:1}72%{transform:scale(.9) rotate(-5deg)}100%{transform:scale(1) rotate(0)}}
-  .revealbanner{position:absolute;top:28%;left:50%;transform:translate(-50%,-50%) scale(0);z-index:6;font-weight:800;font-size:26px;color:#fff;text-shadow:0 2px 0 #d96a20,0 0 14px rgba(255,200,80,.95);white-space:nowrap;pointer-events:none;text-align:center;}
-  .revealbanner.go{animation:bannerpop 1.9s ease-out forwards;}
-  @keyframes bannerpop{0%{transform:translate(-50%,-50%) scale(0)}18%{transform:translate(-50%,-50%) scale(1.18)}30%{transform:translate(-50%,-50%) scale(1)}82%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-86%) scale(.9);opacity:0}}
+  .revealbanner{position:absolute;top:20%;left:50%;transform:translate(-50%,-50%) scale(0);z-index:6;font-weight:900;font-size:34px;letter-spacing:1.5px;white-space:nowrap;pointer-events:none;display:flex;align-items:center;justify-content:center;gap:9px;}
+  .revealbanner .bw{background:linear-gradient(100deg,#ffe9a8 0%,#ffd23d 22%,#fff7d0 38%,#ffb12e 52%,#ffd23d 70%,#ffe9a8 100%);background-size:230% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+    filter:drop-shadow(0 2px 0 #c2560f) drop-shadow(0 3px 1px #a3460a) drop-shadow(0 5px 12px rgba(255,150,40,.6)) drop-shadow(0 0 22px rgba(255,215,90,.95));}
+  .revealbanner .bwemo{font-size:30px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.22)) drop-shadow(0 0 11px rgba(255,210,90,.85));}
+  .revealbanner.go{animation:bannerpop 2.1s cubic-bezier(.2,1.5,.35,1) forwards;}
+  .revealbanner.go .bw{animation:goldshimmer 1.5s ease-in-out;}
+  @keyframes bannerpop{0%{transform:translate(-50%,-50%) scale(0) rotate(-7deg)}15%{transform:translate(-50%,-50%) scale(1.28) rotate(4deg)}27%{transform:translate(-50%,-50%) scale(.95) rotate(0)}37%{transform:translate(-50%,-50%) scale(1.06)}47%{transform:translate(-50%,-50%) scale(1)}84%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-94%) scale(.92);opacity:0}}
+  @keyframes goldshimmer{0%{background-position:210% 0}100%{background-position:-30% 0}}
   .legendcel{position:absolute;inset:-20%;z-index:4;pointer-events:none;background:conic-gradient(from 0deg,#ff8a3d,#ffd166,#7BC950,#48CAE4,#C77DFF,#ff6b9d,#ff8a3d);opacity:0;mix-blend-mode:screen;}
   .legendcel.go{animation:legendspin 2.2s ease-out forwards;}
   @keyframes legendspin{0%{opacity:0;transform:scale(.6) rotate(0)}25%{opacity:.5}100%{opacity:0;transform:scale(1.9) rotate(130deg)}}
@@ -1649,17 +1654,18 @@ function revealCreature(c){
   $("#eggwrap").innerHTML=`<div class="reveal" id="revealCr">${creatureMarkup(c,210)}</div>`;
   setTimeout(()=>{ const r=$("#revealCr"); if(r){ r.classList.remove("reveal"); r.classList.add("floaty"); } },720);
   const en=S.locale!=="id";
-  const txt = c.rarity==="legend" ? (en?"⭐ LEGENDARY! ⭐":"⭐ LEGENDA! ⭐")
-            : LOOP.isNew ? (en?"✨ NEW FRIEND! ✨":"✨ TEMAN BARU! ✨")
-            : (en?"🎉 YAY! 🎉":"🎉 HORE! 🎉");
-  showBanner(txt);
+  let bEmoji,bWord;
+  if(c.rarity==="legend"){ bEmoji='⭐'; bWord=en?'LEGENDARY!':'LEGENDA!'; }
+  else if(LOOP.isNew){ bEmoji='✨'; bWord=en?'NEW FRIEND!':'TEMAN BARU!'; }
+  else { bEmoji='🎉'; bWord=en?'YAY!':'HORE!'; }
+  showBanner(bEmoji,bWord);
   speak(LOOP.isNew ? (en?"New friend! "+nm(c.name):"Teman baru! "+nm(c.name)) : nm(c.name));
   const st=$("#hatch .stage"); if(st) st.classList.remove("hatching");
   window._challengeTimer=setTimeout(()=>{ if(shouldChallenge()) startChallenge(c); else { LOOP.resolved=true; LOOP.answered=true; finishChallenge(); } }, c.rarity==="legend"?2200:1700);
 }
 function flash(){ const f=$("#hatchFlash"); if(!f)return; f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
 function shakeScreen(){ const d=$("#device"); d.classList.remove("screenshake"); void d.offsetWidth; d.classList.add("screenshake"); setTimeout(()=>d.classList.remove("screenshake"),520); }
-function showBanner(txt){ const b=$("#revealBanner"); if(!b)return; b.textContent=txt; b.classList.remove("go"); void b.offsetWidth; b.classList.add("go"); }
+function showBanner(emoji,word){ const b=$("#revealBanner"); if(!b)return; b.innerHTML=`<span class="bwemo">${emoji}</span><span class="bw">${word}</span><span class="bwemo">${emoji}</span>`; b.classList.remove("go"); void b.offsetWidth; b.classList.add("go"); }
 function legendaryCelebration(){ const c=$("#legendCel"); if(!c)return; c.classList.remove("go"); void c.offsetWidth; c.classList.add("go"); }
 
 /* ---- adaptive difficulty ---- */

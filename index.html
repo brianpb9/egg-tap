@@ -154,7 +154,7 @@
   .cardlet.locked .sil{filter:brightness(0) opacity(.18);}
   .rar{position:absolute;top:6px;right:8px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;color:#fff;}
   .setbar{padding:10px 16px 2px;font-weight:800;color:var(--soft);display:flex;justify-content:space-between;}
-  .badgestrip{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;}
+  .badgestrip{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent);} /* right-edge fade hints there's more to scroll */
   .badge{flex:0 0 auto;width:66px;text-align:center;font-size:10px;font-weight:800;color:#7a5a2e;}
   .badge .bc{position:relative;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 50% 36%,#fff7e0,#ffe7a8);box-shadow:0 3px 8px rgba(244,163,0,.35),inset 0 0 0 3px #ffcf5c;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 4px;overflow:hidden;}
   .badge:not(.locked) .bc::after{content:"";position:absolute;top:0;left:-70%;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.7),transparent);transform:skewX(-18deg);animation:cardshine 3.2s ease-in-out infinite;}
@@ -2214,7 +2214,8 @@ function buyPlaceDeco(id){ const d=DATA.decorations.find(x=>x.id===id); if(!d) r
   const before=homeLevel(cnt());
   S.currencies.coins-=d.cost; SFX.coin(); S.home.push({decoId:id}); save(); renderHome();
   const after=homeLevel(cnt());
-  if(after>before){ try{SFX.fanfare('rare');}catch(e){} toast((S.locale==='id'?'🏡 Rumah naik ke Lv':'🏡 Home reached Lv')+after+' '+nm(HOME_LEVELS[after])+'!'); } }
+  if(after>before){ try{SFX.fanfare('rare');}catch(e){} toast((S.locale==='id'?'🏡 Rumah naik ke Lv':'🏡 Home reached Lv')+after+' '+nm(HOME_LEVELS[after])+'!'); }
+  else { toast(S.locale==='id'?'✨ Dipasang! Lebih banyak teman akan berkunjung':'✨ Placed! More friends will come visit'); } }
 function placeCreature(id){ // toggle: one instance per species in Home
   const before=homeLevel(S.home.length);
   const i=S.home.findIndex(h=>h.creatureId===id);
@@ -2404,10 +2405,19 @@ function titleMascotTap(el){ try{SFX.signature&&SFX.signature('crt_bubu');}catch
    {id:"deco_ocean_star",world:"ocean_kingdom",emoji:"⭐",cost:35,label:{id:"Bintang Laut",en:"Starfish"}},
    {id:"deco_meadow_rainbow",world:"rainbow_meadow",emoji:"🌈",cost:70,label:{id:"Pelangi",en:"Rainbow"}},
    {id:"deco_meadow_cloud",world:"rainbow_meadow",emoji:"☁️",cost:40,label:{id:"Awan",en:"Cloud"}},
-   {id:"deco_meadow_flower",world:"rainbow_meadow",emoji:"🌸",cost:30,label:{id:"Bunga",en:"Blossom"}}
+   {id:"deco_meadow_flower",world:"rainbow_meadow",emoji:"🌸",cost:30,label:{id:"Bunga",en:"Blossom"}},
+   {id:"deco_beach_palm",world:"sunny_beach",emoji:"🌴",cost:45,label:{id:"Pohon Palem",en:"Palm Tree"}},
+   {id:"deco_beach_ball",world:"sunny_beach",emoji:"🏐",cost:35,label:{id:"Bola Pantai",en:"Beach Ball"}},
+   // aspirational "wow" items (one per world) — long-term coin goals
+   {id:"deco_forest_wishtree",world:"green_forest",emoji:"🌳",cost:450,label:{id:"Pohon Harapan",en:"Wishing Tree"}},
+   {id:"deco_beach_lighthouse",world:"sunny_beach",emoji:"🗼",cost:500,label:{id:"Mercusuar",en:"Lighthouse"}},
+   {id:"deco_candy_castle",world:"candy_land",emoji:"🏰",cost:550,label:{id:"Istana Permen",en:"Candy Castle"}},
+   {id:"deco_dino_skeleton",world:"dino_valley",emoji:"🦴",cost:480,label:{id:"Fosil Dino",en:"Dino Fossil"}},
+   {id:"deco_ocean_treasure",world:"ocean_kingdom",emoji:"💰",cost:520,label:{id:"Harta Karun",en:"Treasure"}},
+   {id:"deco_meadow_fountain",world:"rainbow_meadow",emoji:"⛲",cost:500,label:{id:"Air Mancur Pelangi",en:"Rainbow Fountain"}}
   ];
   MOREDECO.forEach(d=>{ if(!DATA.decorations.find(x=>x.id===d.id)) DATA.decorations.push(d); });
-  const DECOART={deco_candy_lolly:'candy_lolly',deco_candy_cupcake:'candy_cupcake',deco_candy_donut:'candy_donut',deco_dino_volcano:'dino_volcano',deco_dino_egg:'dino_egg',deco_dino_bone:'dino_bone',deco_ocean_coral:'ocean_coral',deco_ocean_shell:'ocean_shell',deco_ocean_star:'ocean_star',deco_meadow_rainbow:'meadow_rainbow',deco_meadow_cloud:'meadow_cloud',deco_meadow_flower:'meadow_flower'};
+  const DECOART={deco_candy_lolly:'candy_lolly',deco_candy_cupcake:'candy_cupcake',deco_candy_donut:'candy_donut',deco_dino_volcano:'dino_volcano',deco_dino_egg:'dino_egg',deco_dino_bone:'dino_bone',deco_ocean_coral:'ocean_coral',deco_ocean_shell:'ocean_shell',deco_ocean_star:'ocean_star',deco_meadow_rainbow:'meadow_rainbow',deco_meadow_cloud:'meadow_cloud',deco_meadow_flower:'meadow_flower',deco_beach_palm:'beach_palm',deco_beach_ball:'beach_ball',deco_forest_wishtree:'forest_wishtree',deco_beach_lighthouse:'beach_lighthouse',deco_candy_castle:'candy_castle',deco_dino_skeleton:'dino_skeleton',deco_ocean_treasure:'ocean_treasure',deco_meadow_fountain:'meadow_fountain'};
   if(typeof DECOIMG!=='undefined') Object.keys(DECOART).forEach(k=>DECOIMG[k]='assets/deco/'+DECOART[k]+'.png');
 })();
 function boot(){

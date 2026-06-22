@@ -51,6 +51,8 @@
   .topbar .title{text-shadow:0 1px 2px rgba(255,255,255,.7),0 0 6px rgba(255,255,255,.5);}
   .wallet{display:flex;gap:8px;}
   .coin{display:flex;align-items:center;gap:5px;background:linear-gradient(180deg,#ffffff,#f6e9f3);border:2px solid #fff;border-radius:999px;padding:6px 13px;font-weight:800;color:#6b4a5e;box-shadow:0 3px 0 rgba(206,150,182,.55),0 5px 9px rgba(120,40,90,.18);font-size:15px;}
+  @keyframes pillpop{0%{transform:scale(1)}35%{transform:scale(1.2);filter:brightness(1.18) saturate(1.2)}100%{transform:scale(1)}}
+  .coin.pillpop{animation:pillpop .42s cubic-bezier(.3,1.5,.5,1);}
   .coin svg{filter:drop-shadow(0 1.5px 1px rgba(0,0,0,.18));}
   .coin img{vertical-align:middle;filter:drop-shadow(0 1px 1px rgba(0,0,0,.16));}
   .corner img{display:block;margin:0 auto;filter:drop-shadow(0 1.5px 1px rgba(0,0,0,.2));}
@@ -145,6 +147,8 @@
   .nav button:active{transform:translateY(3px);box-shadow:0 1px 0 #e58cbf,0 2px 4px rgba(120,40,90,.25);}
   .nav button.sel{background:linear-gradient(180deg,#c3f0a4,#8add5f);border-color:#fff;color:#3c7a1e;box-shadow:0 4px 0 #5fb83e,0 6px 8px rgba(40,90,30,.3);text-shadow:0 1px 1px rgba(255,255,255,.45);}
   .nav button.sel .ic img{filter:drop-shadow(0 2px 3px rgba(0,0,0,.28));}
+  @keyframes navpop{0%{transform:scale(1)}45%{transform:scale(1.28) translateY(-2px)}100%{transform:scale(1)}}
+  .nav button.sel .ic{display:inline-block;animation:navpop .34s ease;}
 
   .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px;}
@@ -1519,9 +1523,10 @@ const ICON={
   music:`<img src="assets/ui/ic_music.png" alt="" width="29" height="29" draggable="false">`,
   muted:`<img src="assets/ui/ic_muted.png" alt="" width="29" height="29" draggable="false">`,
 };
+function navTap(scr){ try{SFX.tap&&SFX.tap();}catch(e){} try{haptic(8);}catch(e){} show(scr); } // audible + tactile tab switch
 function renderNav(nav){
   const items=[["hatch","nav_hatch"],["album","nav_album"],["home","nav_home"],["world","nav_world"]];
-  nav.innerHTML=items.map(([scr,lab])=>`<button data-scr="${scr}" onclick="show('${scr}')"><span class="ic">${ICON[scr]}</span>${t(lab)}</button>`).join("");
+  nav.innerHTML=items.map(([scr,lab])=>`<button data-scr="${scr}" onclick="navTap('${scr}')"><span class="ic">${ICON[scr]}</span>${t(lab)}</button>`).join("");
 }
 
 /* ===================== ONBOARDING ===================== */
@@ -1610,7 +1615,12 @@ function updateBonusBtn(){ const b=$("#bonusEgg"); if(!b) return;
   const ok = S.currencies.stardust>=BONUS_COST && LOOP && !LOOP.creature && LOOP.crack===0 && LOOP.egg && !LOOP.egg.epic;
   b.style.display=ok?"inline-block":"none";
   b.textContent=(S.locale==='id'?'✨ Telur Ajaib':'✨ Magic Egg')+` (${BONUS_COST}✨)`; }
+function bumpPill(span){ const p=span&&span.parentElement; if(!p) return; p.classList.remove('pillpop'); void p.offsetWidth; p.classList.add('pillpop'); }
 function syncWallet(){
+  const _sc=$("#w_coins"),_ss=$("#w_stars"),_sd=$("#w_dust");
+  if(_sc&&S.currencies.coins>(parseInt(_sc.textContent)||0)) bumpPill(_sc);
+  if(_ss&&S.currencies.stars>(parseInt(_ss.textContent)||0)) bumpPill(_ss);
+  if(_sd&&S.currencies.stardust>(parseInt(_sd.textContent)||0)) bumpPill(_sd);
   $("#w_stars").textContent=S.currencies.stars+"/"+STAR_WISH; $("#w_coins").textContent=S.currencies.coins; $("#w_dust").textContent=S.currencies.stardust;
   $("#worldName").textContent=nm(world(S.currentWorld).name);
   const st=document.querySelector('#hatch .stage'); const b=BG[S.currentWorld];

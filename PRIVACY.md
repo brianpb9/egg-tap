@@ -59,7 +59,7 @@ at the same URL.
 
 ## 9. Contact
 Questions about privacy? Contact the developer at:
-**[INSERT CONTACT EMAIL BEFORE PUBLISHING]**
+**hdrvstudio@gmail.com**
 
 _This document must be hosted at a public URL (e.g. your Vercel deployment at
 `/PRIVACY` or a GitHub Pages link) and that URL entered in the Google Play Console under

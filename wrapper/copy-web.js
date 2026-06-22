@@ -7,7 +7,18 @@ const root = path.resolve(__dirname, '..');
 const www = path.resolve(__dirname, 'www');
 const items = ['index.html', 'manifest.json', 'assets']; // add 'bubu_eggs.html' if you ship the catalog
 
+// Don't ship dead weight in the app: the OLD pre-BUBU roster art (replaced by assets/bubu,
+// graceful SVG fallback if ever referenced) and the store-only trailer. ~76 MB saved.
+const EXCLUDE = new Set([
+  path.join(root, 'assets', 'creatures'),
+  path.join(root, 'assets', 'variants'),
+  path.join(root, 'assets', 'thumbs', 'creatures'),
+  path.join(root, 'assets', 'thumbs', 'variants'),
+  path.join(root, 'assets', 'store', 'trailer.mp4'),
+]);
+
 function cp(src, dst) {
+  if (EXCLUDE.has(src)) return;
   const st = fs.statSync(src);
   if (st.isDirectory()) {
     fs.mkdirSync(dst, { recursive: true });

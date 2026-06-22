@@ -1568,7 +1568,7 @@ let SESSION_HATCH=0; const SOFT_STOP_EVERY=8; const BONUS_COST=40; const STAR_WI
 /* ===================== ADS / MONETIZATION (AdMob via Capacitor; no-op on web) ===================== */
 // Fill these with your real AdMob IDs before the Android build (see ADMOB_SETUP.md).
 const ADMOB={ appId:'ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX', interstitial:'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX', testMode:true };
-const AD_EVERY=4; // show an interstitial after every N hatches (gentler cadence for ages 3-6 / Families policy; was 2)
+const AD_EVERY=3; // interstitial after every 3 hatches (business decision); players buy one-time Remove-Ads to disable
 const ADS={
   _ready:false,
   plugin(){ return (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.AdMob) || null; },
@@ -1577,7 +1577,7 @@ const ADS={
     try{ await p.initialize({ initializeForTesting: ADMOB.testMode, tagForChildDirectedTreatment:true, tagForUnderAgeOfConsent:true, maxAdContentRating:'G' }); }catch(e){} },
   due(){ return !this.removed() && SESSION_HATCH>0 && (SESSION_HATCH%AD_EVERY===0); },
   interstitial(cb){ cb=cb||function(){}; const p=this.plugin(); if(this.removed()||!p){ cb(); return; }
-    (async()=>{ try{ await this.init(); await p.prepareInterstitial({ adId:ADMOB.interstitial, isTesting:ADMOB.testMode, npa:true }); await p.showInterstitial(); }catch(e){} cb(); })(); }
+    (async()=>{ try{ await this.init(); await p.prepareInterstitial({ adId:ADMOB.interstitial, isTesting:ADMOB.testMode, npa:true }); await p.showInterstitial(); track('ad_interstitial',{n:SESSION_HATCH}); }catch(e){} cb(); })(); }
 };
 function removeAds(){ // "Remove Ads" purchase (parent-gated). Native: trigger Play Billing; web: no real ads to remove.
   const bill=(window.Capacitor&&Capacitor.Plugins&&(Capacitor.Plugins.Purchases||Capacitor.Plugins.InAppPurchase))||null;
@@ -1585,8 +1585,14 @@ function removeAds(){ // "Remove Ads" purchase (parent-gated). Native: trigger P
   if(!ADS.plugin()){ toast(S.locale==='id'?'Bebas-iklan tersedia di aplikasi Play Store 💛':'Ad-free is available in the Play Store app 💛'); return; }
   grantAdFree();
 }
-function grantAdFree(){ S.adsRemoved=true; save(); try{SFX.coin&&SFX.coin();}catch(e){} toast(S.locale==='id'?'✨ Bebas iklan selamanya! Terima kasih 💛':'✨ Ad-free forever! Thank you 💛'); if(typeof renderParent==='function') renderParent(); }
+function grantAdFree(){ const wasNew=!S.adsRemoved; S.adsRemoved=true; save(); if(wasNew) track('remove_ads_granted'); try{SFX.coin&&SFX.coin();}catch(e){} toast(S.locale==='id'?'✨ Bebas iklan selamanya! Terima kasih 💛':'✨ Ad-free forever! Thank you 💛'); if(typeof renderParent==='function') renderParent(); }
 function restorePurchases(){ /* native: query Play Billing for owned remove-ads entitlement -> grantAdFree() */ toast(S.locale==='id'?'Memeriksa pembelian…':'Checking purchases…'); }
+/* ===================== ANALYTICS (Firebase via Capacitor; gtag on web; no-op otherwise) ===================== */
+// So you have retention/funnel data at launch instead of flying blind. No PII is ever sent — only anonymous
+// event names + game counters. Wire @capacitor-firebase/analytics in the native build (see RELEASE_CHECKLIST.md).
+const ANALYTICS={ fb(){ return (window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.FirebaseAnalytics)||null; },
+  track(name,params){ try{ const p=this.fb(); if(p&&p.logEvent){ p.logEvent({name,params:params||{}}); return; } if(typeof gtag==='function'){ gtag('event',name,params||{}); } }catch(e){} } };
+function track(name,params){ try{ ANALYTICS.track(name,params); }catch(e){} }
 const MISSIONS=[
   {id:"hatch", goal:5, reward:30, emoji:"🥚", label:{id:"Tetaskan 5 telur",en:"Hatch 5 eggs"}},
   {id:"correct", goal:5, reward:30, emoji:"✅", label:{id:"Jawab 5 benar",en:"Answer 5 right"}},
@@ -1701,6 +1707,7 @@ function hatch(){
   const c=rollCreature(LOOP.egg); LOOP.creature=c; LOOP.isNew=!S.owned[c.id];
   S.owned[c.id]=(S.owned[c.id]||0)+1; S.stats.hatches++;
   SESSION_HATCH++; missionProgress('hatch'); if(LOOP.isNew) missionProgress('new'); awardBadges();
+  track('hatch',{world:S.currentWorld,is_new:!!LOOP.isNew,collected:Object.keys(S.owned).length});
   setCue(""); $("#tapdots").innerHTML=""; updateBonusBtn();
   const st=$("#hatch .stage"); if(st){ st.classList.remove("prehatch"); st.classList.add("hatching"); }
   // STAGE 2 — cracking moment
@@ -2296,7 +2303,7 @@ function creatureOfDay(){ const s=todayStr(); let h=0; for(let i=0;i<s.length;i+
 function renderStarOfDay(){ const el=$("#starOfDay"); if(!el) return; const c=creatureOfDay(); if(!c){ el.innerHTML=''; return; }
   const owned=!!S.owned[c.id], done=S.starDayDone===todayStr(), en=S.locale!=='id'; el.className='starday'+((owned||done)?' got':'');
   el.innerHTML=`<div class="sdimg">${creatureMarkup(c,52)}</div><div class="sdtxt">⭐ ${en?'Star of the Day':'Bintang Hari Ini'}: ${nm(c.name)}<small>${(owned||done)?(en?'Collected ✓':'Sudah punya ✓'):(en?'Hatch it today for +30🪙!':'Tetaskan hari ini → +30🪙!')}</small></div>`; }
-function maybeDaily(){ ensureMissions(); ensureDailyEgg(); if(S.daily.lastClaim===todayStr()) return; renderStreak(); renderStarOfDay(); renderMissions(); openModal("dailyModal"); }
+function maybeDaily(){ ensureMissions(); ensureDailyEgg(); if(S.daily.lastClaim===todayStr()) return; track('daily_open',{streak:S.daily.streak,collected:Object.keys(S.owned).length}); renderStreak(); renderStarOfDay(); renderMissions(); openModal("dailyModal"); }
 function renderStreak(){ const cur=S.daily.streak%7; $("#streakStrip").innerHTML=[1,2,3,4,5,6,7].map(d=>{
   const done=d<=cur, today=d===cur+1; const rw=d===7?'✨30':((d===3||d===6)?'🪙50':'🪙20');
   return `<div class="sd ${done?'done':''} ${today?'today':''}"><div class="sdday">${d===7?'🎁':d}</div><div class="sdrw">${rw}</div></div>`; }).join(""); }

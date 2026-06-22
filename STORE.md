@@ -7,7 +7,7 @@
 **Wonder Egg World — Hatch, Learn & Collect**
 
 ## Subtitle / short description (≤ 80 chars)
-Tap eggs, hatch 100+ cute creatures, and learn colors, numbers & more!
+Tap eggs, hatch 60 cute creatures, and learn colors, numbers & more!
 
 ## Promo text
 Free to play, no chat, no random loot — gentle, no-fail learning for ages 3–6. Family-friendly ads, or go Ad-Free forever with one tap.
@@ -19,7 +19,7 @@ Wonder Egg World is a cozy, no-fail learning game for little ones aged 3–6.
 
 📚 **Learn while you play** — gentle, voice-led mini-challenges teach colors, shapes, numbers, letters, animals, feelings, patterns and memory. Difficulty quietly adapts from Beginner to Expert, so it grows with your child. There is **no "game over"** — every try ends in success and celebration.
 
-🌈 **Collect 100+ creatures** — fill your album with adorable friends and chase rare color variants: Common, Rare, Epic and shiny Legendary rainbows!
+🌈 **Collect 60 creatures** — fill your album with adorable friends across 6 worlds and chase rarities: Common, Rare, Epic and shiny Legendary!
 
 🏡 **Build your home** — decorate a cozy room that grows into a garden, playground, treehouse and castle. Your creatures live there and react to taps.
 

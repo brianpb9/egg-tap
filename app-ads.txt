@@ -1,0 +1,6 @@
+# app-ads.txt for Wonder Egg World
+# 1) Replace pub-XXXXXXXXXXXXXXXX with your AdMob publisher ID (the digits only, no "ca-app-pub" prefix).
+# 2) Host this file at the ROOT of the developer website you declare in AdMob/Play (e.g. https://your-domain/app-ads.txt).
+# 3) In AdMob -> Apps -> your app -> app-ads.txt, click "Check for updates" to verify.
+# This authorizes Google to sell your app's ad inventory and improves fill rate / blocks spoofing.
+google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

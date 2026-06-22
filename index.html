@@ -203,6 +203,12 @@
   .sd.done{background:var(--good);color:#fff;}
   .sd.today{outline:3px solid var(--btn);}
   .sd .sdrw{font-size:9px;font-weight:800;opacity:.92;white-space:nowrap;}
+  .starday{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#fff7e0,#ffe9bd);border:2px solid #ffd166;border-radius:18px;padding:8px 12px;margin:10px 0;text-align:left;}
+  .starday .sdimg{width:52px;height:52px;flex:0 0 auto;}
+  .starday .sdtxt{flex:1;min-width:0;font-weight:800;font-size:13px;color:#7a5a10;}
+  .starday .sdtxt small{display:block;font-weight:700;font-size:11px;color:#b07d1e;}
+  .starday.got{background:linear-gradient(180deg,#e9ffe0,#c9f0b4);border-color:#7fc34f;}
+  .starday.got .sdtxt,.starday.got .sdtxt small{color:#3f7a1e;}
   .sd svg{width:20px;height:24px;}
 
   .gateNums{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
@@ -616,6 +622,7 @@
       <h2 id="d_title">Daily Egg!</h2>
       <p class="note" id="d_sub"></p>
       <div class="streakwrap" id="streakStrip"></div>
+      <div id="starOfDay" class="starday"></div>
       <div id="missionWrap" style="text-align:left"><div class="setbar" style="padding:6px 0"><span id="m_title">🎯 Today's Missions</span></div><div id="missionList"></div></div>
       <button class="big" onclick="claimDaily()" id="d_claim" style="margin-top:8px">Claim 🥚</button>
     </div>
@@ -1868,6 +1875,7 @@ function reward(){
     S.currencies[dt.dupCurrency]=(S.currencies[dt.dupCurrency]||0)+dt.dupAmount; if(dt.dupCurrency==="coins") coinsAdded=dt.dupAmount;
     if(dt.dupCurrency!=="coins"){ S.currencies.coins+=5; coinsAdded+=5; } // small coin trickle on dupes so late-game income never hits zero
     gain=`+${stars}⭐  +${dt.dupAmount}${dt.dupCurrency==="coins"?"🪙":"✨"}${dt.dupCurrency!=="coins"?" +5🪙":""}`; }
+  if(LOOP.isNew && S.starDayDone!==todayStr()){ const sod=creatureOfDay(); if(sod && c.id===sod.id){ S.starDayDone=todayStr(); S.currencies.coins+=30; coinsAdded+=30; setTimeout(()=>toast(S.locale==='id'?'⭐ Bintang Hari Ini! +30🪙':'⭐ Star of the Day! +30🪙'),1150); } } // collected today's featured creature
   if(coinsAdded) setTimeout(()=>flyCoins(coinsAdded),320);
   setTimeout(()=>{try{SFX.coin();}catch(e){}},200);
   $("#rw_card").className="card3d rar-"+(c.rarity||"common");
@@ -2266,7 +2274,13 @@ function pickWorld(id){ SFX.tap(); S.currentWorld=id; save(); refreshBGM(); show
 /* ===================== DAILY ===================== */
 function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
 function ensureDailyEgg(){ const d=todayStr(); if(S.dailyEggDay!==d){ S.dailyEggDay=d; S.dailyEggReady=true; save(); } } // once/day: a guaranteed-new "Daily Surprise" egg
-function maybeDaily(){ ensureMissions(); ensureDailyEgg(); if(S.daily.lastClaim===todayStr()) return; renderStreak(); renderMissions(); openModal("dailyModal"); }
+function creatureOfDay(){ const s=todayStr(); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
+  const un=S.worldsUnlocked||['green_forest']; let pool=DATA.creatures.filter(c=>un.includes(c.world)&&!c.legend); if(!pool.length) pool=DATA.creatures.filter(c=>!c.legend); if(!pool.length) pool=DATA.creatures;
+  return pool[h%pool.length]; }
+function renderStarOfDay(){ const el=$("#starOfDay"); if(!el) return; const c=creatureOfDay(); if(!c){ el.innerHTML=''; return; }
+  const owned=!!S.owned[c.id], done=S.starDayDone===todayStr(), en=S.locale!=='id'; el.className='starday'+((owned||done)?' got':'');
+  el.innerHTML=`<div class="sdimg">${creatureMarkup(c,52)}</div><div class="sdtxt">⭐ ${en?'Star of the Day':'Bintang Hari Ini'}: ${nm(c.name)}<small>${(owned||done)?(en?'Collected ✓':'Sudah punya ✓'):(en?'Hatch it today for +30🪙!':'Tetaskan hari ini → +30🪙!')}</small></div>`; }
+function maybeDaily(){ ensureMissions(); ensureDailyEgg(); if(S.daily.lastClaim===todayStr()) return; renderStreak(); renderStarOfDay(); renderMissions(); openModal("dailyModal"); }
 function renderStreak(){ const cur=S.daily.streak%7; $("#streakStrip").innerHTML=[1,2,3,4,5,6,7].map(d=>{
   const done=d<=cur, today=d===cur+1; const rw=d===7?'✨30':((d===3||d===6)?'🪙50':'🪙20');
   return `<div class="sd ${done?'done':''} ${today?'today':''}"><div class="sdday">${d===7?'🎁':d}</div><div class="sdrw">${rw}</div></div>`; }).join(""); }

@@ -17,8 +17,10 @@ const EXCLUDE = new Set([
   path.join(root, 'assets', 'store', 'trailer.mp4'),
 ]);
 
+const EGGS_DIR = path.join(root, 'assets', 'bubu', 'eggs'); // ship only the in-game eggs (ingame_*); the 72 catalog/stage images are unused in the app (~23 MB)
 function cp(src, dst) {
   if (EXCLUDE.has(src)) return;
+  if (src.startsWith(EGGS_DIR) && fs.statSync(src).isFile() && !path.basename(src).startsWith('ingame_')) return;
   const st = fs.statSync(src);
   if (st.isDirectory()) {
     fs.mkdirSync(dst, { recursive: true });

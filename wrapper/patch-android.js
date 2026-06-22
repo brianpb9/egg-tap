@@ -23,7 +23,7 @@ if (!fs.existsSync(manifestPath)) {
 let strings = fs.readFileSync(stringsPath, 'utf8');
 if (!strings.includes('admob_app_id')) {
   strings = strings.replace('</resources>',
-    '    <string name="admob_app_id">ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX</string>\n</resources>');
+    '    <string name="admob_app_id">ca-app-pub-7340441888702917~7465648358</string>\n</resources>');
   fs.writeFileSync(stringsPath, strings);
   console.log('✓ Added admob_app_id to strings.xml  (replace with your REAL AdMob APP ID)');
 } else { console.log('• strings.xml already has admob_app_id'); }

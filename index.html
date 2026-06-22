@@ -173,6 +173,8 @@
   .placed{position:absolute;cursor:grab;touch-action:none;filter:drop-shadow(0 7px 5px rgba(0,0,0,.28));z-index:2;transition:transform .1s;}
   .placed.dragging{cursor:grabbing;animation:none!important;z-index:99999!important;transform:scale(1.12);filter:drop-shadow(0 13px 10px rgba(0,0,0,.4));}
   .cwrap{display:inline-block;will-change:transform;transform-origin:50% 100%;}
+  @keyframes decopop{0%{transform:scale(0) translateY(12px);opacity:0}55%{transform:scale(1.18)}100%{transform:scale(1);opacity:1}}
+  .placed.popin{animation:decopop .5s cubic-bezier(.2,1.5,.4,1);}
   .cwrap.react{animation:react .5s ease;}
   @keyframes react{0%{transform:scale(1,1)}18%{transform:scale(1.18,.84)}40%{transform:scale(.88,1.18) rotate(-3deg)}62%{transform:scale(1.08,.95) rotate(3deg)}82%{transform:scale(.98,1.03)}100%{transform:scale(1,1)}}
   /* rare KING EGG — big & glowing with a crown */
@@ -2194,7 +2196,8 @@ function renderHome(){
   const dn=decor.length;
   decor.forEach((it,i)=>{ const d=DATA.decorations.find(x=>x.id===it.decoId); if(!d)return;
     const size=dn>5?42:50, pp=homePos('d:'+d.id); const leftPct=pp?pp.x:((i+1)/(dn+1))*100, topPct=pp?pp.y:(66+(i%2)*4); // saved position, else on the grass
-    const de=document.createElement("div"); de.className="placed grounded"; de.style.left=leftPct+"%"; de.style.top=topPct+"%"; de.style.width=size+"px"; de.style.marginLeft=(-size/2)+"px"; de.style.marginTop=(-size/2)+"px"; de.style.zIndex=Math.round(topPct*4); de.innerHTML=decoMarkup(d,size); de.addEventListener('pointerdown',ev=>startPlaceDrag(ev,de,'d:'+d.id,false)); room.appendChild(de); });
+    const de=document.createElement("div"); de.className="placed grounded"+(S._justPlaced===d.id?' popin':''); de.style.left=leftPct+"%"; de.style.top=topPct+"%"; de.style.width=size+"px"; de.style.marginLeft=(-size/2)+"px"; de.style.marginTop=(-size/2)+"px"; de.style.zIndex=Math.round(topPct*4); de.innerHTML=decoMarkup(d,size); de.addEventListener('pointerdown',ev=>startPlaceDrag(ev,de,'d:'+d.id,false)); room.appendChild(de); });
+  S._justPlaced=null;
   // --- friends: tidy grid across the floor (capped & scaled so they never pile up or hide behind UI)
   const n=gridFriends.length; // gridFriends defined above (your chosen 5, else auto)
   if(n){ const rh=room.clientHeight||Math.round(rw*1.25);
@@ -2235,7 +2238,7 @@ function buyPlaceDeco(id){ const d=DATA.decorations.find(x=>x.id===id); if(!d) r
   if(S.currencies.coins<d.cost){ SFX.oops(); toast(t("afford")); return; }
   const cnt=()=>Object.keys(S.owned).map(creature).filter(c=>c&&c.world===S.currentWorld).length + S.home.filter(it=>it.decoId).length;
   const before=homeLevel(cnt());
-  S.currencies.coins-=d.cost; SFX.coin(); S.home.push({decoId:id}); save(); renderHome();
+  S.currencies.coins-=d.cost; SFX.coin(); S.home.push({decoId:id}); S._justPlaced=id; save(); try{burst&&burst(18,$("#room"),true);}catch(e){} renderHome();
   const after=homeLevel(cnt());
   if(after>before){ try{SFX.fanfare('rare');}catch(e){} toast((S.locale==='id'?'🏡 Rumah naik ke Lv':'🏡 Home reached Lv')+after+' '+nm(HOME_LEVELS[after])+'!'); }
   else { toast(S.locale==='id'?'✨ Dipasang! Lebih banyak teman akan berkunjung':'✨ Placed! More friends will come visit'); } }

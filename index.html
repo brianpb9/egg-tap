@@ -1214,6 +1214,13 @@ function toggleMusic(){ S.settings=S.settings||{music:true,sfx:true}; const anyO
   if(t) startBGM(); else stopBGM(); updateMusicIcon(); }
 function setAudioPref(key){ S.settings=S.settings||{music:true,sfx:true}; S.settings[key]=(S.settings[key]===false); save(); // granular toggle (Parent Zone)
   if(key==='music'){ if(S.settings.music) startBGM(); else stopBGM(); } updateMusicIcon(); try{if(S.settings.sfx!==false)SFX.tap&&SFX.tap();}catch(e){} if(typeof renderParent==='function') renderParent(); }
+/* Stop all audio when the app is backgrounded / screen off / closed (a WebView keeps
+   playing music otherwise), and resume when it returns to the foreground. */
+function audioPause(){ try{stopBGM();}catch(e){} try{ if(AC&&AC.state==='running') AC.suspend(); }catch(e){} try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){} }
+function audioResume(){ try{ if(AC&&AC.state==='suspended') AC.resume(); }catch(e){} try{ if(AUDIO_READY) startBGM(); }catch(e){} }
+document.addEventListener('visibilitychange',()=>{ document.hidden?audioPause():audioResume(); });
+window.addEventListener('pagehide',audioPause); window.addEventListener('blur',()=>{ if(document.hidden) audioPause(); });
+try{ if(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App){ Capacitor.Plugins.App.addListener('appStateChange',(s)=>{ (s&&s.isActive)?audioResume():audioPause(); }); } }catch(e){}
 function haptic(p){ try{ if(navigator.vibrate && !(S.settings&&S.settings.sfx===false)) navigator.vibrate(p); }catch(e){} }
 let _enVoice=null;
 function pickEnVoice(){ try{ const vs=speechSynthesis.getVoices(); if(!vs.length) return null; const en=vs.filter(v=>/^en/i.test(v.lang||''));

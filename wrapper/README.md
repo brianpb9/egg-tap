@@ -46,10 +46,16 @@ Easiest: **Android Studio -> Build -> Generate Signed Bundle/APK -> Android App 
 a new keystore (or pick yours) -> it builds the signed `.aab`. **Back up the keystore** — losing
 it means you can never update the app.
 
-### CLI signing (optional, for `npm run build:aab`)
-- Copy `key.properties.example` -> `android/key.properties` and fill it in.
-- In `android/app/build.gradle`, load it and add a release `signingConfig` (standard Android
-  recipe). Then `npm run build:aab` outputs `android/app/build/outputs/bundle/release/app-release.aab`.
+### CLI signing (for `npm run build:aab`) — already wired
+`patch-android.js` (run by `prepare:android`) drops a conditional `android/app/signing.gradle`
+and applies it, so you do **not** edit `build.gradle` by hand. Just:
+1. Create a keystore once (command is in `key.properties.example`).
+2. Copy `key.properties.example` -> `android/key.properties` and fill in the 4 values
+   (absolute keystore path + passwords + alias).
+3. `npm run build:aab`  ->  `android/app/build/outputs/bundle/release/app-release.aab` (signed).
+
+If `key.properties` is absent, the release build is just unsigned — use the Android Studio
+wizard (Build > Generate Signed Bundle) instead.
 
 ## In-app product (Play Console)
 Create `remove_ads` as a **non-consumable** managed product. The game's Parent Zone has

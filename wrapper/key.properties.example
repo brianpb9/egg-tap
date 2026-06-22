@@ -1,0 +1,9 @@
+# Copy this to  android/key.properties  (after `npm run add:android`) and fill in real values.
+# Then either use Android Studio's "Generate Signed Bundle" wizard (easiest), or wire these
+# into android/app/build.gradle for `npm run build:aab` (see README "CLI signing" section).
+# NEVER commit the real key.properties or the .keystore file. Back up the keystore safely —
+# losing it means you can never update the app on Play.
+storeFile=../../wonder-egg-upload.keystore
+storePassword=CHANGE_ME
+keyAlias=upload
+keyPassword=CHANGE_ME

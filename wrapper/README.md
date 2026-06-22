@@ -1,55 +1,66 @@
-# Wonder Egg World — Android wrapper (Capacitor + AdMob + Remove-Ads)
+# Wonder Egg World — Android wrapper (Capacitor)
 
-Turns the web game (repo root) into an installable Android app with AdMob
-interstitials and a one-time "Remove Ads" purchase. The game's ad/IAP logic
-already lives in `../index.html`; this folder is just the native shell.
+Turns the web game (repo root) into an installable Android app with **AdMob interstitials**,
+a one-time **Remove-Ads** purchase, and optional **Firebase Analytics**. All the game logic
+already lives in `../index.html`; this folder is just the native shell + build glue.
 
-> See `../ADMOB_SETUP.md` for the AdMob account setup and Families/COPPA compliance.
+> Full submission steps (Play Console, Families, Data Safety, listing) are in
+> `../RELEASE_CHECKLIST.md`. AdMob/COPPA detail in `../ADMOB_SETUP.md`.
 
-## Prereqs
-- Node 18+, Android Studio (with SDK), a Google Play Console account, an AdMob account.
+## Prereqs (your machine — one-time)
+- **Node 18+**, **Android Studio** (with the Android SDK + an emulator or a USB device),
+  a **Google Play Console** account, an **AdMob** account.
+- (Optional analytics) a **Firebase** project. (Optional IAP) a **RevenueCat** account.
 
-## Build steps
+## Fast path — from zero to .aab
 ```bash
 cd wrapper
 npm install
-npm run copy:web          # copies ../index.html + ../assets + ../manifest.json into www/
-npx cap init "Wonder Egg World" com.wonderegg.world --web-dir=www   # first time only (config already provided)
-npm run add:android       # adds the android/ project
-npm run sync              # copy web + sync plugins
-npm run open              # opens Android Studio -> Build > Generate Signed Bundle (.aab)
+npm run prepare:android      # copy web + add android + sync + patch AdMob manifest (one shot)
+npm run assets               # generate launcher icons/splash (uses ../assets/store/icon.png)
+npm run open                 # Android Studio -> Build > Generate Signed Bundle (.aab)
 ```
-Re-run `npm run sync` after any change to the web game.
+After any later change to the web game, just re-run `npm run sync`.
 
-## 1. AdMob IDs
-- In `../index.html` set the real IDs in `const ADMOB = { appId, interstitial, testMode:false }`.
-- In `android/app/src/main/AndroidManifest.xml`, inside `<application>`:
-  ```xml
-  <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID"
-             android:value="ca-app-pub-REAL~REAL"/>
-  ```
-- Keep `testMode:true` until your account is approved (use test ads only).
+### What `npm run prepare:android` does
+1. `copy:web` — copies `../index.html`, `../assets`, `../manifest.json` into `www/`, copies
+   `billing-glue.js`, and **auto-injects** `<script src="billing-glue.js"></script>`.
+2. `cap add android` — creates the native `android/` project.
+3. `cap sync android` — installs the plugins (AdMob, RevenueCat, Firebase Analytics).
+4. `patch` — injects the **AdMob APPLICATION_ID** meta-data + a `strings.xml` entry
+   (required — without it the app crashes when AdMob starts).
 
-## 2. Remove-Ads purchase
-- Create a **non-consumable** product `remove_ads` in Play Console.
-- This folder uses **RevenueCat** (`@revenuecat/purchases-capacitor`); set your key
-  and entitlement (`ad_free`) in `billing-glue.js`, then include it from `www/index.html`:
-  ```html
-  <script src="billing-glue.js"></script>
-  ```
-  (copy-web.js copies index.html; add the script tag in the source or post-copy).
-- The game's `removeAds()` auto-calls `onRemoveAdsPurchase()` and `restorePurchases()`
-  which `billing-glue.js` defines; success calls `grantAdFree()`.
+## Fill in your IDs (one-time, before building)
+1. **AdMob**
+   - `../index.html` -> `const ADMOB = { appId, interstitial, testMode }` — real IDs; keep
+     `testMode:true` until your AdMob account is approved.
+   - `android/app/src/main/res/values/strings.xml` -> `admob_app_id` -> your real **APP ID**.
+2. **Remove-Ads (RevenueCat)** — `billing-glue.js` -> `RC_KEY` (public Google key);
+   product `remove_ads` (non-consumable), entitlement `ad_free`.
+3. **Analytics (optional)** — drop `google-services.json` into `android/app/`, then enable the
+   google-services Gradle plugin (RELEASE_CHECKLIST.md section F). Without it, analytics no-ops
+   and the app still builds.
 
-## 3. Compliance (kids 3–6) — required
-- Play Console → join **Designed for Families**, target age **3–6**.
-- AdMob is **families-self-certified**; the game already inits child-directed,
-  non-personalized, G-rated. Declare ads + data safety accordingly.
-- Add a **privacy policy URL** (required for Families).
+## Signing
+Easiest: **Android Studio -> Build -> Generate Signed Bundle/APK -> Android App Bundle** -> create
+a new keystore (or pick yours) -> it builds the signed `.aab`. **Back up the keystore** — losing
+it means you can never update the app.
+
+### CLI signing (optional, for `npm run build:aab`)
+- Copy `key.properties.example` -> `android/key.properties` and fill it in.
+- In `android/app/build.gradle`, load it and add a release `signingConfig` (standard Android
+  recipe). Then `npm run build:aab` outputs `android/app/build/outputs/bundle/release/app-release.aab`.
+
+## In-app product (Play Console)
+Create `remove_ads` as a **non-consumable** managed product. The game's Parent Zone has
+**Remove Ads** + **Restore** buttons that drive `onRemoveAdsPurchase()` / `restorePurchases()`
+in `billing-glue.js` -> `grantAdFree()` on success.
 
 ## Files
-- `package.json` — Capacitor + AdMob + RevenueCat deps.
+- `package.json` — Capacitor + AdMob + RevenueCat + Firebase deps and build scripts.
 - `capacitor.config.json` — appId `com.wonderegg.world`, webDir `www`.
-- `copy-web.js` — copies the web game into `www/`.
-- `billing-glue.js` — Play Billing wiring for Remove-Ads.
-- `www/`, `android/`, `node_modules/` are git-ignored (generated at build).
+- `copy-web.js` — copies the web game into `www/` and injects the billing glue.
+- `patch-android.js` — injects the AdMob manifest meta-data (idempotent).
+- `billing-glue.js` — RevenueCat wiring for Remove-Ads.
+- `key.properties.example` — signing template.
+- `www/`, `android/`, `node_modules/`, `key.properties`, `*.keystore` are git-ignored.

@@ -1216,7 +1216,7 @@ function setAudioPref(key){ S.settings=S.settings||{music:true,sfx:true}; S.sett
   if(key==='music'){ if(S.settings.music) startBGM(); else stopBGM(); } updateMusicIcon(); try{if(S.settings.sfx!==false)SFX.tap&&SFX.tap();}catch(e){} if(typeof renderParent==='function') renderParent(); }
 /* Stop all audio when the app is backgrounded / screen off / closed (a WebView keeps
    playing music otherwise), and resume when it returns to the foreground. */
-function audioPause(){ try{stopBGM();}catch(e){} try{ if(AC&&AC.state==='running') AC.suspend(); }catch(e){} try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){} }
+function audioPause(){ try{stopBGM();}catch(e){} try{ if(AC&&AC.state==='running') AC.suspend(); }catch(e){} try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){} try{ const T=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.TextToSpeech; if(T&&T.stop) T.stop(); }catch(e){} }
 function audioResume(){ try{ if(AC&&AC.state==='suspended') AC.resume(); }catch(e){} try{ if(AUDIO_READY) startBGM(); }catch(e){} }
 document.addEventListener('visibilitychange',()=>{ document.hidden?audioPause():audioResume(); });
 window.addEventListener('pagehide',audioPause); window.addEventListener('blur',()=>{ if(document.hidden) audioPause(); });
@@ -1239,9 +1239,13 @@ function speakable(txt){ try{ return String(txt)
   .replace(/_+/g,' blank ')                            // "A _ C" -> "A blank C" (missing-letter puzzles)
   .replace(/\s*[—–]\s*/g,', ')                         // em/en dash = separator -> short pause, NOT "minus"
   .replace(/\s{2,}/g,' ').trim(); }catch(e){ return txt; } }
-function speak(text){ try{ if(S.settings&&S.settings.sfx===false)return; if(!window.speechSynthesis)return; const en=S.locale!=='id';
+function speak(text){ try{ if(S.settings&&S.settings.sfx===false)return; const en=S.locale!=='id'; const t=speakable(text);
+  // Native app: Web Speech is silent in the Android WebView, so route through the device TTS engine.
+  const TTS=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.TextToSpeech;
+  if(TTS&&TTS.speak){ try{TTS.stop();}catch(e){} TTS.speak({ text:t, lang:en?'en-US':'id-ID', rate:0.85, pitch:1.05, category:'playback' }).catch(()=>{}); return; }
+  if(!window.speechSynthesis)return;
   if(en && !_enVoice) _enVoice=pickEnVoice();
-  const u=new SpeechSynthesisUtterance(speakable(text));
+  const u=new SpeechSynthesisUtterance(t);
   u.lang=en?"en-US":"id-ID"; if(en && _enVoice) u.voice=_enVoice; // pick a clear, natural English voice instead of the device default
   u.rate=0.72; u.pitch=1.05; // extra slow & calm — the voice guides pre-readers (ages 3-5)
   speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }

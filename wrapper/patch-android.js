@@ -70,6 +70,16 @@ if (!gradle.includes("apply from: 'signing.gradle'") && !gradle.includes('apply 
   console.log("✓ Wrote signing.gradle and added apply line to app/build.gradle");
 } else { console.log('• build.gradle already applies signing.gradle'); }
 
+// 4) Ensure compile/target SDK >= 35 (Google Play requires API 35 for new apps)
+const varPath = path.join(__dirname, 'android', 'variables.gradle');
+if (fs.existsSync(varPath)) {
+  let v = fs.readFileSync(varPath, 'utf8'); const before = v;
+  v = v.replace(/compileSdkVersion\s*=\s*3[0-4]\b/, 'compileSdkVersion = 35')
+       .replace(/targetSdkVersion\s*=\s*3[0-4]\b/, 'targetSdkVersion = 35');
+  if (v !== before) { fs.writeFileSync(varPath, v); console.log('✓ Bumped compile/target SDK to 35 (Play requirement)'); }
+  else { console.log('• variables.gradle already at SDK 35+'); }
+}
+
 console.log('\nNext:');
 console.log('  1) Put your REAL AdMob APP ID in android/app/src/main/res/values/strings.xml (admob_app_id).');
 console.log('  2) Signing: copy wrapper/key.properties.example -> android/key.properties and fill it in,');

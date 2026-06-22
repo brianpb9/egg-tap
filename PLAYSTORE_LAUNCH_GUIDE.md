@@ -114,6 +114,36 @@ prepareInterstitial({ adId, isTesting: ADMOB.testMode, npa:true }); // npa = non
 
 ---
 
+## 5b. Cara GENERATE semua aset (in-game + store) ⭐
+> Bagian yang sering kelupaan: hampir semua gambar **harus dibuat/generate**, bukan ada otomatis.
+
+**Tool:**
+- **Higgsfield MCP** — `generate_image` (model `gpt_image_2`, quality `low` cukup) →
+  `remove_background` (transparan, **maks 8 job konkuren**) → download via PowerShell.
+- **PowerShell System.Drawing** — resize, bikin thumbnail, composite teks, upscale.
+- **ffmpeg** — re-encode audio, (opsi) PNG→WebP.
+
+### In-game art (karakter, telur, background, dekorasi)
+- Generate via Higgsfield. **Pakai 1 "anchor" image** sebagai referensi gaya (`medias`) supaya 60+ aset konsisten.
+- `remove_background` untuk yang perlu transparan (karakter/dekor/telur).
+- Bikin **thumbnail 256px** untuk tampilan kecil (≤120px) → hemat memori & load.
+- Wire via peta di code: `IMG` (id→png), `BG`, `EGGIMG`, `DECOIMG`, path thumbnail.
+- ⚠️ Jangan kirim aset tak terpakai ke app (§7).
+
+### Store assets — WAJIB dibuat sendiri:
+| Aset | Cara buat |
+|---|---|
+| **App icon 512×512** | Generate art icon (Higgsfield). Simpan juga **1024 source** untuk generator launcher icon. |
+| **Feature graphic 1024×500** | AI sering gagal render teks → **generate banner scene TANPA teks** (sisakan ruang langit) lalu **composite judul** pakai System.Drawing (font bold + faux-outline). **Jangan pakai file icon** (→ error "too small"). |
+| **Phone screenshots** | **Tangkap dari HP/emulator** saat game **terisi & menarik** (koleksi penuh, home rame) — bukan layar kosong. Min 2, maks 8. |
+| **Launcher icon + splash (Android)** | Auto-generate: `npx capacitor-assets generate --android` (butuh `wrapper/assets/icon.png` 1024 + `splash.png` 2732). |
+
+### Audio
+- **VO** bisa di-generate (TTS, mis. ElevenLabs "Maya"). **BGM** disediakan sendiri (Suno/Udio).
+- Re-encode untuk ukuran (§7): BGM 128k, VO 64k mono.
+
+---
+
 ## 6. Alur testing → production (gate waktu!)
 1. **Internal testing** — instan, ≤100 tester via email. Buat release → upload `.aab` → publish.
    - Tester install lewat **opt-in link** (Play TIDAK kirim email otomatis). Buka link di HP yang login email tester.
@@ -144,6 +174,8 @@ prepareInterstitial({ adId, isTesting: ADMOB.testMode, npa:true }); // npa = non
 ## 8. Checklist A–Z (urutan eksekusi)
 ```
 [ ] A. Desain compliant: no login/PII, save lokal, child-directed (kalau anak)
+[ ] A2. GENERATE semua aset: in-game (anchor style + thumbnail 256px) + store
+        (icon 512, feature 1024x500 banner+judul, screenshot terisi) — lihat §5b
 [ ] B. Daftar Play Console ($25) — VERIFIKASI DULUAN (1–3 hari)
 [ ] C. Daftar AdMob + RevenueCat (+Firebase opsional)
 [ ] D. Host privacy policy (HTML, ada email kontak) → catat URL

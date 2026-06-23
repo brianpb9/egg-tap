@@ -89,6 +89,18 @@ if (fs.existsSync(varPath)) {
   else { console.log('• variables.gradle already at SDK 35+'); }
 }
 
+// 5) Android 15 edge-to-edge opt-out (else the bottom nav draws under the system nav bar)
+const stylesPath = path.join(A, 'res', 'values', 'styles.xml');
+if (fs.existsSync(stylesPath)) {
+  let st = fs.readFileSync(stylesPath, 'utf8');
+  if (!st.includes('windowOptOutEdgeToEdgeEnforcement')) {
+    st = st.replace('<item name="android:background">@null</item>',
+      '<item name="android:background">@null</item>\n        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>');
+    fs.writeFileSync(stylesPath, st);
+    console.log('✓ Opted out of Android 15 edge-to-edge (styles.xml)');
+  } else { console.log('• styles.xml already opts out of edge-to-edge'); }
+}
+
 console.log('\nNext:');
 console.log('  1) Put your REAL AdMob APP ID in android/app/src/main/res/values/strings.xml (admob_app_id).');
 console.log('  2) Signing: copy wrapper/key.properties.example -> android/key.properties and fill it in,');

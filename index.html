@@ -2244,7 +2244,7 @@ function renderHome(){
   } else if(careWrap){ careWrap.innerHTML=''; }
   // tray: decoration shop — buying decor invites more friends to hang out
   const decos=DATA.decorations.filter(d=>d.world===S.currentWorld);
-  let html=`<div class="traytag">🎁<div>${S.locale==='id'?'Undang':'Invite'}</div></div>`;
+  let html=`<div class="traytag">🛍️<div>${S.locale==='id'?'Hias':'Decor'}</div></div>`;
   html+= decos.length ? decos.map(d=>{ const owned=decor.some(h=>h.decoId===d.id), af=S.currencies.coins>=d.cost; const cls=owned?'owned':(af?'':'cantafford');
       return `<div class="trayitem ${cls}" onclick="buyPlaceDeco('${d.id}')">${decoMarkup(d,40)}${nm(d.label)}<div class="muted">${owned?(S.locale==='id'?'✓ dipasang':'✓ placed'):'🪙'+d.cost}</div></div>`; }).join("")
     : `<div class="trayitem cantafford" style="cursor:default">—</div>`;
